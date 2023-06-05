@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "ecocanvas"
+version = "0.1.0"
+description = ""
+authors = ["Songjimyung <jimyung0401@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+django = "^4.2.1"
+djangorestframework = "^3.14.0"
+djangorestframework-jwt = "^1.11.0"
+djangorestframework-simplejwt = "^5.2.2"
+django-cors-headers = "^4.0.0"
+django-dotenv = "^1.4.2"
+mysqlclient = "^2.1.1"
+pillow = "^9.5.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
