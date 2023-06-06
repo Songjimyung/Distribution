@@ -12,7 +12,7 @@ class Campaign(models.Model):
     3이 되었을 때 캠페인이 완료처리 됩니다.
     STATUS_CHOICES는 0시작이 좋을지, 1시작이 좋을지 고민됩니다
     is_funding이 False라면 Backoffice 검토 없이 그냥 게시해보는 것도 좋을 것 같아요
-    최초 작성일 : 2023-06-06
+    최초 작성일 : 2023.06.06
     업데이트 일자 : 
     """
     class Meta:
@@ -23,7 +23,7 @@ class Campaign(models.Model):
         (3, "캠페인 승인, 완료 상태"),
     )
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="users")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="campaigns")
     like = models.ManyToManyField(User, related_name="likes", blank=True)
     title = models.CharField("캠페인 제목", max_length=50)
     content = models.TextField("캠페인 내용")
@@ -45,14 +45,14 @@ class CampaignReview(models.Model):
     """
     작성자 : 최준영
     내용 : 캠페인 리뷰 모델입니다.
-    최초 작성일 : 2023-06-06
+    최초 작성일 : 2023.06.06
     업데이트 일자 : 
     """
     class Meta:
         db_table = "campaign review"
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="users")
-    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="campaigns")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reviews")
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="reviews")
     title = models.CharField("캠페인 리뷰 제목", max_length=50)
     content = models.TextField("캠페인 리뷰 내용")
     created_at = models.DateTimeField("캠페인 리뷰 작성일", auto_now_add=True)
@@ -66,14 +66,14 @@ class CampaignComment(models.Model):
     """
     작성자 : 최준영
     내용 : 캠페인 댓글 모델입니다.
-    최초 작성일 : 2023-06-06
+    최초 작성일 : 2023.06.06
     업데이트 일자 : 
     """
     class Meta:
         db_table = "campaign comment"
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="users")
-    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="campaigns")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="comments")
     content = models.TextField("캠페인 댓글 내용")
     created_at = models.DateTimeField("캠페인 댓글 작성일", auto_now_add=True)
     updated_at = models.DateTimeField("캠페인 댓글 수정일", auto_now=True)
@@ -88,13 +88,13 @@ class Funding(models.Model):
     내용 : 캠페인 펀딩 모델입니다.
     file이 업로드되게 될 경로와 방법을 고민해봐야할 것 같습니다.
     https://docs.djangoproject.com/en/4.2/ref/models/fields/#filefield
-    최초 작성일 : 2023-06-06
+    최초 작성일 : 2023.06.06
     업데이트 일자 : 
     """
     class Meta:
         db_table = "funding"
 
-    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="campaigns")
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="fundings")
     created_at = models.DateTimeField("펀딩 생성일", auto_now_add=True)
     deadline = models.DateTimeField("펀딩 마감일")
     goal = models.PositiveIntegerField("펀딩 목표 금액")
@@ -111,12 +111,12 @@ class FundingOrder(models.Model):
     내용 : 펀딩 결제정보 모델입니다.
     결제는 shop에서 import 해서 쓰게 되는걸까요?
     payment_text는 쓰일지 확정되지 않아 주석으로 처리해두겠습니다.
-    최초 작성일 : 2023-06-06
+    최초 작성일 : 2023.06.06
     업데이트 일자 : 
     """
     class Meta:
         db_table = "funding order"
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="users")
-    funding = models.ForeignKey(Funding, on_delete=models.CASCADE, related_name="fundings")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="fundingorders")
+    funding = models.ForeignKey(Funding, on_delete=models.CASCADE, related_name="fundingorders")
     # payment_text = models.TextField("결제정보")
