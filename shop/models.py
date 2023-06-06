@@ -12,8 +12,7 @@ class ShopCategory(models.Model):
     '''
     category_name = models.CharField(max_length=30)
     category_number = models.PositiveIntegerField(default=0)
-    def __str__(self):
-        return self.category_name
+
 
 
 class ShopProduct(models.Model):
@@ -29,7 +28,8 @@ class ShopProduct(models.Model):
     product_desc = models.TextField()
     product_date = models.DateTimeField(auto_now_add=True)
     category = models.ForeignKey(ShopCategory, on_delete=models.CASCADE, related_name='products')
-
+    def __str__(self):
+        return str(self.product_name)
 
 
 class ShopCart(models.Model):
