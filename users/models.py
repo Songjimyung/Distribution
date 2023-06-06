@@ -4,6 +4,12 @@ import re
 
 # 인자값으로 들어온 문자열이 password_regex에 정의된 조건들을 모두 만족하는지 검사
 def password_validator(password):
+    '''
+    작성자 : 이주한
+    작성날짜 : 2023.06.06
+    작성내용 : 비밀번호 유효성 검증 함수
+    업데이트 날짜 :
+    '''
     password_regex = '^(?=.*[\d])(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*()])[\w\d!@#$%^&*()]{8,}$'
     
     if not re.search(password_regex, str(password)):
@@ -12,6 +18,12 @@ def password_validator(password):
 
 # 인자값으로 들어온 문자열의 문자중 연속해서 3개 이상의 문자가 같은 패턴인지 검사
 def password_pattern(password):
+    '''
+    작성자 : 이주한
+    작성날짜 : 2023.06.06
+    작성내용 : 비밀번호 패턴 유효성 검증 함수
+    업데이트 날짜 :
+    '''
     password_pattern = r"(.)\1+\1"
     
     if re.search(password_pattern, str(password)):
@@ -19,10 +31,13 @@ def password_pattern(password):
     return False
 
 
-from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
-
-
 class UserManager(BaseUserManager):
+    '''
+    작성자 : 이주한
+    작성날짜 : 2023.06.06
+    작성내용 : UserManager 모델
+    업데이트 날짜 :
+    '''
     def create_user(self, email, name, password=None):
         if not email:
             raise ValueError("이메일을 입력해주세요!")
@@ -51,6 +66,12 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser):
+    '''
+    작성자 : 이주한
+    작성날짜 : 2023.06.06
+    작성내용 : User 모델
+    업데이트 날짜 :
+    '''
     email = models.EmailField(
         verbose_name="email address",
         max_length=255,
