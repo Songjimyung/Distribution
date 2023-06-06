@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from .models import ShopProduct, ShopCategory
 from .serializers import ProductListSerializer, ProductSerializer
 from config.permissions import IsAdminUserOrReadonly
+from django.core.exceptions import ValidationError
 
 
 
@@ -28,7 +29,7 @@ class ProductViewAPI(APIView):
             serializer.save(category=category)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
-            return Response({"massage":"상품 등록 완료"}, serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
