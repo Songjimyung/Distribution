@@ -4,6 +4,5 @@ from rest_framework_simplejwt.views import (TokenObtainPairView, TokenRefreshVie
 
 
 urlpatterns = [    
-    path('main/',  TokenObtainPairView.as_view(), name='main'),   
-
+    path('main/',  TokenObtainPairView.as_view(), name='main'),
 ]
