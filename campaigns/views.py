@@ -37,9 +37,10 @@ class CampaignView(APIView):
         캠페인의 진행 상태인 status가 2인 승인상태, 
         status가 3인 승인 + 완료 상태의 캠페인만 Q객체와 filter를 사용해
         비승인은 제외하고 GET 요청에 대해 Response합니다.
+        select_related를 사용해 eager-loading쪽으로 잡아봤습니다. (변경가능성높음)
         """
-        campaigns = Campaign.objects.filter(Q(status=2)|Q(status=3))
-        serializer = CampaignSerializer(campaigns, many=True)
+        queryset = Campaign.objects.filter(Q(status=2)|Q(status=3)).select_related("fundings")
+        serializer = CampaignSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
@@ -47,7 +48,6 @@ class CampaignView(APIView):
         캠페인 POST요청 함수입니다.
         is_funding이 True라면 펀딩정보를 같이 POST하는 방식으로 모듈화 했습니다.
         """
-        print(request.data["is_funding"])
         if request.data["is_funding"] == "False":
             return self.create_campaign(request)
         else:
@@ -86,25 +86,33 @@ class CampaignDetailView(APIView):
     내용 : 캠페인 디테일 뷰 입니다.
     개별 캠페인 GET과 그 캠페인에 대한 PUT, DELETE 요청을 처리합니다.
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 
+    업데이트 일자 : 2023.06.07
     """
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     def get(self, request, campaign_id):
         """
-        campaing_id를 Parameter로 받아 해당하는 캠페인을 볼 수 있는 GET 요청 함수입니다.
+        campaing_id를 Parameter로 받아 해당하는 캠페인에 GET 요청을 보내는 함수입니다.
         """
-        campaign = get_object_or_404(Campaign, id=campaign_id)
-        serializer = CampaignSerializer(campaign)
+        # campaign = Campaign.objects.get(id=campaign_id)
+        queryset = get_object_or_404(Campaign, id=campaign_id)
+        serializer = CampaignSerializer(queryset)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, campaign_id):
         """
         campaing_id를 Parameter로 받아 해당하는 캠페인을 수정할 수 있는
         PUT 요청 함수입니다.
+        is_funding이 True라면 펀딩정보를 같이 PUT하는 방식으로 모듈화 했습니다.
         """
-        campaign = get_object_or_404(Campaign, id=campaign_id)
-        if request.user == campaign.user:
-            serializer = CampaignCreateSerializer(campaign, data=request.data)
+        if request.data["is_funding"] == "False":
+            return self.update_campaign(request, campaign_id)
+        else:
+            return self.update_campaign_with_funding(request, campaign_id)
+        
+    def update_campaign(self, request, campaign_id):
+        queryset = get_object_or_404(Campaign, id=campaign_id)
+        if request.user == queryset.user:
+            serializer = CampaignCreateSerializer(queryset, data=request.data)
             if serializer.is_valid():
                 serializer.save()
                 return Response({"message": "캠페인 수정완료", "data": serializer.data}, status=status.HTTP_200_OK)
@@ -112,15 +120,34 @@ class CampaignDetailView(APIView):
                 return Response({"message":"캠페인 수정에 실패했습니다.", "errors": serializer.erros}, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({"message":"해당 캠페인을 수정할 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+    
+    def update_campaign_with_funding(self, request, campaign_id):
+        queryset = get_object_or_404(Campaign, id=campaign_id)
+        if request.user == queryset.user:
+            campaign_serializer = CampaignCreateSerializer(queryset, data=request.data)
+            funding_serializer = FundingCreateSerializer(data=request.data)
+            if campaign_serializer.is_valid() and funding_serializer.is_valid():
+                campaign = campaign_serializer.save()
+                funding_serializer.validated_data['campaign'] = campaign
+                funding_serializer.save()
+                response_data = {
+                    "message": "캠페인이 작성되었습니다.",
+                    "data": [campaign_serializer.data, funding_serializer.data]
+                }
+                return Response(response_data, status=status.HTTP_200_OK)
+            else:
+                return Response({"message": "캠페인 및 펀딩 정보가 올바르지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({"message":"해당 캠페인을 수정할 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
 
     def delete(self, request, campaign_id):
         """
         campaing_id를 Parameter로 받아 해당하는 캠페인을 삭제할 수 있는
-        DELTE 요청 함수입니다.
+        DELETE 요청 함수입니다.
         """
-        campaign = get_object_or_404(Campaign, id=campaign_id)
-        if request.user == campaign.user:
-            campaign.delete()
+        queryset = get_object_or_404(Campaign, id=campaign_id)
+        if request.user == queryset.user:
+            queryset.delete()
             return Response({"message":"캠페인이 삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
         else:
             return Response({"message":"해당 캠페인을 삭제할 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
@@ -138,8 +165,8 @@ class CampaignReviewView(APIView):
         """
         캠페인 리뷰를 볼 수 있는 GET 요청 함수입니다.
         """
-        campaign = get_object_or_404(Campaign, id=campaign_id)
-        review = campaign.reviews.all()
+        queryset = get_object_or_404(Campaign, id=campaign_id)
+        review = queryset.reviews.all()
         serializer = CampaignReviewSerializer(review, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
@@ -165,9 +192,9 @@ class CampaignReviewDetailView(APIView):
         """
         리뷰를 수정할 수 있는 PUT 요청 함수입니다.
         """
-        review = get_object_or_404(CampaignReview, id=review_id)
-        if request.user == review.user:
-            serializer = CampaignReviewCreateSerializer(review, data=request.data)
+        queryset = get_object_or_404(CampaignReview, id=review_id)
+        if request.user == queryset.user:
+            serializer = CampaignReviewCreateSerializer(queryset, data=request.data)
             if serializer.is_valid():
                 serializer.save()
                 return Response({"message": "리뷰 수정완료", "data": serializer.data}, status=status.HTTP_200_OK)
@@ -180,9 +207,9 @@ class CampaignReviewDetailView(APIView):
         """
         리뷰를 삭제할 수 있는 DELETE 요청 함수입니다.
         """
-        review = get_object_or_404(CampaignReview, id=review_id)
-        if request.user == review.user:
-            review.delete()
+        queryset = get_object_or_404(CampaignReview, id=review_id)
+        if request.user == queryset.user:
+            queryset.delete()
             return Response({"message":"리뷰가 삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
         else:
             return Response({"message":"해당 리뷰를 삭제할 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
@@ -200,8 +227,8 @@ class CampaignCommentView(APIView):
         """
         캠페인 댓글을 볼 수 있는 GET 요청 함수입니다.
         """
-        campaign = get_object_or_404(Campaign, id=campaign_id)
-        comment = campaign.comments.all()
+        queryset = get_object_or_404(Campaign, id=campaign_id)
+        comment = queryset.comments.all()
         serializer = CampaignCommentSerializer(comment, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -227,9 +254,9 @@ class CampaignCommentDetailView(APIView):
         """
         댓글을 수정할 수 있는 PUT 요청 함수입니다.
         """
-        comment = get_object_or_404(CampaignComment, id=comment_id)
-        if request.user == comment.user:
-            serializer = CampaignCommentCreateSerializer(comment, data=request.data)
+        queryset = get_object_or_404(CampaignComment, id=comment_id)
+        if request.user == queryset.user:
+            serializer = CampaignCommentCreateSerializer(queryset, data=request.data)
             if serializer.is_valid():
                 serializer.save()
                 return Response({"message": "댓글 수정완료", "data": serializer.data}, status=status.HTTP_200_OK)
@@ -242,18 +269,9 @@ class CampaignCommentDetailView(APIView):
         """
         댓글을 삭제할 수 있는 DELETE 요청 함수입니다.
         """
-        comment = get_object_or_404(CampaignComment, id=comment_id)
-        if request.user == comment.user:
-            comment.delete()
+        queryset = get_object_or_404(CampaignComment, id=comment_id)
+        if request.user == queryset.user:
+            queryset.delete()
             return Response({"message":"댓글이 삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
         else:
             return Response({"message":"해당 댓글을 삭제할 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
-
-
-class FundingView(APIView):
-    """
-    작성자 : 최준영
-    내용 : 펀딩 뷰입니다.
-    최초 작성일 : 2023.06.07
-    업데이트 일자 : 
-    """

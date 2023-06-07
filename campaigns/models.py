@@ -96,13 +96,14 @@ class Funding(BaseModel):
     """
     작성자 : 최준영
     내용 : 캠페인 펀딩 모델입니다.
+    캠페인과의 관계는 OneToOne으로 변경하였습니다.
     최초 작성일 : 2023.06.06
     업데이트 일자 : 2023.06.07
     """
     class Meta:
         db_table = "funding"
 
-    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="fundings")
+    campaign = models.OneToOneField(Campaign, on_delete=models.CASCADE, related_name="fundings")
     funding_startdate = models.DateTimeField("펀딩 생성일", auto_now_add=True)
     deadline = models.DateTimeField("펀딩 마감일")
     goal = models.PositiveIntegerField("펀딩 목표 금액")
