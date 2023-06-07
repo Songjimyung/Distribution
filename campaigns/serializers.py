@@ -89,3 +89,33 @@ class CampaignCommentCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CampaignComment
         fields = ("content",)
+
+
+class FundingSerializer(serializers.ModelSerializer):
+    """
+    작성자 : 최준영
+    내용 : 펀딩 시리얼라이저 입니다.
+    최초 작성일 : 2023.06.07
+    업데이트 일자 : 
+    """
+    class Meta:
+        model = Funding
+        fields = "__all__"
+
+
+class FundingCreateSerializer(serializers.ModelSerializer):
+    """
+    작성자 : 최준영
+    내용 : 펀딩 생성 시리얼라이저 입니다.
+    최초 작성일 : 2023.06.07
+    업데이트 일자 : 
+    """
+    class Meta:
+        model = Funding
+        fields = (
+            "funding_startdate",
+            "deadline",
+            "goal",
+            "current",
+            "approvefile",
+        )

@@ -28,7 +28,7 @@ class Campaign(models.Model):
     title = models.CharField("캠페인 제목", max_length=50)
     content = models.TextField("캠페인 내용")
     members = models.PositiveIntegerField("캠페인 모집 인원")
-    current_members = models.PositiveIntegerField("캠페인 현재 참가인원")
+    current_members = models.PositiveIntegerField("캠페인 현재 참가인원", default=0)
     startdate = models.DateTimeField("캠페인 시작일")
     enddate = models.DateTimeField("캠페인 마감일")
     created_at = models.DateTimeField("캠페인 작성일", auto_now_add=True)
@@ -86,8 +86,6 @@ class Funding(models.Model):
     """
     작성자 : 최준영
     내용 : 캠페인 펀딩 모델입니다.
-    file이 업로드되게 될 경로와 방법을 고민해봐야할 것 같습니다.
-    https://docs.djangoproject.com/en/4.2/ref/models/fields/#filefield
     최초 작성일 : 2023.06.06
     업데이트 일자 : 
     """
@@ -95,10 +93,10 @@ class Funding(models.Model):
         db_table = "funding"
 
     campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="fundings")
-    created_at = models.DateTimeField("펀딩 생성일", auto_now_add=True)
+    funding_startdate = models.DateTimeField("펀딩 생성일", auto_now_add=True)
     deadline = models.DateTimeField("펀딩 마감일")
     goal = models.PositiveIntegerField("펀딩 목표 금액")
-    current = models.PositiveIntegerField("펀딩 현재 금액")
+    current = models.PositiveIntegerField("펀딩 현재 금액", default=0)
     approvefile = models.FileField("펀딩 승인 파일", upload_to="%Y/%m/", blank=True)
 
     def __str__(self):

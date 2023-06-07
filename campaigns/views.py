@@ -17,6 +17,8 @@ from campaigns.serializers import (
     CampaignReviewCreateSerializer,
     CampaignCommentSerializer,
     CampaignCommentCreateSerializer,
+    FundingSerializer,
+    FundingCreateSerializer,
 )
 
 
@@ -27,14 +29,14 @@ class CampaignView(APIView):
     전체 캠페인 리스트를 GET하는 get함수와
     캠페인을 작성할 수 있는 post가 있는 클래스입니다.
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 
+    업데이트 일자 : 2023.06.07
     """
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     def get(self, request):
         """
         캠페인의 진행 상태인 status가 2인 승인상태, 
         status가 3인 승인 + 완료 상태의 캠페인만 Q객체와 filter를 사용해
-        비승인은 제외하고 Response합니다.
+        비승인은 제외하고 GET 요청에 대해 Response합니다.
         """
         campaigns = Campaign.objects.filter(Q(status=2)|Q(status=3))
         serializer = CampaignSerializer(campaigns, many=True)
@@ -42,12 +44,40 @@ class CampaignView(APIView):
 
     def post(self, request):
         """
-        캠페인을 작성하는 Post 요청 함수입니다.
+        캠페인 POST요청 함수입니다.
+        is_funding이 True라면 펀딩정보를 같이 POST하는 방식으로 모듈화 했습니다.
         """
+        print(request.data["is_funding"])
+        if request.data["is_funding"] == "False":
+            return self.create_campaign(request)
+        else:
+            return self.create_campaign_with_funding(request)
+
+    def create_campaign_with_funding(self, request):
+        campaign_serializer = CampaignCreateSerializer(data=request.data)
+        funding_serializer = FundingCreateSerializer(data=request.data)
+        
+        if campaign_serializer.is_valid() and funding_serializer.is_valid():
+            campaign = campaign_serializer.save(user=request.user)
+            funding_serializer.validated_data['campaign'] = campaign
+            funding_serializer.save()
+            response_data = {
+                "message": "캠페인이 작성되었습니다.",
+                "data": [campaign_serializer.data, funding_serializer.data]
+            }
+            return Response(response_data, status=status.HTTP_201_CREATED)
+        else:
+            return Response({"message": "캠페인 및 펀딩 정보가 올바르지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+    def create_campaign(self, request):
         serializer = CampaignCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user)
-        return Response({"message": "캠페인이 작성되었습니다.", "data": serializer.data}, status=status.HTTP_201_CREATED)
+        response_data = {
+            "message": "캠페인이 작성되었습니다.",
+            "data": serializer.data
+        }
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 
 class CampaignDetailView(APIView):
@@ -61,7 +91,7 @@ class CampaignDetailView(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     def get(self, request, campaign_id):
         """
-        campaing_id를 파라미터로 받아 해당하는 캠페인을 볼 수 있는 GET 요청 함수입니다.
+        campaing_id를 Parameter로 받아 해당하는 캠페인을 볼 수 있는 GET 요청 함수입니다.
         """
         campaign = get_object_or_404(Campaign, id=campaign_id)
         serializer = CampaignSerializer(campaign)
@@ -69,7 +99,7 @@ class CampaignDetailView(APIView):
 
     def put(self, request, campaign_id):
         """
-        campaing_id를 파라미터로 받아 해당하는 캠페인을 수정할 수 있는
+        campaing_id를 Parameter로 받아 해당하는 캠페인을 수정할 수 있는
         PUT 요청 함수입니다.
         """
         campaign = get_object_or_404(Campaign, id=campaign_id)
@@ -85,7 +115,7 @@ class CampaignDetailView(APIView):
 
     def delete(self, request, campaign_id):
         """
-        campaing_id를 파라미터로 받아 해당하는 캠페인을 삭제할 수 있는
+        campaing_id를 Parameter로 받아 해당하는 캠페인을 삭제할 수 있는
         DELTE 요청 함수입니다.
         """
         campaign = get_object_or_404(Campaign, id=campaign_id)
