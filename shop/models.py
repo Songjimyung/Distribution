@@ -1,6 +1,6 @@
 from django.db import models
 from users.models import User
-
+from django.urls import reverse
 
 
 class ShopCategory(models.Model):
@@ -12,7 +12,10 @@ class ShopCategory(models.Model):
     '''
     category_name = models.CharField(max_length=30)
     category_number = models.PositiveIntegerField(default=0)
-
+    def __str__(self):
+        return str(self.category_name)
+    def get_absolute_url(self):
+        return reverse('product_view', kwargs={"category_id":self.id})
 
 
 class ShopProduct(models.Model):
@@ -32,18 +35,6 @@ class ShopProduct(models.Model):
         return str(self.product_name)
 
 
-class ShopCart(models.Model):
-    '''
-    작성자 : 장소은
-    내용 : 장바구니 모델 
-    최초 작성일: 2023.06.06
-    업데이트 일자:
-    '''
-    product_count = models.PositiveIntegerField(default=0)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    product = models.ForeignKey(ShopProduct, on_delete=models.CASCADE)
-
-
 
 class ShopOrder(models.Model):
     '''
@@ -61,7 +52,6 @@ class ShopOrder(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
 
-
 class ShopOrderDetail(models.Model):
     '''
     작성자 : 장소은
@@ -74,7 +64,6 @@ class ShopOrderDetail(models.Model):
     order = models.ForeignKey(ShopOrder,on_delete=models.CASCADE)
     product = models.ForeignKey(ShopProduct, on_delete=models.CASCADE)
     # price = models.ForeignKey(Amount, on_delete=models.CASCADE)
-
 
 
 class ShopImageFile(models.Model):
