@@ -18,7 +18,7 @@ pillow = "^9.5.0"
 channels = "^4.0.0"
 channels-redis = "^4.1.0"
 daphne = "^4.0.0"
-autopep8 = "^2.0.2"
+faker = "^18.10.1"
 
 
 [build-system]
