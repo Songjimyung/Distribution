@@ -248,3 +248,12 @@ class CampaignCommentDetailView(APIView):
             return Response({"message":"댓글이 삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
         else:
             return Response({"message":"해당 댓글을 삭제할 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+
+
+class FundingView(APIView):
+    """
+    작성자 : 최준영
+    내용 : 펀딩 뷰입니다.
+    최초 작성일 : 2023.06.07
+    업데이트 일자 : 
+    """
