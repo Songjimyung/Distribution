@@ -18,7 +18,7 @@ class Campaign(models.Model):
     class Meta:
         db_table = "campaign"
     STATUS_CHOICES = (
-        (1, "캠페인 비승인 상태"),
+        (1, "캠페인 미승인 상태"),
         (2, "캠페인 승인 상태"),
         (3, "캠페인 승인, 완료 상태"),
     )
@@ -33,7 +33,7 @@ class Campaign(models.Model):
     enddate = models.DateTimeField("캠페인 마감일")
     created_at = models.DateTimeField("캠페인 작성일", auto_now_add=True)
     updated_at = models.DateTimeField("캠페인 수정일", auto_now=True)
-    image = models.ImageField("캠페인 이미지", null=True, blank=True)
+    image = models.ImageField("캠페인 이미지", blank=True, upload_to="%Y/%m/")
     is_funding = models.BooleanField("캠페인 펀딩여부", default=False)
     status = models.PositiveSmallIntegerField("캠페인 진행 상태", choices=STATUS_CHOICES, default=1)
 
@@ -99,7 +99,7 @@ class Funding(models.Model):
     deadline = models.DateTimeField("펀딩 마감일")
     goal = models.PositiveIntegerField("펀딩 목표 금액")
     current = models.PositiveIntegerField("펀딩 현재 금액")
-    approvefile = models.FileField("펀딩 승인 파일", upload_to="", blank=True)
+    approvefile = models.FileField("펀딩 승인 파일", upload_to="%Y/%m/", blank=True)
 
     def __str__(self):
         return str(self.goal)
@@ -109,7 +109,7 @@ class FundingOrder(models.Model):
     """
     작성자 : 최준영
     내용 : 펀딩 결제정보 모델입니다.
-    결제는 shop에서 import 해서 쓰게 되는걸까요?
+    결제는 아직 import하지 않은 상황입니다.
     payment_text는 쓰일지 확정되지 않아 주석으로 처리해두겠습니다.
     최초 작성일 : 2023.06.06
     업데이트 일자 : 

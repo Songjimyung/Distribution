@@ -13,10 +13,10 @@ class ReviewDisplay(admin.ModelAdmin):
     """
     작성자 : 최준영
     내용 : 캠페인 admin 등록 클래스입니다.
+    list_display는 ManyToManyField를 지원하지 않습니다.
     최초 작성일 : 2023.06.06
     업데이트 일자 : 
     """
-    # list_display는 ManyToManyField 미지원
     list_display = [
         'user',
         'title',
