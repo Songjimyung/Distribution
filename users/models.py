@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 import re
 
-# 인자값으로 들어온 문자열이 password_regex에 정의된 조건들을 모두 만족하는지 검사
 def password_validator(password):
     '''
     작성자 : 이주한
@@ -16,7 +15,6 @@ def password_validator(password):
         return True
     return False
 
-# 인자값으로 들어온 문자열의 문자중 연속해서 3개 이상의 문자가 같은 패턴인지 검사
 def password_pattern(password):
     '''
     작성자 : 이주한

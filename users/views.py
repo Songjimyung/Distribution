@@ -2,9 +2,12 @@ from rest_framework.views import APIView
 from rest_framework.generics import get_object_or_404
 from rest_framework import status
 from rest_framework.response import Response
-from users.serializers import SignUpSerializer
+from users.serializers import SignUpSerializer, CustomTokenObtainPairSerializer
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView
+)
 
-# UserView
+
 class UserView(APIView):
     '''
     작성자 : 이주한
@@ -12,7 +15,6 @@ class UserView(APIView):
     최초 작성일 : 2023.06.06
     업데이트 일자 :
     '''
-    # 회원가입 POST 메소드
     def post(self, request):
         serializer = SignUpSerializer(data=request.data)
         if serializer.is_valid():
@@ -28,3 +30,7 @@ class UserView(APIView):
     # 회원 비활성화 DELETE 메소드
     def delete(self, request):
         pass
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
