@@ -8,11 +8,10 @@ from config.permissions import IsAdminUserOrReadonly
 from django.core.exceptions import ValidationError
 
 
-
 class ProductViewAPI(APIView): 
     '''
     작성자:장소은
-    내용: 관리자용 카테고리별 상품목록 조회 / 상품 등록 
+    내용: 카테고리별 상품목록 조회(일반,관리자) / 상품 등록(관리자) 
     작성일: 2023.06.06
     '''
     permission_classes = [IsAdminUserOrReadonly]
@@ -30,7 +29,6 @@ class ProductViewAPI(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 class ProductDetailViewAPI(APIView):

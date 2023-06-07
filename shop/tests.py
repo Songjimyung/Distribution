@@ -21,11 +21,13 @@ class ProductTest(APITestCase):
         cls.faker = Faker()
         cls.category = ShopCategory.objects.create(category_name=cls.faker.word(), category_number=1)
         cls.product = ShopProduct.objects.create(product_name=cls.faker.word(), product_desc=cls.faker.sentence(), product_price=1000, category=cls.category)
-        cls.product_data = {'product_name':"test111", 'product_desc':"ddd", 'category':cls.category.id}
+        cls.product_data = {'product_name':cls.product.product_name, 'product_desc':cls.product.product_desc, 'category':cls.category.id}
+
 
     def setUp(self): 
         self.admin_access_token = self.client.post(reverse('log_in'), self.admin_data).data['access']
         self.access_token = self.client.post(reverse('log_in'), self.user_data).data['access']
+
 
     def test_user_post_product(self):
         response = self.client.post(
@@ -34,6 +36,7 @@ class ProductTest(APITestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.admin_access_token}",
             )
         self.assertEquals(response.status_code, 201)
+
 
     def test_admin_post_product(self):
         response = self.client.post(

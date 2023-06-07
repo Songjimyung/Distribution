@@ -17,6 +17,7 @@ class ShopCategory(models.Model):
     def get_absolute_url(self):
         return reverse('product_view', kwargs={"category_id":self.id})
 
+
 class ShopProduct(models.Model):
     '''
     작성자 : 장소은
@@ -32,7 +33,6 @@ class ShopProduct(models.Model):
     category = models.ForeignKey(ShopCategory, on_delete=models.CASCADE, related_name='products')
     def __str__(self):
         return str(self.product_name)
-
 
 
 
@@ -52,7 +52,6 @@ class ShopOrder(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
 
-
 class ShopOrderDetail(models.Model):
     '''
     작성자 : 장소은
@@ -65,7 +64,6 @@ class ShopOrderDetail(models.Model):
     order = models.ForeignKey(ShopOrder,on_delete=models.CASCADE)
     product = models.ForeignKey(ShopProduct, on_delete=models.CASCADE)
     # price = models.ForeignKey(Amount, on_delete=models.CASCADE)
-
 
 
 class ShopImageFile(models.Model):
