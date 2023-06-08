@@ -8,7 +8,9 @@ urlpatterns = [
     path('chat/', include("chat.urls")),
     path('campaigns/', include("campaigns.urls")),
     path('users/', include("users.urls")),
-    path('payments/', include("payments.urls")),    
+    path('users/', include('dj_rest_auth.urls')),
+    path('users/', include('allauth.urls')),
+    path('payments/', include("payments.urls")),
     path('shop/', include("shop.urls")),
 ]
 

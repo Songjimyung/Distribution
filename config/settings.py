@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 import os
 from datetime import timedelta
@@ -22,16 +23,33 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     'corsheaders',
     'rest_framework',
+    'rest_framework.authtoken',
     'rest_framework_simplejwt',
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
     'users',
     'shop',
     'campaigns',
     'chat',
     'payments',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
     'django_apscheduler',
 ]
+
+SITE_ID = 1
+
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+
+REST_USE_JWT = True
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -82,7 +100,6 @@ CHANNEL_LAYERS = {
     },
 }
 
-from datetime import datetime
 now = datetime.now()
 str_now = now.strftime('%y%m%d_%H')
 
@@ -138,7 +155,7 @@ DATABASES = {
         'NAME': 'user_data',
         'ENGINE': 'django.db.backends.mysql',
         'USER': os.environ.get('USER'),
-        'PASSWORD' : os.environ.get('PASSWORD'),
+        'PASSWORD': os.environ.get('PASSWORD'),
         'PORT': os.environ.get('PORT')
     },
 }
