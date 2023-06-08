@@ -275,3 +275,61 @@ class CampaignCommentDetailView(APIView):
             return Response({"message":"댓글이 삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
         else:
             return Response({"message":"해당 댓글을 삭제할 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+
+
+
+class ParticipatingCampaignView(APIView):
+    """
+    작성자 : 박지홍
+    내용 : 유저가 작성한 캠페인을 보여주는 기능.
+    최초 작성일 : 2023.06.08
+    업데이트 일자 : 
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        campaign = Campaign.objects.filter(user=request.user)
+        serializer = CampaignSerializer(campaign, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class CampaignUserReviewView(APIView):
+    """
+    작성자 : 박지홍
+    내용 : 유저가 작성한 리뷰를 보여주는 기능
+    최초 작성일 : 2023.06.08
+    업데이트 일자 : 
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        review = CampaignReview.objects.filter(user=request.user)
+        serializer = CampaignReviewSerializer(review, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class CampaignUserLikeView(APIView):
+    """
+    작성자 : 박지홍
+    내용 : 유저가 좋아요 누른 캠페인을 보여주는 기능.
+    최초 작성일 : 2023.06.08
+    업데이트 일자 : 
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        review = Campaign.objects.filter(user=request.user, like=request.user)
+        serializer = CampaignSerializer(review, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class CampaignUserCommentView(APIView):
+    """
+    작성자 : 박지홍
+    내용 : 유저가 작성한 댓글을 보여주는 기능.
+    최초 작성일 : 2023.06.08
+    업데이트 일자 : 
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        review = CampaignComment.objects.filter(user=request.user).select_related("campaign")
+        serializer = CampaignCommentSerializer(review, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
