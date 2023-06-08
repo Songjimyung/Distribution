@@ -30,17 +30,16 @@ class CampaignView(APIView):
     전체 캠페인 리스트를 GET하는 get함수와
     캠페인을 작성할 수 있는 post가 있는 클래스입니다.
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.07
+    업데이트 일자 : 2023.06.08
     """
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     def get(self, request):
         """
-        캠페인의 진행 상태인 status가 2인 승인상태, 
-        status가 3인 승인 + 완료 상태의 캠페인만 Q객체와 filter를 사용해
+        캠페인의 진행 상태인 status가 1 이상의 캠페인만 필터로 받아
         비승인은 제외하고 GET 요청에 대해 Response합니다.
         select_related를 사용해 eager-loading쪽으로 잡아봤습니다. (변경가능성높음)
         """
-        queryset = Campaign.objects.filter(Q(status=2)|Q(status=3)).select_related("fundings")
+        queryset = Campaign.objects.filter(status__gte=1).select_related("fundings")
         serializer = CampaignSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -287,14 +286,14 @@ def check_campaign_status():
     timezone.localtime()은 로컬 시각(한국)으로 찍히는데, 뭘 사용해야 할지는
     settings.py 시각과 MySQL에 찍히는 DB 시간 고려해서 정해야할 것 같습니다.
     최초 작성일 : 2023.06.08
-    업데이트 일자 : 
+    업데이트 일자 : 2023.06.08
     """
     now = timezone.now() # UTC로찍힘
     # now = timezone.localtime() # 한국 로컬타임 찍힘
     print(now)
-    campaigns = Campaign.objects.filter(status=2)
+    campaigns = Campaign.objects.filter(Q(status=2)|Q(status=3))
 
     for campaign in campaigns:
         if campaign.enddate <= now:
-            campaign.status = 3
+            campaign.status = 4
             campaign.save()
