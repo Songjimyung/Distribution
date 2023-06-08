@@ -81,45 +81,6 @@ CHANNEL_LAYERS = {
     },
 }
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'format1': {'format': '[%(asctime)s] %(levelname)s %(message)s','datefmt': "%Y-%m-%d %H:%M:%S"},
-        'format2': {'format': '%(levelname)s %(message)s [%(name)s:%(lineno)s]'},
-    },    
-    'handlers': {
-        'file': {
-                'level': 'INFO',
-                'class': 'logging.handlers.RotatingFileHandler',
-                'filename': os.path.join(BASE_DIR, 'logs/pythonblog.log'),
-                'encoding': 'UTF-8',
-                'maxBytes': 1024 * 1024 * 5,  # 5 MB
-                'backupCount': 5,
-                'formatter': 'format1',
-                },
-        'console': {'level': 'INFO','class': 'logging.StreamHandler','formatter': 'format2',
-        },
-    },
-    'loggers': {
-        'django.db.backends': {
-            'handlers': ['file'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-        'django.server': {
-            'handlers': ['file','console'],
-            'propagate': False,
-            'level': 'INFO',
-        },
-        'django.request': {
-            'handlers':['file','console'],
-            'propagate': False,
-            'level':'DEBUG',
-        },        
-    },
-}
-
 from datetime import datetime
 now = datetime.now()
 str_now = now.strftime('%y%m%d_%H')
