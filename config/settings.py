@@ -81,6 +81,22 @@ CHANNEL_LAYERS = {
     },
 }
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "django.db.backends": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+        },
+    },
+}
 
 DATABASES = {
     'dev': {
@@ -172,3 +188,6 @@ SIMPLE_JWT = {
 CORS_ALLOW_ALL_ORIGINS = True
 
 AUTH_USER_MODEL = 'users.User'
+
+MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_URL = "/media/"
