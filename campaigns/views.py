@@ -3,6 +3,7 @@ from rest_framework import status, permissions
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
+from django.utils import timezone
 from campaigns.models import (
     Campaign, 
     CampaignComment, 
@@ -29,17 +30,16 @@ class CampaignView(APIView):
     전체 캠페인 리스트를 GET하는 get함수와
     캠페인을 작성할 수 있는 post가 있는 클래스입니다.
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.07
+    업데이트 일자 : 2023.06.08
     """
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     def get(self, request):
         """
-        캠페인의 진행 상태인 status가 2인 승인상태, 
-        status가 3인 승인 + 완료 상태의 캠페인만 Q객체와 filter를 사용해
+        캠페인의 진행 상태인 status가 1 이상의 캠페인만 필터로 받아
         비승인은 제외하고 GET 요청에 대해 Response합니다.
         select_related를 사용해 eager-loading쪽으로 잡아봤습니다. (변경가능성높음)
         """
-        queryset = Campaign.objects.filter(Q(status=2)|Q(status=3)).select_related("fundings")
+        queryset = Campaign.objects.filter(status__gte=1).select_related("fundings")
         serializer = CampaignSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -277,7 +277,6 @@ class CampaignCommentDetailView(APIView):
             return Response({"message":"해당 댓글을 삭제할 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
 
 
-
 class ParticipatingCampaignView(APIView):
     """
     작성자 : 박지홍
@@ -333,3 +332,25 @@ class CampaignUserCommentView(APIView):
         review = CampaignComment.objects.filter(user=request.user).select_related("campaign")
         serializer = CampaignCommentSerializer(review, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+def check_campaign_status():
+    """
+    작성자 : 최준영
+    내용 : 캠페인 status 체크 함수입니다.
+    status가 2인 캠페인 중 완료 날짜가 되거나 지난 캠페인의 status를
+    3으로 바꿔주는 함수입니다.
+    timezone.now()는 UTC기준 시각으로 찍히고,
+    timezone.localtime()은 로컬 시각(한국)으로 찍히는데, 뭘 사용해야 할지는
+    settings.py 시각과 MySQL에 찍히는 DB 시간 고려해서 정해야할 것 같습니다.
+    최초 작성일 : 2023.06.08
+    업데이트 일자 : 2023.06.08
+    """
+    now = timezone.now() # UTC로찍힘
+    # now = timezone.localtime() # 한국 로컬타임 찍힘
+    print(now)
+    campaigns = Campaign.objects.filter(Q(status=2)|Q(status=3))
+
+    for campaign in campaigns:
+        if campaign.enddate <= now:
+            campaign.status = 4
+            campaign.save()

@@ -23,20 +23,29 @@ class CampaignDisplay(admin.ModelAdmin):
         'content',
         'members',
         'current_members',
-        'startdate',
-        'enddate',
-        'created_at',
-        'updated_at',
         'image',
         'is_funding',
+        'campaign_start_date',
+        'campaign_end_date',
+        'activity_start_date',
+        'activity_end_date',
+        'created_at',
+        'updated_at',
         'status',
     ]
     fields = [
-        'movie',
         'user',
+        'title',
         'content',
-        'rating',
-        'like',
+        'members',
+        'current_members',
+        'image',
+        'is_funding',
+        'campaign_start_date',
+        'campaign_end_date',
+        'activity_start_date',
+        'activity_end_date',
+        'status',
     ]
     readonly_fields = (
         'created_at',
@@ -65,8 +74,6 @@ class FundingDisplay(admin.ModelAdmin):
     """
     list_display = [
         'campaign',
-        'funding_startdate',
-        'deadline',
         'goal',
         'current',
         'approvefile',
@@ -75,8 +82,6 @@ class FundingDisplay(admin.ModelAdmin):
     ]
     fields = [
         'campaign',
-        'funding_startdate',
-        'deadline',
         'goal',
         'current',
         'approvefile',
@@ -87,13 +92,9 @@ class FundingDisplay(admin.ModelAdmin):
     )
     list_filter = [
         'campaign',
-        'funding_startdate',
-        'deadline',
     ]
     search_fields = [
         'campaign',
-        'funding_startdate',
-        'deadline',
         'goal',
         'current',
         'approvefile',
