@@ -82,18 +82,87 @@ CHANNEL_LAYERS = {
 }
 
 LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "console": {
-            "level": "DEBUG",
-            "class": "logging.StreamHandler",
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'format1': {'format': '[%(asctime)s] %(levelname)s %(message)s','datefmt': "%Y-%m-%d %H:%M:%S"},
+        'format2': {'format': '%(levelname)s %(message)s [%(name)s:%(lineno)s]'},
+    },    
+    'handlers': {
+        'file': {
+                'level': 'INFO',
+                'class': 'logging.handlers.RotatingFileHandler',
+                'filename': os.path.join(BASE_DIR, 'logs/pythonblog.log'),
+                'encoding': 'UTF-8',
+                'maxBytes': 1024 * 1024 * 5,  # 5 MB
+                'backupCount': 5,
+                'formatter': 'format1',
+                },
+        'console': {'level': 'INFO','class': 'logging.StreamHandler','formatter': 'format2',
         },
     },
-    "loggers": {
-        "django.db.backends": {
-            "handlers": ["console"],
-            "level": "DEBUG",
+    'loggers': {
+        'django.db.backends': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'django.server': {
+            'handlers': ['file','console'],
+            'propagate': False,
+            'level': 'INFO',
+        },
+        'django.request': {
+            'handlers':['file','console'],
+            'propagate': False,
+            'level':'DEBUG',
+        },        
+    },
+}
+
+from datetime import datetime
+now = datetime.now()
+str_now = now.strftime('%y%m%d_%H')
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{asctime} {levelname} {module} {message}',
+            'datefmt': '%Y-%m-%d %H:%M',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'debug_log': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': f'logs/debug/deb__{str_now}.log',
+            'formatter': 'verbose',
+        },
+        'error_log': {
+            'level': 'ERROR',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': f'logs/error/err__{str_now}.log',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django.db.backends': {
+            'handlers': ['debug_log'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['error_log'],
+            'level': 'ERROR',
+            'propagate': True,
         },
     },
 }
