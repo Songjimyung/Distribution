@@ -19,6 +19,8 @@ channels = "^4.0.0"
 channels-redis = "^4.1.0"
 daphne = "^4.0.0"
 faker = "^18.10.1"
+dj-rest-auth = "^4.0.1"
+django-allauth = "^0.54.0"
 
 
 [build-system]
