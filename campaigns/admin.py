@@ -70,8 +70,6 @@ class FundingDisplay(admin.ModelAdmin):
     """
     list_display = [
         'campaign',
-        'funding_startdate',
-        'deadline',
         'goal',
         'current',
         'approvefile',
@@ -80,8 +78,6 @@ class FundingDisplay(admin.ModelAdmin):
     ]
     fields = [
         'campaign',
-        'funding_startdate',
-        'deadline',
         'goal',
         'current',
         'approvefile',
@@ -92,13 +88,9 @@ class FundingDisplay(admin.ModelAdmin):
     )
     list_filter = [
         'campaign',
-        'funding_startdate',
-        'deadline',
     ]
     search_fields = [
         'campaign',
-        'funding_startdate',
-        'deadline',
         'goal',
         'current',
         'approvefile',
