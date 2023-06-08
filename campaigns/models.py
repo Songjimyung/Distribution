@@ -29,14 +29,14 @@ class Campaign(BaseModel):
     STATUS_CHOICES는 0시작이 좋을지, 1시작이 좋을지 고민됩니다
     is_funding이 False라면 Backoffice 검토 없이 그냥 게시해보는 것도 좋을 것 같아요
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.07
+    업데이트 일자 : 2023.06.08
     """
     class Meta:
         db_table = "campaign"
     STATUS_CHOICES = (
-        (1, "캠페인 미승인 상태"),
-        (2, "캠페인 승인 상태"),
-        (3, "캠페인 승인, 완료 상태"),
+        (1, "미승인"),
+        (2, "승인"),
+        (3, "완료"),
     )
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="campaigns")
@@ -60,10 +60,10 @@ class CampaignReview(BaseModel):
     작성자 : 최준영
     내용 : 캠페인 리뷰 모델입니다.
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.07
+    업데이트 일자 : 2023.06.08
     """
     class Meta:
-        db_table = "campaign review"
+        db_table = "campaign_review"
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reviews")
     campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="reviews")
@@ -79,10 +79,10 @@ class CampaignComment(BaseModel):
     작성자 : 최준영
     내용 : 캠페인 댓글 모델입니다.
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.07
+    업데이트 일자 : 2023.06.08
     """
     class Meta:
-        db_table = "campaign comment"
+        db_table = "campaign_comment"
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
     campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="comments")
@@ -121,10 +121,10 @@ class FundingOrder(BaseModel):
     결제는 아직 import하지 않은 상황입니다.
     payment_text는 쓰일지 확정되지 않아 주석으로 처리해두겠습니다.
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.07
+    업데이트 일자 : 2023.06.08
     """
     class Meta:
-        db_table = "funding order"
+        db_table = "funding_order"
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="fundingorders")
     funding = models.ForeignKey(Funding, on_delete=models.CASCADE, related_name="fundingorders")
