@@ -3,7 +3,7 @@ from users.models import User
 from .models import User, password_validator, password_pattern
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-# 회원가입에 필요한 serializer
+
 class SignUpSerializer(serializers.ModelSerializer):
     '''
     작성자 : 이주한
@@ -54,15 +54,12 @@ class SignUpSerializer(serializers.ModelSerializer):
         password = data.get("password")
         re_password = data.get("re_password")
 
-        # 비밀번호 & 비밀번호 확인 일치 검사
         if password != re_password:
             raise serializers.ValidationError(detail={"password": "비밀번호와 비밀번호 확인이 일치하지 않습니다!"})
 
-        # 비밀번호 유효성 검사
         if password_validator(password):
             raise serializers.ValidationError(detail={"password": "비밀번호는 8자 이상의 영문 대소문자와 숫자, 특수문자를 포함하여야 합니다!"})
 
-        # 비밀번호 유효성 검사
         if password_pattern(password):
             raise serializers.ValidationError(detail={"password": "비밀번호는 연속해서 3자리 이상 동일한 영문,숫자,특수문자 사용이 불가합니다!"})
 
@@ -72,7 +69,6 @@ class SignUpSerializer(serializers.ModelSerializer):
         email = validated_data["email"]
         name = validated_data["name"]
         password = validated_data["password"]
-        # 새로운 User 인스턴스를 생성과정에서 re_password가 예외를 발생시킬 수 있기 때문에 create() 메소드에서 check_password 필드를 제거합니다.
         validated_data.pop("re_password", None)
         user = User.objects.create(name=name, email=email,)
         user.set_password(password)
@@ -81,7 +77,6 @@ class SignUpSerializer(serializers.ModelSerializer):
         return validated_data
 
 
-# 로그인시 필요한 JWT 토큰 serializer
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     '''
     작성자 : 이주한
