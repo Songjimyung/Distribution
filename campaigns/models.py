@@ -28,7 +28,10 @@ class Campaign(BaseModel):
     2이 되었을 때 캠페인의 모집이 시작됩니다.
     캠페인 활동기간이 시작되면 3으로 바뀌고, 정상 종료되었다면 4로 바뀝니다.
     status 5, 6, 7은 실패 여부에 따라 나누었습니다.
+    글 게시 시, 활동이 없는 캠페인모금만 있다면 비워놔도 좋다고 써줘야할 것 같습니다
     is_funding이 False라면 Backoffice 검토 없이 그냥 게시해보는 것도 좋을 것 같아요
+
+    캠페인 참여 유저 필드는 아직 미구현
     최초 작성일 : 2023.06.06
     업데이트 일자 : 2023.06.08
     """
@@ -51,8 +54,10 @@ class Campaign(BaseModel):
     content = models.TextField("캠페인 내용")
     members = models.PositiveIntegerField("캠페인 모집 인원")
     current_members = models.PositiveIntegerField("캠페인 현재 참가인원", default=0)
-    startdate = models.DateTimeField("캠페인 시작일")
-    enddate = models.DateTimeField("캠페인 마감일")
+    campaign_start_date = models.DateTimeField("캠페인 시작일")
+    campaign_end_date  = models.DateTimeField("캠페인 마감일")
+    activity_start_date = models.DateTimeField("활동 시작일", blank=True)
+    activity_end_date = models.DateTimeField("활동 마감일", blank=True)
     image = models.ImageField("캠페인 이미지", blank=True, upload_to="%Y/%m/")
     is_funding = models.BooleanField("캠페인 펀딩여부", default=False)
     status = models.PositiveSmallIntegerField("캠페인 진행 상태", choices=STATUS_CHOICES, default=0)
