@@ -15,26 +15,26 @@ class CampaignDisplay(admin.ModelAdmin):
     내용 : 캠페인 admin 페이지 등록 클래스입니다.
     list_display는 ManyToManyField를 지원하지 않아 like는 넣지 않았습니다.
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 
+    업데이트 일자 : 2023.06.08
     """
     list_display = [
-        'user',
         'title',
         'content',
+        'user',
         'members',
         'current_members',
-        'startdate',
-        'enddate',
-        'created_at',
-        'updated_at',
-        'image',
         'is_funding',
         'status',
+        'startdate',
+        'enddate',
+        'image',
+        'created_at',
+        'updated_at',
     ]
     fields = [
-        'user',
         'title',
         'content',
+        'user',
         'members',
         'current_members',
         'startdate',
@@ -48,7 +48,6 @@ class CampaignDisplay(admin.ModelAdmin):
         'updated_at',
     )
     list_filter = [
-        'title',
         'user',
         'is_funding',
         'status',
