@@ -18,6 +18,7 @@ pillow = "^9.5.0"
 channels = "^4.0.0"
 channels-redis = "^4.1.0"
 daphne = "^4.0.0"
+iamport-rest-client = "^0.9.0"
 
 
 [build-system]

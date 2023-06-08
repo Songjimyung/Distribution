@@ -203,3 +203,6 @@ SIMPLE_JWT = {
 CORS_ALLOW_ALL_ORIGINS = True
 
 AUTH_USER_MODEL = 'users.User'
+
+IMP_KEY = os.environ.get('IMP_KEY')
+IMP_SECRET = os.environ.get('IMP_SECRET')
