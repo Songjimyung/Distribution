@@ -32,11 +32,16 @@ class CampaignDisplay(admin.ModelAdmin):
         'status',
     ]
     fields = [
-        'movie',
         'user',
+        'title',
         'content',
-        'rating',
-        'like',
+        'members',
+        'current_members',
+        'startdate',
+        'enddate',
+        'image',
+        'is_funding',
+        'status',
     ]
     readonly_fields = (
         'created_at',
