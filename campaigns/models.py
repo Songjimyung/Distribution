@@ -104,7 +104,7 @@ class Funding(BaseModel):
         db_table = "funding"
 
     campaign = models.OneToOneField(Campaign, on_delete=models.CASCADE, related_name="fundings")
-    funding_startdate = models.DateTimeField("펀딩 시작일")
+    funding_startdate = models.DateTimeField("펀딩 시작일", auto_now_add=True)
     deadline = models.DateTimeField("펀딩 마감일")
     goal = models.PositiveIntegerField("펀딩 목표 금액")
     current = models.PositiveIntegerField("펀딩 현재 금액", default=0)
