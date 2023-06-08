@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'campaigns',
     'chat',
     'payments',
+    'django_apscheduler',
 ]
 
 REST_FRAMEWORK = {
@@ -191,3 +192,6 @@ AUTH_USER_MODEL = 'users.User'
 
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"
+
+APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
+SCHEDULER_DEFAULT = True
