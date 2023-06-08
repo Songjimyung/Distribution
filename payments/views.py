@@ -5,7 +5,7 @@ import json
 from iamport import Iamport
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-
+from .models import Payment
 # iamport 설정
 
 @api_view(['POST'])
@@ -36,12 +36,13 @@ def register_customer(request):
             pg = 'nice',
             pwd_2digit = pwd_2digit,            
         )
-        
-        customer_uid = response.get('customer_uid')
-        
+        payment = Payment()
+        payment.customer_uid = response.get('customer_uid')
+        payment.user = request.user.ID
+        payment.save()
         return Response(response)
-    except Exception as e:
-        return JsonResponse({'message': str(e)}, status=400)
+    except ValueError:
+        return JsonResponse({'message': '입력값이 올바르지 않습니다.'}, status=400)
   
 @csrf_exempt
 def create_payment_schedule(request):
