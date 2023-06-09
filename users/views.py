@@ -16,7 +16,7 @@ from allauth.socialaccount.providers.google import views as google_view
 from allauth.socialaccount.providers.kakao import views as kakao_view
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from allauth.socialaccount.models import SocialAccount
-from users.serializers import SignUpSerializer, CustomTokenObtainPairSerializer
+from users.serializers import SignUpSerializer, CustomTokenObtainPairSerializer, UserSerializer
 
 
 state = os.environ.get('STATE')

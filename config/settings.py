@@ -254,6 +254,9 @@ REST_USE_JWT = True
 
 APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
 SCHEDULER_DEFAULT = True
+IMP_KEY = os.environ.get('IMP_KEY')
+IMP_SECRET = os.environ.get('IMP_SECRET')
+
 
 SITE_ID = 1
 
