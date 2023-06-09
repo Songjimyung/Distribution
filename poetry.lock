@@ -1027,6 +1027,23 @@ files = [
 ]
 
 [[package]]
+name = "tzlocal"
+version = "5.0.1"
+description = "tzinfo object for the local timezone"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "tzlocal-5.0.1-py3-none-any.whl", hash = "sha256:f3596e180296aaf2dbd97d124fe76ae3a0e3d32b258447de7b939b3fd4be992f"},
+    {file = "tzlocal-5.0.1.tar.gz", hash = "sha256:46eb99ad4bdb71f3f72b7d24f4267753e240944ecfc16f25d2719ba89827a803"},
+]
+
+[package.dependencies]
+tzdata = {version = "*", markers = "platform_system == \"Windows\""}
+
+[package.extras]
+devenv = ["black", "check-manifest", "flake8", "pyroma", "pytest (>=4.3)", "pytest-cov", "pytest-mock (>=3.3)", "zest.releaser"]
+
+[[package]]
 name = "zope-interface"
 version = "6.0"
 description = "Interfaces for Python"
@@ -1076,4 +1093,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "c942b0607d94339ab9f3382efe3ba6018c7feda8263be4bd688cf8e804f9fe1f"
+content-hash = "e8737adf22afbd368abaec72087cbf329ef6ab4dc90a9bce7ed17811b3019da0"
