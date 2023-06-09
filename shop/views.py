@@ -3,7 +3,7 @@ from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import ShopProduct, ShopCategory
-from .serializers import ProductListSerializer, ProductSerializer
+from .serializers import ProductListSerializer, ProductSerializer, CategoryListSerializer
 from config.permissions import IsAdminUserOrReadonly
 from django.core.exceptions import ValidationError
 
@@ -56,3 +56,30 @@ class ProductDetailViewAPI(APIView):
         product = get_object_or_404(ShopProduct, id=product_id)
         product.delete()
         return Response({"massage":"삭제 완료"}, status=status.HTTP_204_NO_CONTENT)
+
+
+
+class AdminProductViewAPI(APIView):
+    '''
+    작성자 : 박지홍
+    내용 : 어드민 페이지에서 전체 상품 목록을 받아오기위해 사용
+    최초 작성일 : 2023.06.09
+    업데이트 일자 :
+    '''
+    def get(self, request):
+        products = ShopProduct.objects.all()
+        serializer = ProductListSerializer(products, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class AdminCategoryViewAPI(APIView):
+    '''
+    작성자 : 박지홍
+    내용 : 어드민 페이지에서 전체 카테고리 목록을 받아오기위해 사용
+    최초 작성일 : 2023.06.09
+    업데이트 일자 :
+    '''
+    def get(self, request):
+        categorys = ShopCategory.objects.all()
+        serializer = CategoryListSerializer(categorys, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
