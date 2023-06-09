@@ -7,21 +7,22 @@ from django.urls import reverse
 
 class Test(APITestCase):
     @classmethod
-    def setUpTestData(cls):
-        cls.user_data = {'email': 'testuser@test.com', 'password': '1234'}
-        cls.user = User.objects.create_user('testuser@test.com', '1234')
+def setUpTestData(cls):
+        cls.admin_data = {"email": "admin@admin.com", "name":"admin","password": "Aedeye12up!"}
+        cls.admin = User.objects.create_superuser(email="admin@admin.com", name="admin", password="Aedeye12up!")
 
-    def test_case_rooms(self):
-        user = User.objects.create(email="test@test.com", password="test")
-        user2 = User.objects.create(email="test2@test.com", password="test")
-        access_token = self.client.post(reverse('login'), self.user_data).data["token"]["access"]
+    def test_case_create_rooms(self):
+        email = "test@test.com"
+        user = self.client.post(reverse("sign_up"), {"email": email,"name":"test1", "password":"Radeye12ui!", "re_password":"Radeye12ui!"})
+        access_token = self.client.post(reverse("log_in"), {"email":"test@test.com", "password":"Radeye12ui!"}).data['access']
+        
         url = reverse("room_view")
-        token = f'Bearer {access_token}'
-        print(url)
+        token = f"Bearer {access_token}"
         client = APIClient()
-        a = client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
-        data = {"user": user.id, "author": user2.id}
-        temp = self.client.post(path=url, data=data, headers={'Authorization': token})
-
-        result = self.client.get(path=url, headers={'Authorization': token})
+        
+        a = client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+        temp = self.client.post(path=url, headers={"Authorization": token})
+        result = self.client.get(path=url, headers={"Authorization": token})
+        user_list = result.data.get(1)
+        self.assertIn(email, user_list)
 
