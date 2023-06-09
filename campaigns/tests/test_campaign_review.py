@@ -1,10 +1,25 @@
 import random
+import tempfile
+from PIL import Image
 from datetime import timedelta
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APITestCase
 from users.models import User
 from campaigns.models import Campaign, CampaignReview
+
+
+def arbitrary_image(temp_text):
+    """
+    작성자 : 최준영
+    내용 : 테스트용 임의 이미지 생성 함수입니다.
+    최초 작성일 : 2023.06.09
+    업데이트 일자 :
+    """
+    size = (50, 50)
+    image = Image.new("RGBA", size)
+    image.save(temp_text, "png")
+    return temp_text
 
 
 class CampaignReviewCreateReadTest(APITestCase):
@@ -35,7 +50,14 @@ class CampaignReviewCreateReadTest(APITestCase):
             "is_funding": "False",
             "status": "1",
         }
-        cls.user = User.objects.create_user("test@test.com", "John", "Qwerasdf1234!")
+        temp_img = tempfile.NamedTemporaryFile()
+        temp_img.name = "image.png"
+        image_file = arbitrary_image(temp_img)
+        image_file.seek(0)
+        cls.campaign_data["image"] = image_file.name
+
+        cls.user = User.objects.create_user(**cls.user_data)
+
         cls.campaign_data['user'] = User.objects.get(id=1)
         cls.campaign = Campaign.objects.create(**cls.campaign_data)
         cls.review_data = {
@@ -100,6 +122,17 @@ class CampaignReviewUpdateDeleteTest(APITestCase):
             "is_funding": "False",
             "status": "1",
         }
+        temp_img = tempfile.NamedTemporaryFile()
+        temp_img.name = "image.png"
+        image_file = arbitrary_image(temp_img)
+        image_file.seek(0)
+        cls.campaign_data["image"] = image_file.name
+
+        cls.user = User.objects.create_user(**cls.user_data)
+
+        cls.campaign_data['user'] = User.objects.get(id=1)
+        cls.campaign = Campaign.objects.create(**cls.campaign_data)
+
         cls.review_data = {
             "title": "탄소발자국 캠페인 모집 후기",
             "content": "보람찼다"
@@ -109,11 +142,6 @@ class CampaignReviewUpdateDeleteTest(APITestCase):
             "content": "오늘도 채식 캠페인과 함께했는데, \
                 작고 사소한 일이지만 탄소배출 감소에 이바지했다고 생각하니 뿌듯했습니다."
         }
-        cls.user = User.objects.create_user("test@test.com", "John", "Qwerasdf1234!")
-
-        cls.campaign_data['user'] = User.objects.get(id=1)
-        cls.campaign = Campaign.objects.create(**cls.campaign_data)
-
         cls.review_data['user'] = User.objects.get(id=1)
         cls.review_data['campaign'] = Campaign.objects.get(id=1)
         cls.review = CampaignReview.objects.create(**cls.review_data)
