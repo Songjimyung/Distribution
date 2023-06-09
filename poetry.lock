@@ -616,6 +616,23 @@ files = [
 idna = ">=2.5"
 
 [[package]]
+name = "iamport-rest-client"
+version = "0.9.0"
+description = "REST client for I'mport;(http://www.iamport.kr)"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "iamport-rest-client-0.9.0.tar.gz", hash = "sha256:93081593683888ec58cd60ccd64fdc4e54ffe7e3e2eedde6812dea56c77f4939"},
+    {file = "iamport_rest_client-0.9.0-py3-none-any.whl", hash = "sha256:12529ac2ebf2d938a9c5f7b13e003ad3c0dcb2720329909085d8f731f3b876c1"},
+]
+
+[package.dependencies]
+requests = "2.26.0"
+
+[package.extras]
+dev = ["flake8 (==4.0.1)", "isort (==5.9.3)", "mypy (==0.910)", "pytest (==6.2.4)", "pytest-cov (==2.12.1)", "types-requests (==2.26.0)"]
+
+[[package]]
 name = "idna"
 version = "3.4"
 description = "Internationalized Domain Names in Applications (IDNA)"
