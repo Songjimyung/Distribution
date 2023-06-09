@@ -1,19 +1,29 @@
-from django.urls import reverse
-from rest_framework.test import APITestCase
-from faker import Faker
-from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
-from PIL import Image
+import os
+import random
 import tempfile
+from PIL import Image
+from faker import Faker
+from datetime import timedelta
+from django.urls import reverse
+from django.utils import timezone
+from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
+from rest_framework.test import APITestCase
 from users.models import User
-from campaigns.models import (
-    Campaign, 
-    Funding, 
-    FundingOrder
-)
-from campaigns.serializers import (
-    CampaignSerializer,
-    CampaignCreateSerializer,
-)
+from campaigns.models import Campaign
+from campaigns.serializers import CampaignSerializer
+
+
+def arbitrary_image(temp_text):
+    """
+    작성자 : 최준영
+    내용 : 테스트용 임의 이미지 생성 함수입니다.
+    최초 작성일 : 2023.06.08
+    업데이트 일자 :
+    """
+    size = (50, 50)
+    image = Image.new("RGBA", size)
+    image.save(temp_text, "png")
+    return temp_text
 
 
 class CampaignCreateTest(APITestCase):
@@ -21,28 +31,287 @@ class CampaignCreateTest(APITestCase):
     작성자 : 최준영
     내용 : 캠페인 생성 테스트 클래스입니다.
     최초 작성일 : 2023.06.08
-    업데이트 일자 : 
+    업데이트 일자 :
     """
+
     @classmethod
     def setUpTestData(cls):
         cls.user_data = {
-            "user_name": "leedddd",
-            "email": "test@testuser.com",
-            "password": "Qwerasdf1234!"
+            "email": "test@test.com",
+            "name": "John",
+            "password": "Qwerasdf1234!",
         }
-        cls.movie_data = {
-            "id": "397567",
-            "title": "신과함께-죄와 벌",
-            "release_date": "2017-12-20",
-            "overview": "살인, 나태, 거짓, 불의, 배신, 폭력, 천륜 7개의 지옥에서 7번의 재판을 무사히 통과한 망자만이 환생하여\
-                새로운 삶을 시작할 수 있다. 화재 사고 현장에서 여자아이를 구하고 죽음을 맞이한 소방관 자홍, 그의 앞에 저승차사\
-                해원맥과 덕춘이 나타난다. 자신의 죽음이 아직 믿기지도 않는데 덕춘은 정의로운 망자이자 귀인이라며 그를 치켜세운다.",
-            "vote_average": "7.9",
-            "poster_path": "https://image.tmdb.org/t/p/w600_and_h900_bestv2/5j2YVF7VouLG0Ze96SEsj4DnVQM.jpg",
-            "genres": ["액션", "모험", "판타지", "스릴러"]
+        cls.campaign_data = {
+            "title": "탄소발자국 캠페인 모집",
+            "content": "더 나은 세상을 위한 지구별 눈물 닦아주기, 이제 우리가 행동에 나설 때입니다.",
+            "members": "200",
+            "current_members": "0",
+            "campaign_start_date": "2023-06-09",
+            "campaign_end_date": "2023-06-16",
+            "activity_start_date": "2023-06-17",
+            "activity_end_date": "2023-06-27",
+            "image": "",
+            "is_funding": "True",
+            "status": "1",
+            # funding data
+            "goal": "2000000",
+            "current": "0",
+            "approve_file": "",
         }
+        cls.user = User.objects.create_user("test@test.com", "John", "Qwerasdf1234!")
+
     def setUp(self):
-        self.access_token = self.client.post(reverse('user:token_obtain_pair'), self.user_data).data['access']
+        self.access_token = self.client.post(reverse("log_in"), self.user_data).data[
+            "access"
+        ]
+
+    def test_create_campaign(self):
+        """
+        캠페인 생성 테스트 함수입니다.
+        임시 이미지파일과 펀딩 승인파일을 생성한 후
+        펀딩정보와 같이 캠페인에 같이 POST요청을 확인하는 테스트입니다.
+        """
+        temp_img = tempfile.NamedTemporaryFile()
+        temp_img.name = "image.png"
+        image_file = arbitrary_image(temp_img)
+        image_file.seek(0)
+        self.campaign_data["image"] = image_file
+
+        temp_text = tempfile.NamedTemporaryFile(mode="w+", delete=False)
+        temp_text.write("some text")
+        temp_text.seek(0)
+        self.campaign_data["approve_file"] = temp_text
+
+        url = reverse("campaign_view")
+        response = self.client.post(
+            path=url,
+            data=encode_multipart(data=self.campaign_data, boundary=BOUNDARY),
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
+        )
+        self.assertEqual(response.status_code, 201)
 
 
+class CampaignReadTest(APITestCase):
+    """
+    작성자 : 최준영
+    내용 : 캠페인 GET요청이 올바르게 이루어지는지 검증하는 테스트 클래스입니다.
+    최초 작성일 : 2023.06.08
+    업데이트 일자 :
+    """
 
+    @classmethod
+    def setUpTestData(cls):
+        cls.campaigns = []
+        list_of_domains = (
+            "com",
+            "co",
+            "net",
+            "org",
+            "biz",
+            "info",
+            "edu",
+            "gov",
+        )
+        cls.faker = Faker()
+        first_name = cls.faker.first_name()
+        last_name = cls.faker.last_name()
+        company = cls.faker.company().split()[0].strip(",")
+        dns_org = cls.faker.random_choices(elements=list_of_domains, length=1)[0]
+        email_faker = f"{first_name}.{last_name}@{company}.{dns_org}".lower()
+        date = timezone.now() + timedelta(seconds=random.randint(0, 86400))
+        for _ in range(10):
+            cls.user = User.objects.create_user(
+                cls.faker.name() + "A1!", email_faker, cls.faker.word() + "B2@"
+            )
+            cls.campaigns.append(
+                Campaign.objects.create(
+                    title=cls.faker.sentence(),
+                    content=cls.faker.text(),
+                    user=cls.user,
+                    members=random.randrange(100, 200),
+                    current_members=random.randrange(0, 10),
+                    campaign_start_date=date,
+                    campaign_end_date=date,
+                    activity_start_date=date,
+                    activity_end_date=date,
+                    image="",
+                    is_funding="False",
+                    status="1",
+                )
+            )
+
+    def test_get_campaign(self):
+        """
+        `setUpTestData` 메소드를 사용하여 테스트 사용자와 캠페인 데이터를 설정합니다.
+        1. GET 요청의 status_code가 200인지 확인합니다.
+        2. faker 패키지를 사용하여 10개의 더미 리뷰 데이터를 생성하고, 생성된 10개의 캠페인에 대해
+        response와 serializer가 일치하는지 테스트합니다.
+        """
+        for i, campaign in enumerate(self.campaigns):
+            url = reverse("campaign_view")
+            response = self.client.get(url)
+            serializer = CampaignSerializer(campaign).data
+            self.assertEqual(response.status_code, 200)
+            for key, value in serializer.items():
+                self.assertEqual(response.data[i][key], value)
+
+
+class CampaignDetailTest(APITestCase):
+    """
+    작성자 : 최준영
+    내용 : 캠페인 특정캠페인 GET, UPDATE, DELETE 테스트 클래스입니다.
+    최초 작성일 : 2023.06.09
+    업데이트 일자 :
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user_data = {
+            "email": "test@test.com",
+            "name": "John",
+            "password": "Qwerasdf1234!",
+        }
+        cls.campaign_data = {
+            "title": "탄소발자국 캠페인 모집",
+            "content": "더 나은 세상을 위한 지구별 눈물 닦아주기, 이제 우리가 행동에 나설 때입니다.",
+            "members": "200",
+            "current_members": "0",
+            "campaign_start_date": "2023-06-09",
+            "campaign_end_date": "2023-06-16",
+            "activity_start_date": "2023-06-17",
+            "activity_end_date": "2023-06-27",
+            "image": "",
+            "is_funding": "False",
+            "status": "0",
+            # funding data
+            "goal": "2000000",
+            "current": "0",
+            "approve_file": "",
+        }
+        cls.new_campaign_data = {
+            "title": "탄소발자국 캠페인 모집",
+            "content": "더 나은 세상을 위한 지구별 눈물 닦아주기, 이제 우리가 행동에 나설 때입니다.\
+                인류 역사상 가장 위대한 미션: 2050년까지 탄소중립을 실현하라",
+            "members": "300",
+            "current_members": "4",
+            "campaign_start_date": "2023-06-19",
+            "campaign_end_date": "2023-06-30",
+            "activity_start_date": "2023-06-20",
+            "activity_end_date": "2023-06-27",
+            "image": "",
+            "is_funding": "True",
+            "status": "1",
+            # funding data
+            "goal": "1000000",
+            "current": "10000",
+            "approve_file": "",
+        }
+        cls.user = User.objects.create_user("test@test.com", "John", "Qwerasdf1234!")
+
+    def setUp(self):
+        self.access_token = self.client.post(reverse("log_in"), self.user_data).data[
+            "access"
+        ]
+
+    def test_get_detail_campaign(self):
+        """
+        개별 캠페인 GET요청 테스트 함수입니다.
+        """
+        temp_img = tempfile.NamedTemporaryFile()
+        temp_img.name = "image.png"
+        image_file = arbitrary_image(temp_img)
+        image_file.seek(0)
+        self.campaign_data["image"] = image_file
+
+        temp_text = tempfile.NamedTemporaryFile(mode="w+", delete=False)
+        temp_text.write("some text")
+        temp_text.seek(0)
+        self.campaign_data["approve_file"] = temp_text
+
+        url = reverse("campaign_view")
+        response = self.client.post(
+            path=url,
+            data=encode_multipart(data=self.campaign_data, boundary=BOUNDARY),
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
+        )
+        self.assertEqual(response.status_code, 201)
+
+        campaign = Campaign.objects.get(title=self.campaign_data['title'])
+        url = campaign.get_absolute_url()
+        response = self.client.get(
+            path=url,
+            HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_update_campaign(self):
+        """
+        캠페인 수정 테스트 함수입니다.
+        임시 이미지파일과 펀딩 승인파일을 생성한 후
+        수정한 후 PUT 요청이 잘 이루어지는지 검증하는 테스트함수입니다.
+        """
+        temp_img = tempfile.NamedTemporaryFile()
+        temp_img.name = "image.png"
+        image_file = arbitrary_image(temp_img)
+        image_file.seek(0)
+        self.campaign_data["image"] = image_file
+
+        temp_text = tempfile.NamedTemporaryFile(mode="w+", delete=False)
+        temp_text.write("some text")
+        temp_text.seek(0)
+        self.campaign_data["approve_file"] = temp_text
+
+        url = reverse("campaign_view")
+        response = self.client.post(
+            path=url,
+            data=encode_multipart(data=self.campaign_data, boundary=BOUNDARY),
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
+        )
+        self.assertEqual(response.status_code, 201)
+
+        campaign = Campaign.objects.get(title=self.campaign_data['title'])
+        url = campaign.get_absolute_url()
+        response = self.client.put(
+            path=url,
+            data=encode_multipart(data=self.new_campaign_data, boundary=BOUNDARY),
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_delete_campaign(self):
+        """
+        캠페인 삭제 테스트 함수입니다.
+        임시 이미지파일과 펀딩 승인파일을 생성한 후
+        DELETE 요청이 잘 이루어지는지 검증하는 테스트함수입니다.
+        """
+        temp_img = tempfile.NamedTemporaryFile()
+        temp_img.name = "image.png"
+        image_file = arbitrary_image(temp_img)
+        image_file.seek(0)
+        self.campaign_data["image"] = image_file
+
+        temp_text = tempfile.NamedTemporaryFile(mode="w+", delete=False)
+        temp_text.write("some text")
+        temp_text.seek(0)
+        self.campaign_data["approve_file"] = temp_text
+
+        url = reverse("campaign_view")
+        response = self.client.post(
+            path=url,
+            data=encode_multipart(data=self.campaign_data, boundary=BOUNDARY),
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
+        )
+        self.assertEqual(response.status_code, 201)
+
+        campaign = Campaign.objects.get(title=self.campaign_data['title'])
+        url = campaign.get_absolute_url()
+        response = self.client.delete(
+            path=url, 
+            HTTP_AUTHORIZATION=f"Bearer {self.access_token}"
+        )
+        self.assertEqual(response.status_code, 204)
