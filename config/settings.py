@@ -257,6 +257,9 @@ SCHEDULER_DEFAULT = True
 IMP_KEY = os.environ.get('IMP_KEY')
 IMP_SECRET = os.environ.get('IMP_SECRET')
 
+IMP_KEY = os.environ.get('IMP_KEY')
+IMP_SECRET = os.environ.get('IMP_SECRET')
+
 
 SITE_ID = 1
 
