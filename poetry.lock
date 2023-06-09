@@ -132,6 +132,7 @@ files = [
     {file = "certifi-2023.5.7.tar.gz", hash = "sha256:0f0d56dc5a6ad56fd4ba36484d6cc34451e1c6548c61daad8c320169f91eddc7"},
 ]
 
+[[package]]
 name = "autopep8"
 version = "2.0.2"
 description = "A tool that automatically formats Python code to conform to the PEP 8 style guide"
