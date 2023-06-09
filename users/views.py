@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.generics import get_object_or_404
 from rest_framework import status
 from rest_framework.response import Response
-from users.serializers import SignUpSerializer, CustomTokenObtainPairSerializer
+from users.serializers import SignUpSerializer, CustomTokenObtainPairSerializer, UserSerializer
 from rest_framework_simplejwt.views import (
     TokenObtainPairView
 )
@@ -168,3 +168,29 @@ class KakaoLogin(SocialLoginView):
     adapter_class = kakao_view.KakaoOAuth2Adapter
     client_class = OAuth2Client
     callback_url = kakao_callback_uri
+
+
+class UserListView(APIView):
+    '''
+    작성자 : 박지홍
+    내용: 어드민 페이지에서 전체 일반 유저 리스트를 받기 위해 사용 
+    작성일 : 2023.06.09
+    업데이트 일자 :
+    '''
+    def get(self, request):
+        users = User.objects.filter(is_admin=False)
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UserDetailView(APIView):
+    '''
+    작성자 : 박지홍
+    내용: 어드민 페이지에서 일반 유저의 상세 정보를 알기 위해 사용
+    작성일 : 2023.06.09
+    업데이트 일자 :
+    '''
+    def get(self, request, user_id):
+        user = User.objects.filter(id=user_id)
+        serializer = UserSerializer(user, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
