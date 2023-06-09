@@ -16,7 +16,6 @@ class SignUpSerializer(serializers.ModelSerializer):
         error_messages={
             "required": "비밀번호 확인은 필수 입력 사항입니다!",
             "blank": "비밀번호 확인은 필수 입력 사항입니다!",
-            "write_only": True,
         }
     )
     
