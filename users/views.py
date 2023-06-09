@@ -124,7 +124,7 @@ class kakaoCallBackView(APIView):
         kakao_email = kakao_user_info["email"]
         age_range = kakao_user_info["age_range"]
         gender = kakao_user_info["gender"]
-        
+
         try:
             user = User.objects.get(email=kakao_email)
             social_user = SocialAccount.objects.get(user=user) 

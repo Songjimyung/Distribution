@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'campaigns',
     'chat',
     'payments',
+    'django_apscheduler',
     # dj-rest-auth
     'dj_rest_auth',
     'dj_rest_auth.registration',
@@ -96,19 +97,49 @@ CHANNEL_LAYERS = {
     },
 }
 
+from datetime import datetime
+now = datetime.now()
+str_now = now.strftime('%y%m%d_%H')
+
 LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "console": {
-            "level": "DEBUG",
-            "class": "logging.StreamHandler",
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{asctime} {levelname} {module} {message}',
+            'datefmt': '%Y-%m-%d %H:%M',
+            'style': '{',
         },
     },
-    "loggers": {
-        "django.db.backends": {
-            "handlers": ["console"],
-            "level": "DEBUG",
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'debug_log': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': f'logs/debug/deb__{str_now}.log',
+            'formatter': 'verbose',
+        },
+        'error_log': {
+            'level': 'ERROR',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': f'logs/error/err__{str_now}.log',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django.db.backends': {
+            'handlers': ['debug_log'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['error_log'],
+            'level': 'ERROR',
+            'propagate': True,
         },
     },
 }
@@ -207,9 +238,13 @@ AUTH_USER_MODEL = 'users.User'
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"
 
+
 ACCOUNT_EMAIL_REQUIRED = True            # email 필드 사용 o
 ACCOUNT_USERNAME_REQUIRED = False        # username 필드 사용 x
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 
 REST_USE_JWT = True
 
+
+APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
+SCHEDULER_DEFAULT = True
