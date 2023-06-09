@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 import os
 from datetime import timedelta
@@ -54,6 +55,10 @@ REST_FRAMEWORK = {
     )
 }
 
+REST_USE_JWT = True
+JWT_AUTH_COOKIE = 'jwt_token'
+JTW_AUTH_REFRESH_COOKIE = 'jwt_refresh_token'
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
@@ -83,6 +88,10 @@ TEMPLATES = [
     },
 ]
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
@@ -97,7 +106,6 @@ CHANNEL_LAYERS = {
     },
 }
 
-from datetime import datetime
 now = datetime.now()
 str_now = now.strftime('%y%m%d_%H')
 
@@ -153,7 +161,7 @@ DATABASES = {
         'NAME': 'user_data',
         'ENGINE': 'django.db.backends.mysql',
         'USER': os.environ.get('USER'),
-        'PASSWORD' : os.environ.get('PASSWORD'),
+        'PASSWORD': os.environ.get('PASSWORD'),
         'PORT': os.environ.get('PORT')
     },
 }
@@ -232,6 +240,7 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 AUTH_USER_MODEL = 'users.User'
 

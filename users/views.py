@@ -23,6 +23,8 @@ from .models import User
 state = os.environ.get('STATE')
 kakao_callback_uri = os.environ.get('KAKAO_CALLBACK_URI')
 base_url = os.environ.get('BASE_URL')
+
+
 class UserView(APIView):
     '''
     작성자 : 이주한
@@ -30,6 +32,7 @@ class UserView(APIView):
     최초 작성일 : 2023.06.06
     업데이트 일자 :
     '''
+
     def post(self, request):
         serializer = SignUpSerializer(data=request.data)
         if serializer.is_valid():
@@ -37,7 +40,7 @@ class UserView(APIView):
             return Response({"message": "가입완료!"}, status=status.HTTP_201_CREATED)
         else:
             return Response({"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST)
-    
+
     # 회원정보 수정 PUT 메소드
     def put(self, request):
         pass
@@ -86,29 +89,30 @@ def kakao_login(request):
     '''
     rest_api_key = os.environ.get('KAKAO_REST_API_KEY')
     return redirect(
-    f"https://kauth.kakao.com/oauth/authorize?client_id={rest_api_key}&redirect_uri={kakao_callback_uri}&response_type=code")
+        f"https://kauth.kakao.com/oauth/authorize?client_id={rest_api_key}&redirect_uri={kakao_callback_uri}&response_type=code")
 
 
 class kakaoCallBackView(APIView):
     '''
     작성자 : 장소은
-    내용: Kakao 로그인 콜백을 처리하는 APIView GET. Kakao 토큰 API에 POST 요청을 보냄. 응답을 받아와서 JSON 형식으로 파싱하여 access_token추출
-          응답 데이터에 'error' 키가 포함되어 있다면 에러처리. 
-          그렇지 않은 경우는 access_token을 사용하여 Kakao API를 호출하여 사용자 정보를 가져옴 이메일(kakao_email), 연령대(age_range), 성별(gender) 추출
-          try-except - 기존에 가입된 유저인지 체크
-          만약 가입된 유저라면, 해당 유저정보를 사용하여 JWT 토큰을 생성하고, 리다이렉트 응답&JWT 토큰은 쿠키에 저장해 전달
-          User.DoesNotExist - 새로운 가입자 처리, 가입 처리 결과에 따라 리다이렉트 응답을 생성
+    내용 :  Kakao 로그인 콜백을 처리하는 APIView GET. Kakao 토큰 API에 POST 요청을 보냄. 응답을 받아와서 JSON 형식으로 파싱하여 access_token추출
+            응답 데이터에 'error' 키가 포함되어 있다면 에러처리. 
+            그렇지 않은 경우는 access_token을 사용하여 Kakao API를 호출하여 사용자 정보를 가져옴 이메일(kakao_email), 연령대(age_range), 성별(gender) 추출
+            try-except - 기존에 가입된 유저인지 체크
+            만약 가입된 유저라면, 해당 유저정보를 사용하여 JWT 토큰을 생성하고, 리다이렉트 응답&JWT 토큰은 쿠키에 저장해 전달
+            User.DoesNotExist - 새로운 가입자 처리, 가입 처리 결과에 따라 리다이렉트 응답을 생성
     최초 작성일 : 2023.06.08
     업데이트 일자 :
     '''
+
     def get(self, request):
         code = request.GET.get("code")
         rest_api_key = os.environ.get('KAKAO_REST_API_KEY')
         data = {
-          "grant_type" : "authorization_code",
-          "client_id" : rest_api_key,
-          "redirection_url" : kakao_callback_uri,
-          "code" : request.GET.get("code")
+            "grant_type": "authorization_code",
+            "client_id": rest_api_key,
+            "redirection_url": kakao_callback_uri,
+            "code": request.GET.get("code")
         }
         kakao_token_api = "https://kauth.kakao.com/oauth/token"
         response = requests.post(kakao_token_api, data=data)
@@ -118,7 +122,8 @@ class kakaoCallBackView(APIView):
         if "error" in response_data:
             error = response_data["error"]
             raise Exception(f"Access Token Request Error: {error}")
-        profile_request = requests.get("https://kapi.kakao.com/v2/user/me", headers={"Authorization": f"Bearer {access_token}"})
+        profile_request = requests.get(
+            "https://kapi.kakao.com/v2/user/me", headers={"Authorization": f"Bearer {access_token}"})
         profile_json = profile_request.json()
         kakao_user_info = profile_json.get('kakao_account')
         kakao_email = kakao_user_info["email"]
@@ -127,15 +132,16 @@ class kakaoCallBackView(APIView):
 
         try:
             user = User.objects.get(email=kakao_email)
-            social_user = SocialAccount.objects.get(user=user) 
+            social_user = SocialAccount.objects.get(user=user)
             # 기존에 kakao로 가입된 유저
             data = {'access_token': access_token, 'code': code}
             accept = requests.post(
                 f"{base_url}users/kakao/login/finish/", data=data)
             jwt_token = generate_jwt_token(user)
             print(jwt_token)
-            response = HttpResponseRedirect("http://127.0.0.1:3000/")
-            response.set_cookie('jwt_token', jwt_token, path='/')
+            response = HttpResponseRedirect("http://127.0.0.1:3000/login")
+            response.set_cookie('jwt_token', jwt_token, path='/',
+                                domain=None, secure=False, httponly=False, samesite=None)
             return response
             # return JsonResponse(response_data)
 
