@@ -90,21 +90,3 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['email'] = user.email
         token["is_admin"] = user.is_admin
         return token
-
-
-class CustomRefreshToken(RefreshToken):
-    '''
-    작성자 : 이주한
-    내용 : 
-            1.JWT access token 만료시에 token을 새로고침 하여 새로 발급받지 않고도 
-                계속해서 인증된 세션을 유지할 수 있게 해주는 RefreshToken 클래스를 상속받은 CustomRefreshToken 
-            2.소셜 로그인시에 access token과 refresh token 발급을 받기 위해 필요한 클래스
-    최초 작성일 : 2023.06.09
-    업데이트 일자 :
-    '''
-    @classmethod
-    def for_user(cls, user):
-        token = super().for_user(user)
-        token['email'] = user.email
-        token['is_admin'] = user.is_admin
-        return token

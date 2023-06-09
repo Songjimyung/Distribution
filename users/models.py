@@ -36,25 +36,25 @@ class UserManager(BaseUserManager):
     작성내용 : UserManager 모델
     업데이트 날짜 :
     '''
-    def create_user(self, email, name, password=None):
+    def create_user(self, email, username, password=None):
         if not email:
             raise ValueError("이메일을 입력해주세요!")
-        if not name:
+        if not username:
             raise ValueError("이름을 입력해주세요!")
 
         user = self.model(
             email=self.normalize_email(email),
-            name=name
+            username=username
         )
 
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, name, password=None):
+    def create_superuser(self, email, username, password=None):
         user = self.create_user(
             email=self.normalize_email(email),
-            name=name,
+            username=username,
             password=password,
         )
         
@@ -75,14 +75,14 @@ class User(AbstractBaseUser):
         max_length=255,
         unique=True,
     )
-    name = models.CharField(verbose_name="user name", max_length=30,)
+    username = models.CharField(verbose_name="user name", max_length=30,)
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
 
     objects = UserManager()
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ['name']
+    REQUIRED_FIELDS = ['username']
 
     def __str__(self):
         return self.email
