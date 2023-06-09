@@ -10,7 +10,7 @@ class SignUpSerializer(serializers.ModelSerializer):
     작성자 : 이주한
     내용 : 회원가입에 필요한 Sign Up Serializer 클래스
     최초 작성일 : 2023.06.06
-    업데이트 일자 :
+    업데이트 일자 : 2023.06.09
     '''
     re_password = serializers.CharField(
         error_messages={

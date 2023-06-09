@@ -51,6 +51,12 @@ class UserView(APIView):
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
+    '''
+    작성자 : 이주한
+    내용 : 로그인에 사용되는 JWT 토큰 view 입니다.
+    최초 작성일 : 2023.06.06
+    업데이트 일자 :
+    '''
     serializer_class = CustomTokenObtainPairSerializer
 
 
@@ -86,12 +92,26 @@ def generate_jwt_token(user):
 
 # Google 로그인
 def google_login(request):
+    '''
+    작성자 : 이주한
+    내용 : 구글 OAUTH2.0 서버로 client_id, callback_uri, scope를 보내서 구글 로그인 페이지를 불러옵니다.
+    최초 작성일 : 2023.06.08
+    업데이트 일자 :
+    '''
     scope = "https://www.googleapis.com/auth/userinfo.email"
     client_id = os.environ.get("SOCIAL_AUTH_GOOGLE_CLIENT_ID")
     
     return redirect(f"https://accounts.google.com/o/oauth2/v2/auth?client_id={client_id}&response_type=code&redirect_uri={google_callback_uri}&scope={scope}")
 
 def google_callback(request):
+    '''
+    작성자 : 이주한
+    내용 : 받아온 구글 로그인 폼에 사용자가 id와 pw를 작성하여 제공하면 구글이 Authorization Code를 발급해줍니다. 
+            Authorization Code와 함께 넘어온 값들을 활용하여 django-allauth가 access, refresh 토큰을 발급해주고 
+            dj-rest-auth의 JWTCookieAuthentication이 쿠키에 저장해줍니다.
+    최초 작성일 : 2023.06.08
+    업데이트 일자 :
+    '''
     client_id = os.environ.get("SOCIAL_AUTH_GOOGLE_CLIENT_ID")
     client_secret = os.environ.get("SOCIAL_AUTH_GOOGLE_SECRET")
     code = request.GET.get('code')
@@ -176,6 +196,12 @@ def google_callback(request):
 
 
 class GoogleLogin(SocialLoginView):
+    '''
+    작성자 : 이주한
+    내용: Google OAuth2 어댑터와 OAuth2Client를 사용하여 Google 로그인을 처리하는 클래스. 인증 완료 후 SocialLoginView에서 처리되는 방식
+    작성일 : 2023.06.08
+    업데이트 일자 :
+    '''
     adapter_class = google_view.GoogleOAuth2Adapter
     callback_url = google_callback_uri
     client_class = OAuth2Client

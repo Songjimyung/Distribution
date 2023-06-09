@@ -5,9 +5,9 @@ import re
 def password_validator(password):
     '''
     작성자 : 이주한
-    작성날짜 : 2023.06.06
-    작성내용 : 비밀번호 유효성 검증 함수
-    업데이트 날짜 :
+    내용 : 비밀번호 유효성 검증 함수
+    최초 작성일 : 2023.06.06
+    업데이트 일자 :
     '''
     password_regex = '^(?=.*[\d])(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*()])[\w\d!@#$%^&*()]{8,}$'
     
@@ -18,9 +18,9 @@ def password_validator(password):
 def password_pattern(password):
     '''
     작성자 : 이주한
-    작성날짜 : 2023.06.06
-    작성내용 : 비밀번호 패턴 유효성 검증 함수
-    업데이트 날짜 :
+    내용 : 비밀번호 패턴 유효성 검증 함수
+    최초 작성일 : 2023.06.06
+    업데이트 일자 :
     '''
     password_pattern = r"(.)\1+\1"
     
@@ -32,9 +32,9 @@ def password_pattern(password):
 class UserManager(BaseUserManager):
     '''
     작성자 : 이주한
-    작성날짜 : 2023.06.06
-    작성내용 : UserManager 모델
-    업데이트 날짜 :
+    내용 : UserManager 모델
+    최초 작성일 : 2023.06.06
+    업데이트 일자 :
     '''
     def create_user(self, email, username, password=None):
         if not email:
@@ -66,9 +66,11 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser):
     '''
     작성자 : 이주한
-    작성날짜 : 2023.06.06
-    작성내용 : User 모델
-    업데이트 날짜 :
+    내용 : 
+            2023.06.06: User 모델 생성
+            2023.06.09: User 모델에 추가로 필요한 필드 추가(사용자 생성일, 정보 수정일, 탈퇴일)
+    최초 작성일 : 2023.06.06
+    업데이트 일자 : 2023.06.09
     '''
     email = models.EmailField(
         verbose_name="email address",
@@ -78,6 +80,9 @@ class User(AbstractBaseUser):
     username = models.CharField(verbose_name="user name", max_length=30,)
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    withdrawal_at = models.DateTimeField(auto_now=True)
 
     objects = UserManager()
 
