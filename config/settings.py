@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 import os
 from datetime import timedelta
@@ -25,8 +26,8 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'corsheaders',
     'rest_framework',
-    'rest_framework_simplejwt',
     'rest_framework.authtoken',
+    'rest_framework_simplejwt',
     'users',
     'shop',
     'campaigns',
@@ -40,6 +41,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.kakao',
+    'allauth.socialaccount.providers.google',
     'django_apscheduler',
 ]
 
@@ -97,7 +99,6 @@ CHANNEL_LAYERS = {
     },
 }
 
-from datetime import datetime
 now = datetime.now()
 str_now = now.strftime('%y%m%d_%H')
 
@@ -153,7 +154,7 @@ DATABASES = {
         'NAME': 'user_data',
         'ENGINE': 'django.db.backends.mysql',
         'USER': os.environ.get('USER'),
-        'PASSWORD' : os.environ.get('PASSWORD'),
+        'PASSWORD': os.environ.get('PASSWORD'),
         'PORT': os.environ.get('PORT')
     },
 }
@@ -233,11 +234,18 @@ SIMPLE_JWT = {
 
 CORS_ALLOW_ALL_ORIGINS = True
 
+CORS_ALLOW_HEADERS = [
+    'authorization-token',
+    'content-type',  # 'Content-Type' 헤더 추가
+    'authorization',  # 'authorization' 헤더 추가
+]
+
 AUTH_USER_MODEL = 'users.User'
 
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"
 
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_EMAIL_REQUIRED = True            # email 필드 사용 o
 ACCOUNT_USERNAME_REQUIRED = False        # username 필드 사용 x
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
@@ -248,4 +256,20 @@ APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
 SCHEDULER_DEFAULT = True
 IMP_KEY = os.environ.get('IMP_KEY')
 IMP_SECRET = os.environ.get('IMP_SECRET')
+
+
+SITE_ID = 1
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'offline',
+        },
+        'OAUTH_PKCE_ENABLED': True,
+    },
+}
 

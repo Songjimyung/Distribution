@@ -2,6 +2,7 @@ from rest_framework import serializers
 from users.models import User
 from .models import User, password_validator, password_pattern
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class SignUpSerializer(serializers.ModelSerializer):
@@ -9,13 +10,12 @@ class SignUpSerializer(serializers.ModelSerializer):
     작성자 : 이주한
     내용 : 회원가입에 필요한 Sign Up Serializer 클래스
     최초 작성일 : 2023.06.06
-    업데이트 일자 :
+    업데이트 일자 : 2023.06.09
     '''
     re_password = serializers.CharField(
         error_messages={
             "required": "비밀번호 확인은 필수 입력 사항입니다!",
             "blank": "비밀번호 확인은 필수 입력 사항입니다!",
-            "write_only": True,
         }
     )
     
@@ -87,7 +87,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        token['name'] = user.name
+        token['email'] = user.email
         token["is_admin"] = user.is_admin
         return token
 
