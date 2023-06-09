@@ -90,3 +90,15 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['name'] = user.name
         token["is_admin"] = user.is_admin
         return token
+
+
+class UserSerializer(serializers.ModelSerializer):
+    '''
+    작성자 : 박지홍
+    내용 : 어드민 페이지에서 필요한 유저의 정보를 직렬화 하는 Serializer 클래스
+    최초 작성일 : 2023.06.09
+    업데이트 일자 :
+    '''
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'username', 'is_active']
