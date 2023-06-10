@@ -1,28 +1,35 @@
+from users.models import User
+import requests
+import os
+from django.utils.translation import gettext_lazy as _
+from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect
+from django.shortcuts import redirect
+from dj_rest_auth.registration.views import SocialLoginView
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 from rest_framework.generics import get_object_or_404
 from rest_framework import status
 from rest_framework.response import Response
-from users.serializers import SignUpSerializer, CustomTokenObtainPairSerializer
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView
-)
+from rest_framework_simplejwt.views import TokenObtainPairView
+from allauth.socialaccount.providers.google import views as google_view
+from users.serializers import SignUpSerializer, CustomTokenObtainPairSerializer, UserSerializer
 from allauth.socialaccount.models import SocialAccount
 from dj_rest_auth.registration.views import SocialLoginView
-from allauth.socialaccount.models import SocialAccount
 from rest_framework_simplejwt.tokens import RefreshToken
 from allauth.socialaccount.providers.kakao import views as kakao_view
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
-from django.shortcuts import redirect
-from json.decoder import JSONDecodeError
-from django.http import JsonResponse, HttpResponseRedirect
-from django.http import HttpResponse
-import requests
-import os
-from .models import User
+from allauth.socialaccount.models import SocialAccount
+from users.serializers import SignUpSerializer, CustomTokenObtainPairSerializer, UserSerializer
+
 
 state = os.environ.get('STATE')
 kakao_callback_uri = os.environ.get('KAKAO_CALLBACK_URI')
+google_callback_uri = os.environ.get('GOOGLE_CALLBACK_URI')
 base_url = os.environ.get('BASE_URL')
+
+
+front_base_url = os.environ.get('FRONT_BASE_URL')
 
 
 class UserView(APIView):
@@ -51,6 +58,12 @@ class UserView(APIView):
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
+    '''
+    작성자 : 이주한
+    내용 : 로그인에 사용되는 JWT 토큰 view 입니다.
+    최초 작성일 : 2023.06.06
+    업데이트 일자 :
+    '''
     serializer_class = CustomTokenObtainPairSerializer
 
 
@@ -78,6 +91,134 @@ def generate_jwt_token(user):
     '''
     refresh = CustomRefreshToken.for_user(user)
     return {'refresh': str(refresh), 'access': str(refresh.access_token)}
+
+
+def generate_jwt_token(user):
+    refresh = CustomRefreshToken.for_user(user)
+
+    return {'refresh': str(refresh), 'access': str(refresh.access_token)}
+
+
+# Google 로그인
+def google_login(request):
+    '''
+    작성자 : 이주한
+    내용 : 구글 OAUTH2.0 서버로 client_id, callback_uri, scope를 보내서 구글 로그인 페이지를 불러옵니다.
+    최초 작성일 : 2023.06.08
+    업데이트 일자 :
+    '''
+    scope = "https://www.googleapis.com/auth/userinfo.email"
+    client_id = os.environ.get("SOCIAL_AUTH_GOOGLE_CLIENT_ID")
+
+    return redirect(f"https://accounts.google.com/o/oauth2/v2/auth?client_id={client_id}&response_type=code&redirect_uri={google_callback_uri}&scope={scope}")
+
+
+def google_callback(request):
+    '''
+    작성자 : 이주한
+    내용 : 받아온 구글 로그인 폼에 사용자가 id와 pw를 작성하여 제공하면 구글이 Authorization Code를 발급해줍니다. 
+            Authorization Code와 함께 넘어온 값들을 활용하여 django-allauth가 access, refresh 토큰을 발급해주고 
+            dj-rest-auth의 JWTCookieAuthentication이 쿠키에 저장해줍니다.
+    최초 작성일 : 2023.06.08
+    업데이트 일자 :
+    '''
+    client_id = os.environ.get("SOCIAL_AUTH_GOOGLE_CLIENT_ID")
+    client_secret = os.environ.get("SOCIAL_AUTH_GOOGLE_SECRET")
+    code = request.GET.get('code')
+
+    token_req = requests.post(
+        f"https://oauth2.googleapis.com/token?client_id={client_id}&client_secret={client_secret}&code={code}&grant_type=authorization_code&redirect_uri={google_callback_uri}&state={state}")
+    token_req_json = token_req.json()
+    error = token_req_json.get("error")
+
+    if error is not None:
+        redirect_url = f'{front_base_url}index.html'
+        err_msg = "error"
+        redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
+
+        return redirect(redirect_url_with_status)
+
+    access_token = token_req_json.get('access_token')
+    email_req = requests.get(
+        f"https://www.googleapis.com/oauth2/v1/tokeninfo?access_token={access_token}")
+    email_req_status = email_req.status_code
+
+    if email_req_status != 200:
+        redirect_url = f'{front_base_url}index.html'
+        err_msg = "failed_to_get"
+        redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
+
+        return redirect(redirect_url_with_status)
+
+    email_req_json = email_req.json()
+    email = email_req_json.get('email')
+
+    try:
+        user = User.objects.get(email=email)
+        social_user = SocialAccount.objects.get(user=user)
+
+        if social_user is None:
+            redirect_url = f'{front_base_url}index.html'
+            status_code = 204
+            redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
+
+            return redirect(redirect_url_with_status)
+
+        if social_user.provider != 'google':
+            redirect_url = f'{front_base_url}index.html'
+            status_code = 400
+            redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
+
+            return redirect(redirect_url_with_status)
+
+        data = {'access_token': access_token, 'code': code}
+        accept = requests.post(
+            f"{base_url}users/google/login/finish/", data=data)
+        accept_status = accept.status_code
+
+        if accept_status != 200:
+            redirect_url = f'{front_base_url}index.html'
+            err_msg = "failed_to_signin"
+            redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
+
+            return redirect(redirect_url_with_status)
+
+        jwt_token = generate_jwt_token(user)
+        response = HttpResponseRedirect(f'{front_base_url}index.html')
+        response.set_cookie('jwt_token', jwt_token)
+
+        return response
+
+    except User.DoesNotExist:
+        data = {'access_token': access_token, 'code': code}
+        accept = requests.post(
+            f"{base_url}users/google/login/finish/", data=data)
+        accept_status = accept.status_code
+
+        if accept_status != 200:
+            redirect_url = f'{front_base_url}index.html'
+            err_msg = "google_signup"
+            redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
+
+            return redirect(redirect_url_with_status)
+
+        redirect_url = f'{front_base_url}index.html'
+        status_code = 201
+        redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
+
+        return redirect(redirect_url_with_status)
+
+
+class GoogleLogin(SocialLoginView):
+    '''
+    작성자 : 이주한
+    내용: Google OAuth2 어댑터와 OAuth2Client를 사용하여 Google 로그인을 처리하는 클래스. 인증 완료 후 SocialLoginView에서 처리되는 방식
+    작성일 : 2023.06.08
+    업데이트 일자 :
+    '''
+    adapter_class = google_view.GoogleOAuth2Adapter
+    callback_url = google_callback_uri
+    client_class = OAuth2Client
 
 
 def kakao_login(request):
@@ -178,3 +319,31 @@ class KakaoLogin(SocialLoginView):
     adapter_class = kakao_view.KakaoOAuth2Adapter
     client_class = OAuth2Client
     callback_url = kakao_callback_uri
+
+
+class UserListView(APIView):
+    '''
+    작성자 : 박지홍
+    내용: 어드민 페이지에서 전체 일반 유저 리스트를 받기 위해 사용 
+    작성일 : 2023.06.09
+    업데이트 일자 :
+    '''
+
+    def get(self, request):
+        users = User.objects.filter(is_admin=False)
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UserDetailView(APIView):
+    '''
+    작성자 : 박지홍
+    내용: 어드민 페이지에서 일반 유저의 상세 정보를 알기 위해 사용
+    작성일 : 2023.06.09
+    업데이트 일자 :
+    '''
+
+    def get(self, request, user_id):
+        user = User.objects.filter(id=user_id)
+        serializer = UserSerializer(user, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

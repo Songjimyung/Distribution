@@ -26,14 +26,13 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'corsheaders',
     'rest_framework',
-    'rest_framework_simplejwt',
     'rest_framework.authtoken',
+    'rest_framework_simplejwt',
     'users',
     'shop',
     'campaigns',
     'chat',
     'payments',
-    'django_apscheduler',
     # dj-rest-auth
     'dj_rest_auth',
     'dj_rest_auth.registration',
@@ -42,6 +41,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.kakao',
+    'django_apscheduler',
 ]
 
 # 웹사이트 복수 생성시 사이트 지정을 위해 필요
@@ -60,9 +60,9 @@ JWT_AUTH_COOKIE = 'jwt_token'
 JTW_AUTH_REFRESH_COOKIE = 'jwt_refresh_token'
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -239,17 +239,24 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
-CORS_ORIGIN_ALLOW_ALL = True
-CORS_ORIGIN_WHITELIST = [
-    'http://localhost:3000',  # 허용할 오리진
+CORS_ALLOW_ALL_ORIGINS = False
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
 ]
+
+CORS_ALLOW_CREDENTIALS = True  # cross-site HTTP요청에 Cookie 추가
+
+CORS_ALLOW_HEADERS = [
+    'authorization-token',
+    'content-type',  # 'Content-Type' 헤더 추가
+    'authorization',  # 'authorization' 헤더 추가
+]
+
 AUTH_USER_MODEL = 'users.User'
 
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"
-
 
 ACCOUNT_EMAIL_REQUIRED = True            # email 필드 사용 o
 ACCOUNT_USERNAME_REQUIRED = False        # username 필드 사용 x
@@ -257,7 +264,5 @@ ACCOUNT_AUTHENTICATION_METHOD = 'email'
 
 REST_USE_JWT = True
 
-
 APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
 SCHEDULER_DEFAULT = True
-LOGIN_REDIRECT_URL = 'http://127.0.0.1:3000'
