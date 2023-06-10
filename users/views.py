@@ -118,7 +118,7 @@ class kakaoCallBackView(APIView):
         response = requests.post(kakao_token_api, data=data)
         response_data = response.json()
         access_token = response_data.get("access_token")
-
+        print(access_token)
         if "error" in response_data:
             error = response_data["error"]
             raise Exception(f"Access Token Request Error: {error}")
@@ -129,15 +129,17 @@ class kakaoCallBackView(APIView):
         kakao_email = kakao_user_info["email"]
         age_range = kakao_user_info["age_range"]
         gender = kakao_user_info["gender"]
-
+        print(kakao_email)
         try:
             user = User.objects.get(email=kakao_email)
-            social_user = SocialAccount.objects.get(user=user)
+            print(user)
             # 기존에 kakao로 가입된 유저
             data = {'access_token': access_token, 'code': code}
+            print(data)
             accept = requests.post(
                 f"{base_url}users/kakao/login/finish/", data=data)
             jwt_token = generate_jwt_token(user)
+            print(accept, "accept")
             print(jwt_token)
             response = HttpResponseRedirect("http://127.0.0.1:3000/login")
             response.set_cookie('jwt_token', jwt_token, path='/',
@@ -146,11 +148,13 @@ class kakaoCallBackView(APIView):
             # return JsonResponse(response_data)
 
         except User.DoesNotExist:
+            print("1")
             data = {'access_token': access_token, 'code': code}
+            print(data)
             accept = requests.post(
                 f"{base_url}users/kakao/login/finish/", data=data)
             accept_status = accept.status_code
-
+            print(accept)
             if accept_status != 200:
                 redirect_url = 'http://127.0.0.1:3000/index.html'
                 status_code = accept_status

@@ -18,11 +18,11 @@ class SignUpSerializer(serializers.ModelSerializer):
             "write_only": True,
         }
     )
-    
+
     class Meta:
         model = User
         fields = (
-            "name",
+            "username",
             "password",
             "re_password",
             "email",
@@ -55,22 +55,25 @@ class SignUpSerializer(serializers.ModelSerializer):
         re_password = data.get("re_password")
 
         if password != re_password:
-            raise serializers.ValidationError(detail={"password": "비밀번호와 비밀번호 확인이 일치하지 않습니다!"})
+            raise serializers.ValidationError(
+                detail={"password": "비밀번호와 비밀번호 확인이 일치하지 않습니다!"})
 
         if password_validator(password):
-            raise serializers.ValidationError(detail={"password": "비밀번호는 8자 이상의 영문 대소문자와 숫자, 특수문자를 포함하여야 합니다!"})
+            raise serializers.ValidationError(
+                detail={"password": "비밀번호는 8자 이상의 영문 대소문자와 숫자, 특수문자를 포함하여야 합니다!"})
 
         if password_pattern(password):
-            raise serializers.ValidationError(detail={"password": "비밀번호는 연속해서 3자리 이상 동일한 영문,숫자,특수문자 사용이 불가합니다!"})
+            raise serializers.ValidationError(
+                detail={"password": "비밀번호는 연속해서 3자리 이상 동일한 영문,숫자,특수문자 사용이 불가합니다!"})
 
         return data
 
     def create(self, validated_data):
         email = validated_data["email"]
-        name = validated_data["name"]
+        username = validated_data["username"]
         password = validated_data["password"]
         validated_data.pop("re_password", None)
-        user = User.objects.create(name=name, email=email,)
+        user = User.objects.create(username=username, email=email,)
         user.set_password(password)
         user.save()
 
@@ -87,6 +90,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        token['name'] = user.name
+        token['username'] = user.username
         token["is_admin"] = user.is_admin
         return token

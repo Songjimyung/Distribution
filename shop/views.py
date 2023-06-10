@@ -6,15 +6,17 @@ from .models import ShopProduct, ShopCategory
 from .serializers import ProductListSerializer, ProductSerializer
 from config.permissions import IsAdminUserOrReadonly
 from django.core.exceptions import ValidationError
+from django.http import JsonResponse
 
 
-class ProductViewAPI(APIView): 
+class ProductViewAPI(APIView):
     '''
     작성자:장소은
     내용: 카테고리별 상품목록 조회(일반,관리자) / 상품 등록(관리자) 
     작성일: 2023.06.06
     '''
     permission_classes = [IsAdminUserOrReadonly]
+
     def get(self, request, category_id):
         category = get_object_or_404(ShopCategory, id=category_id)
         products = ShopProduct.objects.filter(category_id=category.id)
@@ -38,6 +40,7 @@ class ProductDetailViewAPI(APIView):
     작성일: 2023.06.06
     '''
     permission_classes = [IsAdminUserOrReadonly]
+
     def get(self, request, product_id):
         product = get_object_or_404(ShopProduct, id=product_id)
         serializer = ProductSerializer(product)
@@ -45,7 +48,8 @@ class ProductDetailViewAPI(APIView):
 
     def patch(self, request, product_id):
         product = get_object_or_404(ShopProduct, id=product_id)
-        serializer = ProductSerializer(product, data=request.data, partial=True)
+        serializer = ProductSerializer(
+            product, data=request.data, partial=True)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -55,4 +59,11 @@ class ProductDetailViewAPI(APIView):
     def delete(self, request, product_id):
         product = get_object_or_404(ShopProduct, id=product_id)
         product.delete()
-        return Response({"massage":"삭제 완료"}, status=status.HTTP_204_NO_CONTENT)
+        return Response({"massage": "삭제 완료"}, status=status.HTTP_204_NO_CONTENT)
+
+
+def category_list(request):
+    categories = ShopCategory.objects.all()
+    data = [{'category_id': category.id, 'category_name': category.category_name}
+            for category in categories]
+    return JsonResponse(data, safe=False)
