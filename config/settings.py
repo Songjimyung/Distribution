@@ -57,9 +57,9 @@ REST_FRAMEWORK = {
 }
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -232,7 +232,13 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
+]
+
+CORS_ALLOW_CREDENTIALS = True # cross-site HTTP요청에 Cookie 추가
 
 CORS_ALLOW_HEADERS = [
     'authorization-token',
@@ -257,9 +263,6 @@ SCHEDULER_DEFAULT = True
 IMP_KEY = os.environ.get('IMP_KEY')
 IMP_SECRET = os.environ.get('IMP_SECRET')
 
-IMP_KEY = os.environ.get('IMP_KEY')
-IMP_SECRET = os.environ.get('IMP_SECRET')
-
 
 SITE_ID = 1
 
@@ -275,3 +278,4 @@ SOCIALACCOUNT_PROVIDERS = {
         'OAUTH_PKCE_ENABLED': True,
     },
 }
+
