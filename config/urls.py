@@ -7,8 +7,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('chat/', include("chat.urls")),
     path('campaigns/', include("campaigns.urls")),
-    path('users/', include('allauth.urls')),  #소셜로그인
     path('users/', include("users.urls")),
+    path('users/', include('allauth.urls')),  #소셜로그인
     path('users/', include('dj_rest_auth.urls')),
     path('payments/', include("payments.urls")),
     path('shop/', include("shop.urls")),

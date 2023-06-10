@@ -2,7 +2,6 @@ from rest_framework import serializers
 from users.models import User
 from .models import User, password_validator, password_pattern
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class SignUpSerializer(serializers.ModelSerializer):
@@ -10,7 +9,7 @@ class SignUpSerializer(serializers.ModelSerializer):
     작성자 : 이주한
     내용 : 회원가입에 필요한 Sign Up Serializer 클래스
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.09
+    업데이트 일자 : 2023.06.10
     '''
     re_password = serializers.CharField(
         error_messages={
@@ -22,7 +21,7 @@ class SignUpSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            "name",
+            "username",
             "password",
             "re_password",
             "email",
@@ -35,7 +34,7 @@ class SignUpSerializer(serializers.ModelSerializer):
                     "blank": "email은 필수 입력 사항입니다!",
                 }
             },
-            "name": {
+            "username": {
                 "error_messages": {
                     "required": "이름은 필수 입력 사항입니다!",
                     "blank": "이름은 필수 입력 사항입니다!",
@@ -67,10 +66,10 @@ class SignUpSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         email = validated_data["email"]
-        name = validated_data["name"]
+        username = validated_data["username"]
         password = validated_data["password"]
         validated_data.pop("re_password", None)
-        user = User.objects.create(name=name, email=email,)
+        user = User.objects.create(username=username, email=email,)
         user.set_password(password)
         user.save()
 
@@ -87,8 +86,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        token['email'] = user.email
-        token["is_admin"] = user.is_admin
+        token['user_id'] = user.id
+        token["email"] = user.email
         return token
 
 
