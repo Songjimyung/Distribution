@@ -21,12 +21,17 @@ from allauth.socialaccount.providers.kakao import views as kakao_view
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from allauth.socialaccount.models import SocialAccount
 from users.serializers import SignUpSerializer, CustomTokenObtainPairSerializer, UserSerializer
+from django.http import JsonResponse
+from rest_framework.permissions import AllowAny
+from rest_framework.decorators import api_view, permission_classes
+from json.decoder import JSONDecodeError
 
 
 state = os.environ.get('STATE')
 kakao_callback_uri = os.environ.get('KAKAO_CALLBACK_URI')
 google_callback_uri = os.environ.get('GOOGLE_CALLBACK_URI')
 base_url = os.environ.get('BASE_URL')
+BASE_URL = "http://localhost:8000/"
 
 
 front_base_url = os.environ.get('FRONT_BASE_URL')
@@ -79,6 +84,7 @@ class CustomRefreshToken(RefreshToken):
         token = super().for_user(user)
         token["user_id"] = user.id
         token['email'] = user.email
+        token['is_admin'] = user.is_admin
         return token
 
 
@@ -90,12 +96,6 @@ def generate_jwt_token(user):
     업데이트 일자 :
     '''
     refresh = CustomRefreshToken.for_user(user)
-    return {'refresh': str(refresh), 'access': str(refresh.access_token)}
-
-
-def generate_jwt_token(user):
-    refresh = CustomRefreshToken.for_user(user)
-
     return {'refresh': str(refresh), 'access': str(refresh.access_token)}
 
 
@@ -221,81 +221,93 @@ class GoogleLogin(SocialLoginView):
     client_class = OAuth2Client
 
 
-def kakao_login(request):
+class KakaoCallbackView(APIView):
     '''
     작성자 : 장소은
-    내용: client_id, redirect uri 등과 같은 정보를 url parameter로 함께 보내서 Redirect한다. Callback URI로 Code값이 들어가게 된다.
-    최초 작성일 : 2023.06.08
-    업데이트 일자 :
-    '''
-    rest_api_key = os.environ.get('KAKAO_REST_API_KEY')
-    return redirect(
-        f"https://kauth.kakao.com/oauth/authorize?client_id={rest_api_key}&redirect_uri={kakao_callback_uri}&response_type=code")
-
-
-class kakaoCallBackView(APIView):
-    '''
-    작성자 : 장소은
-    내용 :  Kakao 로그인 콜백을 처리하는 APIView GET. Kakao 토큰 API에 POST 요청을 보냄. 응답을 받아와서 JSON 형식으로 파싱하여 access_token추출
-            응답 데이터에 'error' 키가 포함되어 있다면 에러처리. 
+    내용 :  Kakao 로그인 콜백을 처리하는 APIView GET. Kakao 토큰 API에 POST 요청을 보냄. 
+            응답을 받아와서 JSON 형식으로 파싱하여 access_token추출
+            응답 데이터에 'error' 키가 포함되어 있다면 에러처리.
             그렇지 않은 경우는 access_token을 사용하여 Kakao API를 호출하여 사용자 정보를 가져옴 이메일(kakao_email), 연령대(age_range), 성별(gender) 추출
             try-except - 기존에 가입된 유저인지 체크
             만약 가입된 유저라면, 해당 유저정보를 사용하여 JWT 토큰을 생성하고, 리다이렉트 응답&JWT 토큰은 쿠키에 저장해 전달
             User.DoesNotExist - 새로운 가입자 처리, 가입 처리 결과에 따라 리다이렉트 응답을 생성
+            +) RedirectURL과 쿠키 반환 로직 변경
     최초 작성일 : 2023.06.08
-    업데이트 일자 :
+    업데이트 일자 : 2023.06.11
     '''
+    permission_classes = [AllowAny]
 
     def get(self, request):
-        code = request.GET.get("code")
         rest_api_key = os.environ.get('KAKAO_REST_API_KEY')
-        data = {
-            "grant_type": "authorization_code",
-            "client_id": rest_api_key,
-            "redirection_url": kakao_callback_uri,
-            "code": request.GET.get("code")
-        }
-        kakao_token_api = "https://kauth.kakao.com/oauth/token"
-        response = requests.post(kakao_token_api, data=data)
-        response_data = response.json()
-        access_token = response_data.get("access_token")
-        print(access_token)
-        if "error" in response_data:
-            error = response_data["error"]
-            raise Exception(f"Access Token Request Error: {error}")
-        profile_request = requests.get(
-            "https://kapi.kakao.com/v2/user/me", headers={"Authorization": f"Bearer {access_token}"})
+        restapikey = rest_api_key
+        code = request.GET.get("code")
+        redirect_uri = kakao_callback_uri
+
+        token_req = requests.get(
+            f"https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id={restapikey}&redirect_uri={redirect_uri}&code={code}"
+        )
+        token_req_json = token_req.json()
+        error = token_req_json.get("error")
+        if error is not None:
+            redirect_url = 'http://127.0.0.1:3000'
+            err_msg = "error"
+            redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
+            return redirect(redirect_url_with_status)
+
+        access_token = token_req_json.get("access_token")
+        profile_request = requests.post(
+            "https://kapi.kakao.com/v2/user/me",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
         profile_json = profile_request.json()
+        error = profile_json.get("error")
+        if error is not None:
+            redirect_url = 'http://127.0.0.1:3000'
+            err_msg = "error"
+            redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
+            return redirect(redirect_url_with_status)
         kakao_user_info = profile_json.get('kakao_account')
         kakao_email = kakao_user_info["email"]
         age_range = kakao_user_info["age_range"]
         gender = kakao_user_info["gender"]
-        print(kakao_email)
+
         try:
+            # 기존에 가입된 유저의 Provider가 kakao가 아니면 에러 발생, 맞으면 로그인
+            # 다른 SNS로 가입된 유저
             user = User.objects.get(email=kakao_email)
-            print(user)
+            social_user = SocialAccount.objects.get(user=user)
+
+            if social_user is None:
+                redirect_url = 'http://127.0.0.1:3000/'
+                status_code = 204
+                redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
+                return redirect(redirect_url_with_status)
+
+            if social_user.provider != 'kakao':
+                redirect_url = 'http://127.0.0.1:3000/'
+                status_code = 400
+                redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
+                return redirect(redirect_url_with_status)
             # 기존에 kakao로 가입된 유저
-            data = {'access_token': access_token, 'code': code}
-            print(data)
+            data = {"access_token": access_token, "code": code}
             accept = requests.post(
-                f"{base_url}users/kakao/login/finish/", data=data)
+                f"{BASE_URL}users/kakao/login/finish/", data=data)
+            accept_status = accept.status_code
+            if accept_status != 200:
+                return JsonResponse({"err_msg": "failed to signin"}, status=accept_status)
             jwt_token = generate_jwt_token(user)
-            print(accept, "accept")
-            print(jwt_token)
-            response = HttpResponseRedirect("http://127.0.0.1:3000/login")
-            response.set_cookie('jwt_token', jwt_token, path='/',
-                                domain=None, secure=False, httponly=False, samesite=None)
-            return response
-            # return JsonResponse(response_data)
+            response_data = {
+                'jwt_token': jwt_token
+            }
+            return JsonResponse(response_data)
 
         except User.DoesNotExist:
-            print("1")
-            data = {'access_token': access_token, 'code': code}
-            print(data)
+            # 기존에 가입된 유저가 없으면 새로 가입
+            data = {"access_token": access_token, "code": code}
             accept = requests.post(
-                f"{base_url}users/kakao/login/finish/", data=data)
+                f"{BASE_URL}users/kakao/login/finish/", data=data)
             accept_status = accept.status_code
-            print(accept)
+
             if accept_status != 200:
                 redirect_url = 'http://127.0.0.1:3000/index.html'
                 status_code = accept_status
