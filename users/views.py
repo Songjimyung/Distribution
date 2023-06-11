@@ -37,6 +37,7 @@ class UserView(APIView):
     최초 작성일 : 2023.06.06
     업데이트 일자 :
     '''
+
     def post(self, request):
         serializer = SignUpSerializer(data=request.data)
         if serializer.is_valid():
@@ -44,7 +45,7 @@ class UserView(APIView):
             return Response({"message": "가입완료!"}, status=status.HTTP_201_CREATED)
         else:
             return Response({"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST)
-    
+
     # 회원정보 수정 PUT 메소드
     def put(self, request):
         pass
@@ -78,6 +79,7 @@ class CustomRefreshToken(RefreshToken):
         token['email'] = user.email
         return token
 
+
 def generate_jwt_token(user):
     '''
     작성자 : 장소은
@@ -88,9 +90,10 @@ def generate_jwt_token(user):
     refresh = CustomRefreshToken.for_user(user)
     return {'refresh': str(refresh), 'access': str(refresh.access_token)}
 
+
 def generate_jwt_token(user):
     refresh = CustomRefreshToken.for_user(user)
-    
+
     return {'refresh': str(refresh), 'access': str(refresh.access_token)}
 
 
@@ -104,8 +107,9 @@ def google_login(request):
     '''
     scope = "https://www.googleapis.com/auth/userinfo.email"
     client_id = os.environ.get("SOCIAL_AUTH_GOOGLE_CLIENT_ID")
-    
+
     return redirect(f"https://accounts.google.com/o/oauth2/v2/auth?client_id={client_id}&response_type=code&redirect_uri={google_callback_uri}&scope={scope}")
+
 
 def google_callback(request):
     '''
@@ -120,7 +124,8 @@ def google_callback(request):
     client_secret = os.environ.get("SOCIAL_AUTH_GOOGLE_SECRET")
     code = request.GET.get('code')
 
-    token_req = requests.post(f"https://oauth2.googleapis.com/token?client_id={client_id}&client_secret={client_secret}&code={code}&grant_type=authorization_code&redirect_uri={google_callback_uri}&state={state}")
+    token_req = requests.post(
+        f"https://oauth2.googleapis.com/token?client_id={client_id}&client_secret={client_secret}&code={code}&grant_type=authorization_code&redirect_uri={google_callback_uri}&state={state}")
     token_req_json = token_req.json()
     error = token_req_json.get("error")
 
@@ -128,18 +133,19 @@ def google_callback(request):
         redirect_url = f'{front_base_url}index.html'
         err_msg = "error"
         redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
-        
+
         return redirect(redirect_url_with_status)
 
     access_token = token_req_json.get('access_token')
-    email_req = requests.get(f"https://www.googleapis.com/oauth2/v1/tokeninfo?access_token={access_token}")
+    email_req = requests.get(
+        f"https://www.googleapis.com/oauth2/v1/tokeninfo?access_token={access_token}")
     email_req_status = email_req.status_code
-    
+
     if email_req_status != 200:
         redirect_url = f'{front_base_url}index.html'
         err_msg = "failed_to_get"
         redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
-        
+
         return redirect(redirect_url_with_status)
 
     email_req_json = email_req.json()
@@ -147,55 +153,57 @@ def google_callback(request):
 
     try:
         user = User.objects.get(email=email)
-        social_user = SocialAccount.objects.get(user=user) 
+        social_user = SocialAccount.objects.get(user=user)
 
         if social_user is None:
             redirect_url = f'{front_base_url}index.html'
             status_code = 204
             redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
-            
+
             return redirect(redirect_url_with_status)
 
         if social_user.provider != 'google':
             redirect_url = f'{front_base_url}index.html'
             status_code = 400
             redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
-            
+
             return redirect(redirect_url_with_status)
 
         data = {'access_token': access_token, 'code': code}
-        accept = requests.post(f"{base_url}users/google/login/finish/", data=data)
+        accept = requests.post(
+            f"{base_url}users/google/login/finish/", data=data)
         accept_status = accept.status_code
 
         if accept_status != 200:
             redirect_url = f'{front_base_url}index.html'
             err_msg = "failed_to_signin"
             redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
-            
+
             return redirect(redirect_url_with_status)
 
         jwt_token = generate_jwt_token(user)
         response = HttpResponseRedirect(f'{front_base_url}index.html')
         response.set_cookie('jwt_token', jwt_token)
-        
+
         return response
 
     except User.DoesNotExist:
         data = {'access_token': access_token, 'code': code}
-        accept = requests.post(f"{base_url}users/google/login/finish/", data=data)
+        accept = requests.post(
+            f"{base_url}users/google/login/finish/", data=data)
         accept_status = accept.status_code
 
         if accept_status != 200:
             redirect_url = f'{front_base_url}index.html'
             err_msg = "google_signup"
             redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
-            
+
             return redirect(redirect_url_with_status)
 
         redirect_url = f'{front_base_url}index.html'
         status_code = 201
         redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
-        
+
         return redirect(redirect_url_with_status)
 
 
@@ -220,29 +228,30 @@ def kakao_login(request):
     '''
     rest_api_key = os.environ.get('KAKAO_REST_API_KEY')
     return redirect(
-    f"https://kauth.kakao.com/oauth/authorize?client_id={rest_api_key}&redirect_uri={kakao_callback_uri}&response_type=code")
+        f"https://kauth.kakao.com/oauth/authorize?client_id={rest_api_key}&redirect_uri={kakao_callback_uri}&response_type=code")
 
 
 class kakaoCallBackView(APIView):
     '''
     작성자 : 장소은
-    내용: Kakao 로그인 콜백을 처리하는 APIView GET. Kakao 토큰 API에 POST 요청을 보냄. 응답을 받아와서 JSON 형식으로 파싱하여 access_token추출
-          응답 데이터에 'error' 키가 포함되어 있다면 에러처리. 
-          그렇지 않은 경우는 access_token을 사용하여 Kakao API를 호출하여 사용자 정보를 가져옴 이메일(kakao_email), 연령대(age_range), 성별(gender) 추출
-          try-except - 기존에 가입된 유저인지 체크
-          만약 가입된 유저라면, 해당 유저정보를 사용하여 JWT 토큰을 생성하고, 리다이렉트 응답&JWT 토큰은 쿠키에 저장해 전달
-          User.DoesNotExist - 새로운 가입자 처리, 가입 처리 결과에 따라 리다이렉트 응답을 생성
+    내용 :  Kakao 로그인 콜백을 처리하는 APIView GET. Kakao 토큰 API에 POST 요청을 보냄. 응답을 받아와서 JSON 형식으로 파싱하여 access_token추출
+            응답 데이터에 'error' 키가 포함되어 있다면 에러처리. 
+            그렇지 않은 경우는 access_token을 사용하여 Kakao API를 호출하여 사용자 정보를 가져옴 이메일(kakao_email), 연령대(age_range), 성별(gender) 추출
+            try-except - 기존에 가입된 유저인지 체크
+            만약 가입된 유저라면, 해당 유저정보를 사용하여 JWT 토큰을 생성하고, 리다이렉트 응답&JWT 토큰은 쿠키에 저장해 전달
+            User.DoesNotExist - 새로운 가입자 처리, 가입 처리 결과에 따라 리다이렉트 응답을 생성
     최초 작성일 : 2023.06.08
     업데이트 일자 :
     '''
+
     def get(self, request):
         code = request.GET.get("code")
         rest_api_key = os.environ.get('KAKAO_REST_API_KEY')
         data = {
-          "grant_type" : "authorization_code",
-          "client_id" : rest_api_key,
-          "redirection_url" : kakao_callback_uri,
-          "code" : request.GET.get("code")
+            "grant_type": "authorization_code",
+            "client_id": rest_api_key,
+            "redirection_url": kakao_callback_uri,
+            "code": request.GET.get("code")
         }
         kakao_token_api = "https://kauth.kakao.com/oauth/token"
         response = requests.post(kakao_token_api, data=data)
@@ -252,24 +261,26 @@ class kakaoCallBackView(APIView):
         if "error" in response_data:
             error = response_data["error"]
             raise Exception(f"Access Token Request Error: {error}")
-        profile_request = requests.get("https://kapi.kakao.com/v2/user/me", headers={"Authorization": f"Bearer {access_token}"})
+        profile_request = requests.get(
+            "https://kapi.kakao.com/v2/user/me", headers={"Authorization": f"Bearer {access_token}"})
         profile_json = profile_request.json()
         kakao_user_info = profile_json.get('kakao_account')
         kakao_email = kakao_user_info["email"]
         age_range = kakao_user_info["age_range"]
         gender = kakao_user_info["gender"]
-        
+
         try:
             user = User.objects.get(email=kakao_email)
-            social_user = SocialAccount.objects.get(user=user) 
+            social_user = SocialAccount.objects.get(user=user)
             # 기존에 kakao로 가입된 유저
             data = {'access_token': access_token, 'code': code}
             accept = requests.post(
                 f"{base_url}users/kakao/login/finish/", data=data)
             jwt_token = generate_jwt_token(user)
             print(jwt_token)
-            response = HttpResponseRedirect("http://127.0.0.1:3000/")
-            response.set_cookie('jwt_token', jwt_token, path='/')
+            response = HttpResponseRedirect("http://127.0.0.1:3000/login")
+            response.set_cookie('jwt_token', jwt_token, path='/',
+                                domain=None, secure=False, httponly=False, samesite=None)
             return response
             # return JsonResponse(response_data)
 
@@ -311,6 +322,7 @@ class UserListView(APIView):
     작성일 : 2023.06.09
     업데이트 일자 :
     '''
+
     def get(self, request):
         users = User.objects.filter(is_admin=False)
         serializer = UserSerializer(users, many=True)
@@ -324,6 +336,7 @@ class UserDetailView(APIView):
     작성일 : 2023.06.09
     업데이트 일자 :
     '''
+
     def get(self, request, user_id):
         user = User.objects.filter(id=user_id)
         serializer = UserSerializer(user, many=True)
