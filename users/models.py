@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 import re
 
+
 def password_validator(password):
     '''
     작성자 : 이주한
@@ -10,10 +11,11 @@ def password_validator(password):
     업데이트 일자 :
     '''
     password_regex = '^(?=.*[\d])(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*()])[\w\d!@#$%^&*()]{8,}$'
-    
+
     if not re.search(password_regex, str(password)):
         return True
     return False
+
 
 def password_pattern(password):
     '''
@@ -23,7 +25,7 @@ def password_pattern(password):
     업데이트 일자 :
     '''
     password_pattern = r"(.)\1+\1"
-    
+
     if re.search(password_pattern, str(password)):
         return True
     return False
@@ -36,6 +38,7 @@ class UserManager(BaseUserManager):
     최초 작성일 : 2023.06.06
     업데이트 일자 :
     '''
+
     def create_user(self, email, username, password=None):
         if not email:
             raise ValueError("이메일을 입력해주세요!")
@@ -57,7 +60,7 @@ class UserManager(BaseUserManager):
             username=username,
             password=password,
         )
-        
+
         user.is_admin = True
         user.save(using=self._db)
         return user
@@ -83,7 +86,6 @@ class User(AbstractBaseUser):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     withdrawal_at = models.DateTimeField(auto_now=True)
-
     objects = UserManager()
 
     USERNAME_FIELD = "email"

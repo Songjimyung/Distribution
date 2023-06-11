@@ -1142,7 +1142,6 @@ tzdata = {version = "*", markers = "platform_system == \"Windows\""}
 
 [package.extras]
 devenv = ["black", "check-manifest", "flake8", "pyroma", "pytest (>=4.3)", "pytest-cov", "pytest-mock (>=3.3)", "zest.releaser"]
->>>>>>>>> Temporary merge branch 2
 
 [[package]]
 name = "zope-interface"
