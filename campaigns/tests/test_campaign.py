@@ -37,7 +37,7 @@ class CampaignCreateTest(APITestCase):
     def setUpTestData(cls):
         cls.user_data = {
             "email": "test@test.com",
-            "name": "John",
+            "username": "John",
             "password": "Qwerasdf1234!",
         }
         cls.campaign_data = {
@@ -168,7 +168,7 @@ class CampaignDetailTest(APITestCase):
     def setUpTestData(cls):
         cls.user_data = {
             "email": "test@test.com",
-            "name": "John",
+            "username": "John",
             "password": "Qwerasdf1234!",
         }
         date = timezone.now() + timedelta(seconds=random.randint(0, 86400))
@@ -278,7 +278,7 @@ class CampaignLikeTest(APITestCase):
     def setUpTestData(cls):
         cls.user_data = {
             "email": "test@test.com",
-            "name": "John",
+            "username": "John",
             "password": "Qwerasdf1234!",
         }
         date = timezone.now() + timedelta(seconds=random.randint(0, 86400))
@@ -343,3 +343,82 @@ class CampaignLikeTest(APITestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["message"], "좋아요 취소!")
+
+
+class CampaignParticipationTest(APITestCase):
+    """
+    작성자 : 최준영
+    내용 : 캠페인 참가 POST 요청 테스트 클래스입니다.
+    최초 작성일 : 2023.06.11
+    업데이트 일자 :
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user_data = {
+            "email": "test@test.com",
+            "username": "John",
+            "password": "Qwerasdf1234!",
+        }
+        date = timezone.now() + timedelta(seconds=random.randint(0, 86400))
+        cls.campaign_data = {
+            "title": "탄소발자국 캠페인 모집",
+            "content": "더 나은 세상을 위한 지구별 눈물 닦아주기, 이제 우리가 행동에 나설 때입니다.",
+            "members": "200",
+            "current_members": "0",
+            "campaign_start_date": date,
+            "campaign_end_date": date,
+            "activity_start_date": date,
+            "activity_end_date": date,
+            "image": "",
+            "is_funding": "False",
+            "status": "1",
+        }
+        temp_img = tempfile.NamedTemporaryFile()
+        temp_img.name = "image.png"
+        image_file = arbitrary_image(temp_img)
+        image_file.seek(0)
+        cls.campaign_data["image"] = image_file.name
+
+        cls.user = User.objects.create_user(**cls.user_data)
+
+        cls.campaign_data['user'] = User.objects.get(id=1)
+        cls.campaign = Campaign.objects.create(**cls.campaign_data)
+
+    def setUp(self):
+        self.access_token = self.client.post(reverse("log_in"), self.user_data).data[
+            "access"
+        ]
+
+    def test_participate_campaign(self):
+        """
+        캠페인 참가 POST요청 테스트 함수입니다.
+        """
+        campaign = Campaign.objects.get(title=self.campaign_data['title'])
+        url = reverse("campaign_participation_view", kwargs={"campaign_id": campaign.id})
+        response = self.client.post(
+            path=url,
+            HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["message"], "캠페인 참가 성공!")
+
+    def test_cancel_participate_campaign(self):
+        """
+        캠페인 참가 취소 POST요청 테스트 함수입니다.
+        """
+        campaign = Campaign.objects.get(title=self.campaign_data['title'])
+        url = reverse("campaign_participation_view", kwargs={"campaign_id": campaign.id})
+        response = self.client.post(
+            path=url,
+            HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["message"], "캠페인 참가 성공!")
+
+        response = self.client.post(
+            path=url,
+            HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["message"], "캠페인 참가 취소!")

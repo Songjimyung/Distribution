@@ -33,7 +33,7 @@ class CampaignCommentCreateReadTest(APITestCase):
     def setUpTestData(cls):
         cls.user_data = {
             "email": "test@test.com",
-            "name": "John",
+            "username": "John",
             "password": "Qwerasdf1234!",
         }
         date = timezone.now() + timedelta(seconds=random.randint(0, 86400))
@@ -105,7 +105,7 @@ class CampaignCommentUpdateDeleteTest(APITestCase):
     def setUpTestData(cls):
         cls.user_data = {
             "email": "test@test.com",
-            "name": "John",
+            "username": "John",
             "password": "Qwerasdf1234!",
         }
         date = timezone.now() + timedelta(seconds=random.randint(0, 86400))

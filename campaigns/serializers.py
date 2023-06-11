@@ -74,6 +74,7 @@ class CampaignSerializer(BaseSerializer):
             "id",
             "user",
             "like",
+            "participant",
             "title",
             "content",
             "members",

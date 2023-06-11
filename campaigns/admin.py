@@ -25,6 +25,7 @@ class CampaignDisplay(admin.ModelAdmin):
         "members",
         "current_members",
         "image",
+        "status",
         "is_funding",
         "campaign_start_date",
         "campaign_end_date",
@@ -32,7 +33,6 @@ class CampaignDisplay(admin.ModelAdmin):
         "activity_end_date",
         "created_at",
         "updated_at",
-        "status",
         "image",
         "created_at",
         "updated_at",
@@ -41,6 +41,9 @@ class CampaignDisplay(admin.ModelAdmin):
         "title",
         "content",
         "user",
+        "status",
+        "participant",
+        "like",
         "members",
         "current_members",
         "image",
@@ -49,7 +52,6 @@ class CampaignDisplay(admin.ModelAdmin):
         "campaign_end_date",
         "activity_start_date",
         "activity_end_date",
-        "status",
     ]
     readonly_fields = (
         "created_at",
