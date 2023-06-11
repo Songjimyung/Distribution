@@ -52,21 +52,20 @@ class Campaign(BaseModel):
         (7, "종료 - 둘 다 실패"),
     )
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="campaigns")
-    like = models.ManyToManyField(User, related_name="likes", blank=True)
-    title = models.CharField("캠페인 제목", max_length=50)
-    content = models.TextField("캠페인 내용")
-    members = models.PositiveIntegerField("캠페인 모집 인원")
-    current_members = models.PositiveIntegerField("캠페인 현재 참가인원", default=0)
+    user = models.ForeignKey(User, verbose_name="작성자", on_delete=models.CASCADE, related_name="campaigns")
+    participant = models.ManyToManyField(User, verbose_name="참가자", related_name="participants", blank=True)
+    like = models.ManyToManyField(User, verbose_name="좋아요", related_name="likes", blank=True)
+    title = models.CharField("제목", max_length=50)
+    content = models.TextField("내용")
+    members = models.PositiveIntegerField("모집 인원")
+    current_members = models.PositiveIntegerField("현재 참가인원", default=0)
     campaign_start_date = models.DateTimeField("캠페인 시작일")
     campaign_end_date = models.DateTimeField("캠페인 마감일")
     activity_start_date = models.DateTimeField("활동 시작일", blank=True)
     activity_end_date = models.DateTimeField("활동 마감일", blank=True)
-    image = models.ImageField("캠페인 이미지", blank=True, upload_to="%Y/%m/")
-    is_funding = models.BooleanField("캠페인 펀딩여부", default=False)
-    status = models.PositiveSmallIntegerField(
-        "캠페인 진행 상태", choices=STATUS_CHOICES, default=0
-    )
+    image = models.ImageField("이미지", null=True, blank=True, upload_to="%Y/%m/")
+    is_funding = models.BooleanField("펀딩여부", default=False)
+    status = models.PositiveSmallIntegerField("진행 상태", choices=STATUS_CHOICES, default=0)
 
     def __str__(self):
         return str(self.title)
