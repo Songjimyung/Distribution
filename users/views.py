@@ -31,9 +31,6 @@ state = os.environ.get('STATE')
 kakao_callback_uri = os.environ.get('KAKAO_CALLBACK_URI')
 google_callback_uri = os.environ.get('GOOGLE_CALLBACK_URI')
 base_url = os.environ.get('BASE_URL')
-BASE_URL = "http://localhost:8000/"
-
-
 front_base_url = os.environ.get('FRONT_BASE_URL')
 
 
@@ -96,6 +93,12 @@ def generate_jwt_token(user):
     업데이트 일자 :
     '''
     refresh = CustomRefreshToken.for_user(user)
+    return {'refresh': str(refresh), 'access': str(refresh.access_token)}
+
+
+def generate_jwt_token(user):
+    refresh = CustomRefreshToken.for_user(user)
+
     return {'refresh': str(refresh), 'access': str(refresh.access_token)}
 
 
@@ -291,7 +294,7 @@ class KakaoCallbackView(APIView):
             # 기존에 kakao로 가입된 유저
             data = {"access_token": access_token, "code": code}
             accept = requests.post(
-                f"{BASE_URL}users/kakao/login/finish/", data=data)
+                f"{base_url}users/kakao/login/finish/", data=data)
             accept_status = accept.status_code
             if accept_status != 200:
                 return JsonResponse({"err_msg": "failed to signin"}, status=accept_status)
@@ -305,7 +308,7 @@ class KakaoCallbackView(APIView):
             # 기존에 가입된 유저가 없으면 새로 가입
             data = {"access_token": access_token, "code": code}
             accept = requests.post(
-                f"{BASE_URL}users/kakao/login/finish/", data=data)
+                f"{base_url}users/kakao/login/finish/", data=data)
             accept_status = accept.status_code
 
             if accept_status != 200:

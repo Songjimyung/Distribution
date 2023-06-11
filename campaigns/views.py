@@ -201,8 +201,11 @@ class CampaignLikeView(APIView):
     내용 : 캠페인 좋아요 뷰 입니다.
     캠페인에 대한 좋아요 POST 요청을 처리합니다.
     최초 작성일 : 2023.06.09
-    업데이트 일자 : 
+    업데이트 일자 : 2023.06.11
     """
+
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
     def post(self, request, campaign_id):
         queryset = get_object_or_404(Campaign, id=campaign_id)
         if queryset.like.filter(id=request.user.id).exists():
@@ -211,6 +214,27 @@ class CampaignLikeView(APIView):
         else:
             queryset.like.add(request.user)
             return Response({'message':'좋아요 성공!'}, status=status.HTTP_200_OK)
+
+
+class CampaignParticipationView(APIView):
+    """
+    작성자 : 최준영
+    내용 : 캠페인 유저 참가 뷰 입니다.
+    캠페인에 대한 참가 POST 요청을 처리합니다.
+    최초 작성일 : 2023.06.11
+    업데이트 일자 : 
+    """
+
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def post(self, request, campaign_id):
+        queryset = get_object_or_404(Campaign, id=campaign_id)
+        if queryset.participant.filter(id=request.user.id).exists():
+            queryset.participant.remove(request.user)
+            return Response({'message':'캠페인 참가 취소!'}, status=status.HTTP_200_OK)
+        else:
+            queryset.participant.add(request.user)
+            return Response({'message':'캠페인 참가 성공!'}, status=status.HTTP_200_OK)
 
 
 class CampaignReviewView(APIView):

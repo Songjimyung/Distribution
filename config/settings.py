@@ -33,7 +33,6 @@ INSTALLED_APPS = [
     'campaigns',
     'chat',
     'payments',
-    # dj-rest-auth
     'dj_rest_auth',
     'dj_rest_auth.registration',
     # django-allauth
