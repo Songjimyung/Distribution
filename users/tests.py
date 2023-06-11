@@ -15,7 +15,7 @@ class SignUpTest(APITestCase):
         url = reverse("sign_up")
         user_data = {
             "email": "user1@google.com",
-            "name": "user1",
+            "username": "user1",
             "password": "Test!!11",
             "re_password": "Test!!11",
         }
@@ -26,7 +26,7 @@ class SignUpTest(APITestCase):
         url = reverse("sign_up")
         user_data = {
             "email": "user1@google.com",
-            "name": "user1",
+            "username": "user1",
             "password": "test11",
             "re_password": "test11",
         }
@@ -37,7 +37,7 @@ class SignUpTest(APITestCase):
         url = reverse("sign_up")
         user_data = {
             "email": "user1@google.com",
-            "name": "user1",
+            "username": "user1",
             "password": "tttTTT111!!!",
             "re_password": "tttTTT111!!!",
         }
@@ -48,7 +48,7 @@ class SignUpTest(APITestCase):
         url = reverse("sign_up")
         user_data = {
             "email": "user1@google.com",
-            "name": "user1",
+            "username": "user1",
             "password": "Test!!11",
         }
         response = self.client.post(url, user_data)
@@ -64,7 +64,7 @@ class LoginTest(APITestCase):
     '''
     def setUp(self):
         self.url = reverse('log_in')
-        self.user_data = User.objects.create_user(email="user1@google.com", name="test", password="Test!!11")
+        self.user_data = User.objects.create_user(email="user1@google.com", username="test", password="Test!!11")
     
     def test_login(self):
         user ={

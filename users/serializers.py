@@ -9,20 +9,19 @@ class SignUpSerializer(serializers.ModelSerializer):
     작성자 : 이주한
     내용 : 회원가입에 필요한 Sign Up Serializer 클래스
     최초 작성일 : 2023.06.06
-    업데이트 일자 :
+    업데이트 일자 : 2023.06.10
     '''
     re_password = serializers.CharField(
         error_messages={
             "required": "비밀번호 확인은 필수 입력 사항입니다!",
             "blank": "비밀번호 확인은 필수 입력 사항입니다!",
-            "write_only": True,
         }
     )
     
     class Meta:
         model = User
         fields = (
-            "name",
+            "username",
             "password",
             "re_password",
             "email",
@@ -35,7 +34,7 @@ class SignUpSerializer(serializers.ModelSerializer):
                     "blank": "email은 필수 입력 사항입니다!",
                 }
             },
-            "name": {
+            "username": {
                 "error_messages": {
                     "required": "이름은 필수 입력 사항입니다!",
                     "blank": "이름은 필수 입력 사항입니다!",
@@ -67,10 +66,10 @@ class SignUpSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         email = validated_data["email"]
-        name = validated_data["name"]
+        username = validated_data["username"]
         password = validated_data["password"]
         validated_data.pop("re_password", None)
-        user = User.objects.create(name=name, email=email,)
+        user = User.objects.create(username=username, email=email,)
         user.set_password(password)
         user.save()
 
@@ -87,6 +86,19 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        token['name'] = user.name
+        token['user_id'] = user.id
+        token["email"] = user.email
         token["is_admin"] = user.is_admin
         return token
+
+
+class UserSerializer(serializers.ModelSerializer):
+    '''
+    작성자 : 박지홍
+    내용 : 어드민 페이지에서 필요한 유저의 정보를 직렬화 하는 Serializer 클래스
+    최초 작성일 : 2023.06.09
+    업데이트 일자 :
+    '''
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'username', 'is_active']

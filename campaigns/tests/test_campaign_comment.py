@@ -1,10 +1,25 @@
 import random
+import tempfile
+from PIL import Image
 from datetime import timedelta
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APITestCase
 from users.models import User
 from campaigns.models import Campaign, CampaignComment
+
+
+def arbitrary_image(temp_text):
+    """
+    작성자 : 최준영
+    내용 : 테스트용 임의 이미지 생성 함수입니다.
+    최초 작성일 : 2023.06.09
+    업데이트 일자 :
+    """
+    size = (50, 50)
+    image = Image.new("RGBA", size)
+    image.save(temp_text, "png")
+    return temp_text
 
 
 class CampaignCommentCreateReadTest(APITestCase):
@@ -23,7 +38,7 @@ class CampaignCommentCreateReadTest(APITestCase):
         }
         date = timezone.now() + timedelta(seconds=random.randint(0, 86400))
         cls.campaign_data = {
-            "content": "탄소발자국 캠페인 모집",
+            "title": "탄소발자국 캠페인 모집",
             "content": "더 나은 세상을 위한 지구별 눈물 닦아주기, 이제 우리가 행동에 나설 때입니다.",
             "members": "200",
             "current_members": "0",
@@ -35,9 +50,17 @@ class CampaignCommentCreateReadTest(APITestCase):
             "is_funding": "False",
             "status": "1",
         }
-        cls.user = User.objects.create_user("test@test.com", "John", "Qwerasdf1234!")
+        temp_img = tempfile.NamedTemporaryFile()
+        temp_img.name = "image.png"
+        image_file = arbitrary_image(temp_img)
+        image_file.seek(0)
+        cls.campaign_data["image"] = image_file.name
+
+        cls.user = User.objects.create_user(**cls.user_data)
+
         cls.campaign_data['user'] = User.objects.get(id=1)
         cls.campaign = Campaign.objects.create(**cls.campaign_data)
+
         cls.comment_data = {
             "content": "좋은 캠페인이네요"
         }
@@ -87,7 +110,7 @@ class CampaignCommentUpdateDeleteTest(APITestCase):
         }
         date = timezone.now() + timedelta(seconds=random.randint(0, 86400))
         cls.campaign_data = {
-            "content": "탄소발자국 캠페인 모집",
+            "title": "탄소발자국 캠페인 모집",
             "content": "더 나은 세상을 위한 지구별 눈물 닦아주기, 이제 우리가 행동에 나설 때입니다.",
             "members": "200",
             "current_members": "0",
@@ -99,17 +122,23 @@ class CampaignCommentUpdateDeleteTest(APITestCase):
             "is_funding": "False",
             "status": "1",
         }
+        temp_img = tempfile.NamedTemporaryFile()
+        temp_img.name = "image.png"
+        image_file = arbitrary_image(temp_img)
+        image_file.seek(0)
+        cls.campaign_data["image"] = image_file.name
+
+        cls.user = User.objects.create_user(**cls.user_data)
+
+        cls.campaign_data['user'] = User.objects.get(id=1)
+        cls.campaign = Campaign.objects.create(**cls.campaign_data)
+
         cls.comment_data = {
             "content": "좋은 캠페인이네요"
         }
         cls.new_comment_data = {
             "content": "좋은 캠페인이네요. 꼭 참여하고 싶습니다!"
         }
-        cls.user = User.objects.create_user("test@test.com", "John", "Qwerasdf1234!")
-
-        cls.campaign_data['user'] = User.objects.get(id=1)
-        cls.campaign = Campaign.objects.create(**cls.campaign_data)
-
         cls.comment_data['user'] = User.objects.get(id=1)
         cls.comment_data['campaign'] = Campaign.objects.get(id=1)
         cls.comment = CampaignComment.objects.create(**cls.comment_data)
