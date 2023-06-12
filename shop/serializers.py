@@ -1,6 +1,6 @@
 from rest_framework.serializers import ValidationError
 from rest_framework import serializers
-from .models import ShopProduct, ShopCategory, ShopImageFile
+from .models import ShopProduct, ShopCategory, ShopImageFile, ShopOrder
 
 
 class PostImageSerializer(serializers.ModelSerializer):
@@ -12,8 +12,9 @@ class PostImageSerializer(serializers.ModelSerializer):
 class ProductListSerializer(serializers.ModelSerializer):
     '''
     작성자:장소은
-    내용: 카테고리별 상품목록 조회시 필요한 Serializer 클래스
+    내용: 카테고리별 상품목록 조회/다중 이미지 업로드 시 필요한 Serializer 클래스
     작성일: 2023.06.07
+    업데이트일: 2023.06.12 
     '''
     images = PostImageSerializer(many=True, read_only=True)
     uploaded_images = serializers.ListField(child=serializers.ImageField(
@@ -28,20 +29,9 @@ class ProductListSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         uploaded_images = validated_data.pop('uploaded_images', [])
         product = super().create(validated_data)
-        for image in uploaded_images:
-            ShopImageFile.objects.create(image_file=image, product=product)
+        for images in uploaded_images:
+            ShopImageFile.objects.create(image_file=images, product=product)
         return product
-
-
-class ProductSerializer(serializers.ModelSerializer):
-    '''
-    작성자:장소은
-    내용: 카테고리별 상품 상세 조회시 필요한 Serializer 클래스
-    작성일: 2023.06.07
-    '''
-    class Meta:
-        model = ShopProduct
-        fields = ('product_name', 'product_price', 'product_desc')
 
 
 class CategoryListSerializer(serializers.ModelSerializer):
@@ -52,4 +42,15 @@ class CategoryListSerializer(serializers.ModelSerializer):
     '''
     class Meta:
         model = ShopCategory
+        fields = '__all__'
+
+
+class OrderProductSerializer(serializers.ModelSerializer):
+    '''
+    작성자:장소은
+    내용: 주문 시 필요한 시리얼라이저
+    작성일 : 2023.06.13
+    '''
+    class Meta:
+        model = ShopOrder
         fields = '__all__'

@@ -46,10 +46,12 @@ class ShopOrder(models.Model):
     최초 작성일: 2023.06.06
     업데이트 일자:
     '''
+    order_quantity = models.PositiveIntegerField(default=0)
     order_date = models.DateTimeField(auto_now_add=True)
     zip_code = models.CharField(max_length=20)
     address = models.CharField(max_length=100)
     address_detail = models.CharField(max_length=100)
+    address_message = models.CharField(max_length=150)
     receiver_name = models.CharField(max_length=20)
     receiver_number = models.CharField(max_length=20)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -77,4 +79,5 @@ class ShopImageFile(models.Model):
     업데이트 일자:
     '''
     image_file = models.ImageField(null=True, blank=True)
-    product = models.ForeignKey(ShopProduct, on_delete=models.CASCADE)
+    product = models.ForeignKey(
+        ShopProduct, on_delete=models.CASCADE, related_name='images')

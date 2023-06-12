@@ -2,11 +2,10 @@ from rest_framework.generics import get_object_or_404
 from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import ShopProduct, ShopCategory
-from .serializers import ProductListSerializer, ProductSerializer, CategoryListSerializer
+from .models import ShopProduct, ShopCategory, ShopOrder
+from .serializers import ProductListSerializer, CategoryListSerializer
 from config.permissions import IsAdminUserOrReadonly
-from django.core.exceptions import ValidationError
-from django.http import JsonResponse
+
 
 
 class ProductViewAPI(APIView):
@@ -43,12 +42,12 @@ class ProductDetailViewAPI(APIView):
 
     def get(self, request, product_id):
         product = get_object_or_404(ShopProduct, id=product_id)
-        serializer = ProductSerializer(product)
+        serializer = ProductListSerializer(product)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def patch(self, request, product_id):
         product = get_object_or_404(ShopProduct, id=product_id)
-        serializer = ProductSerializer(
+        serializer = ProductListSerializer(
             product, data=request.data, partial=True)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -98,6 +97,20 @@ class AdminCategoryViewAPI(APIView):
 
 
 class CategoryViewAPI(APIView):
+    def post(self, request):
+        serializer = CategoryListSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class OrderProductViewAPI(APIView):
+    def get(self, request):
+        orders = ShopOrder.objects.all()
+        serializer = CategoryListSerializer(orders, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     def post(self, request):
         serializer = CategoryListSerializer(data=request.data)
         if serializer.is_valid():
