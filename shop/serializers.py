@@ -1,6 +1,6 @@
 from rest_framework.serializers import ValidationError
 from rest_framework import serializers
-from .models import ShopProduct, ShopCategory, ShopImageFile, ShopOrder
+from .models import ShopProduct, ShopCategory, ShopImageFile, ShopOrder, ShopOrderDetail
 
 
 class PostImageSerializer(serializers.ModelSerializer):
@@ -54,3 +54,15 @@ class OrderProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShopOrder
         fields = '__all__'
+
+
+class OrderDetailSerializer(serializers.ModelSerializer):
+    '''
+    작성자:장소은
+    내용: 주문 시 필요한 시리얼라이저
+    작성일 : 2023.06.13
+    '''
+    class Meta:
+        model = ShopOrderDetail
+        fields = '__all__'
+
