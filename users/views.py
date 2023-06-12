@@ -3,28 +3,21 @@ import requests
 import os
 from django.utils.translation import gettext_lazy as _
 from django.http import HttpResponseRedirect
-from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from dj_rest_auth.registration.views import SocialLoginView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
-from rest_framework.generics import get_object_or_404
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from allauth.socialaccount.providers.google import views as google_view
 from users.serializers import SignUpSerializer, CustomTokenObtainPairSerializer, UserSerializer
 from allauth.socialaccount.models import SocialAccount
-from dj_rest_auth.registration.views import SocialLoginView
-from rest_framework_simplejwt.tokens import RefreshToken
 from allauth.socialaccount.providers.kakao import views as kakao_view
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from allauth.socialaccount.models import SocialAccount
-from users.serializers import SignUpSerializer, CustomTokenObtainPairSerializer, UserSerializer
 from django.http import JsonResponse
 from rest_framework.permissions import AllowAny
-from rest_framework.decorators import api_view, permission_classes
-from json.decoder import JSONDecodeError
 
 
 state = os.environ.get('STATE')
