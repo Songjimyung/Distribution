@@ -15,7 +15,7 @@ class ProductViewAPI(APIView):
     내용: 카테고리별 상품목록 조회(일반,관리자) / 상품 등록(관리자) 
     작성일: 2023.06.06
     '''
-    # permission_classes = [IsAdminUserOrReadonly]
+    permission_classes = [IsAdminUserOrReadonly]
 
     def get(self, request, category_id):
         category = get_object_or_404(ShopCategory, id=category_id)
