@@ -12,6 +12,7 @@ db.sqlite3-journal
 media
 **/migrations/**.py
 !**/migrations/__init__.py
+.vscode
 
 # If your build process includes running collectstatic, then you probably don't need or want to include staticfiles/
 # in your Git repository. Update and uncomment the following line accordingly.
@@ -152,6 +153,9 @@ venv.bak/
 # mkdocs documentation
 /site
 
+#로그파일
+/logs
+
 # mypy
 .mypy_cache/
 .dmypy.json
@@ -165,6 +169,8 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+logs/
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
