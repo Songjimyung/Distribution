@@ -35,9 +35,6 @@ class ShopProduct(models.Model):
     category = models.ForeignKey(
         ShopCategory, on_delete=models.CASCADE, related_name='products')
 
-    def __str__(self):
-        return str(self.product_name)
-
 
 class ShopOrder(models.Model):
     '''
@@ -46,13 +43,17 @@ class ShopOrder(models.Model):
     최초 작성일: 2023.06.06
     업데이트 일자:
     '''
+    order_quantity = models.PositiveIntegerField(default=0)
     order_date = models.DateTimeField(auto_now_add=True)
     zip_code = models.CharField(max_length=20)
     address = models.CharField(max_length=100)
     address_detail = models.CharField(max_length=100)
+    address_message = models.CharField(max_length=150)
     receiver_name = models.CharField(max_length=20)
     receiver_number = models.CharField(max_length=20)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    product = models.ForeignKey(
+        ShopProduct, on_delete=models.CASCADE, related_name='product_key')
 
 
 class ShopOrderDetail(models.Model):
@@ -63,10 +64,26 @@ class ShopOrderDetail(models.Model):
     업데이트 일자:
     '''
     product_count = models.PositiveIntegerField(default=0)
-    order_detail_status = models.CharField(max_length=10)
-    order = models.ForeignKey(ShopOrder, on_delete=models.CASCADE)
-    product = models.ForeignKey(ShopProduct, on_delete=models.CASCADE)
-    # price = models.ForeignKey(Amount, on_delete=models.CASCADE)
+    STATUS_CHOICES = (
+        (0, "주문 접수 완료"),
+        (1, "결제 확인 완료"),
+        (2, "주문취소"),
+        (3, "배송 시작"),
+        (4, "배송 중"),
+        (5, "배송 완료")
+    )
+    order = models.ForeignKey(
+        ShopOrder, on_delete=models.CASCADE, related_name='order_info')
+    product = models.ForeignKey(
+        ShopProduct, on_delete=models.CASCADE, related_name='product_set')
+    order_detail_status = models.PositiveSmallIntegerField(
+        "진행 상태", choices=STATUS_CHOICES, default=0)
+
+    def get_order_detail_status_display(self):
+        return dict(self.STATUS_CHOICES).get(self.order_detail_status, "")
+
+    def __str__(self):
+        return self.get_order_detail_status_display()
 
 
 class ShopImageFile(models.Model):
@@ -77,4 +94,5 @@ class ShopImageFile(models.Model):
     업데이트 일자:
     '''
     image_file = models.ImageField(null=True, blank=True)
-    product = models.ForeignKey(ShopProduct, on_delete=models.CASCADE)
+    product = models.ForeignKey(
+        ShopProduct, on_delete=models.CASCADE, related_name='images')
