@@ -288,6 +288,7 @@ class KakaoCallbackView(APIView):
             response_data = {
                 'jwt_token': jwt_token
             }
+            print(response_data)
             return JsonResponse(response_data)
 
         except User.DoesNotExist:
