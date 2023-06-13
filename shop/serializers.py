@@ -70,9 +70,10 @@ class OrderProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShopOrder
         fields = ['id', 'order_info', 'order_quantity', 'order_date', 'zip_code', 'address',
-                  'address_detail', 'address_message', 'receiver_name', 'receiver_number', 'user', 'product']
+                  'address_detail', 'address_message', 'receiver_name', 'receiver_number', 'user', 'product', 'order_totalprice']
 
     def create(self, validated_data):
+        print("진입확인")
         order_quantity = validated_data.get('order_quantity')
         product_key = validated_data.get('product')
         print(validated_data)
