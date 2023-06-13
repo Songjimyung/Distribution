@@ -13,9 +13,9 @@ class ProductTest(APITestCase):
     '''
     @classmethod
     def setUpTestData(cls):
-        cls.username = User.objects.create_user(email="testuser@test.com", name="장소은", password="Xptmxm123@456")
+        cls.username = User.objects.create_user(email="testuser@test.com", username="장소은", password="Xptmxm123@456")
         cls.user_data = {"email": "testuser@test.com", "password": "Xptmxm123@456"}
-        cls.admin = User.objects.create_superuser(email="adminuser@test.com", name="관리자소은", password="Xptmxm123@456")
+        cls.admin = User.objects.create_superuser(email="adminuser@test.com", username="관리자소은", password="Xptmxm123@456")
         cls.admin_data = {"email": "adminuser@test.com", "password": "Xptmxm123@456"}
         cls.faker = Faker()
         cls.category = ShopCategory.objects.create(category_name=cls.faker.word(), category_number=1)
