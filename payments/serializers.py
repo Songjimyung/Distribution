@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from campaigns.models import Campaign
+from shop.models import ShopProduct
 from .models import Payment
 from iamport import Iamport
 from config import settings
@@ -30,12 +31,19 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = ('created_at','customer_uid', 'card_number', 'expiry_at', 'birth', 'pwd_2digit')
+        
+    def get_token(self):
+        iamport = Iamport(imp_key=settings.IMP_KEY, imp_secret=settings.IMP_SECRET)
+        response = iamport._get_token()
+        print('토큰',response)
+        
+        return response
 
     def create(self, data):
         get_expiry = data.get('expiry_at')
         birth = data.get('birth')
         pwd_2digit = data.get('pwd_2digit')
-        iamport = Iamport(imp_key=settings.IMP_KEY, imp_secret=settings.IMP_SECRET)
+        iamport = self.get_token()
         response = iamport.customer_create(
             customer_uid=self.context['request'].user.email,
             card_number=data['card_number'],
@@ -59,7 +67,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         return payment
     
 
-class PaymentScheduleSerializer(serializers.Serializer):
+class PaymentScheduleSerializer(serializers.ModelSerializer):
     '''
     작성자 : 송지명
     작성날짜 : 2023.06.09
@@ -112,4 +120,3 @@ class PaymentScheduleSerializer(serializers.Serializer):
 
         return response
         
-       
