@@ -12,10 +12,12 @@ class ShopCategory(models.Model):
     '''
     category_name = models.CharField(max_length=30)
     category_number = models.PositiveIntegerField(default=0)
+
     def __str__(self):
         return str(self.category_name)
+
     def get_absolute_url(self):
-        return reverse('product_view', kwargs={"category_id":self.id})
+        return reverse('product_view', kwargs={"category_id": self.id})
 
 
 class ShopProduct(models.Model):
@@ -27,13 +29,14 @@ class ShopProduct(models.Model):
     '''
     product_name = models.CharField(max_length=30)
     product_price = models.PositiveIntegerField(default=0)
-    product_stack = models.PositiveIntegerField(default=0)
+    product_stock = models.PositiveIntegerField(default=0)
     product_desc = models.TextField()
     product_date = models.DateTimeField(auto_now_add=True)
-    category = models.ForeignKey(ShopCategory, on_delete=models.CASCADE, related_name='products')
+    category = models.ForeignKey(
+        ShopCategory, on_delete=models.CASCADE, related_name='products')
+
     def __str__(self):
         return str(self.product_name)
-
 
 
 class ShopOrder(models.Model):
@@ -61,7 +64,7 @@ class ShopOrderDetail(models.Model):
     '''
     product_count = models.PositiveIntegerField(default=0)
     order_detail_status = models.CharField(max_length=10)
-    order = models.ForeignKey(ShopOrder,on_delete=models.CASCADE)
+    order = models.ForeignKey(ShopOrder, on_delete=models.CASCADE)
     product = models.ForeignKey(ShopProduct, on_delete=models.CASCADE)
     # price = models.ForeignKey(Amount, on_delete=models.CASCADE)
 

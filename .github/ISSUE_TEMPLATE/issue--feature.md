@@ -1,5 +1,5 @@
 ---
-name: 'Issue: FEATURE'
+name: 'FEATURE'
 about: Feature 작업 사항
 title: "[Feature]"
 labels: ''

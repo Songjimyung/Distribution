@@ -443,7 +443,7 @@ class CampaignUserLikeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        review = Campaign.objects.filter(user=request.user, like=request.user)
+        review = Campaign.objects.filter(like=request.user)
         serializer = CampaignSerializer(review, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

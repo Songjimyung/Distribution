@@ -9,14 +9,14 @@ class Test(APITestCase):
     @classmethod
     def setUpTestData(cls):
         cls.admin_data = {"email": "admin@admin.com",
-                          "name": "admin", "password": "Aedeye12up!"}
+                          "username": "admin", "password": "Aedeye12up!"}
         cls.admin = User.objects.create_superuser(
-            email="admin@admin.com", name="admin", password="Aedeye12up!")
+            email="admin@admin.com", username="admin", password="Aedeye12up!")
 
     def test_case_create_rooms(self):
         email = "test@test.com"
         user = self.client.post(reverse("sign_up"), {
-                                "email": email, "name": "test1", "password": "Radeye12ui!", "re_password": "Radeye12ui!"})
+                                "email": email, "username": "test1", "password": "Radeye12ui!", "re_password": "Radeye12ui!"})
         access_token = self.client.post(reverse(
             "log_in"), {"email": "test@test.com", "password": "Radeye12ui!"}).data['access']
 

@@ -120,15 +120,3 @@ class PaymentScheduleSerializer(serializers.ModelSerializer):
 
         return response
         
-       
-# class PaymentSerializer(serializers.ModelSerializer):
-    
-#     class Meta:
-#         model = Payment
-#         fields = ['merchant_uid', 'amount']
-
-#     def create(self, data) :
-#         product_price = ShopProduct.product_price
-#         product_name = ShopProduct.product_name
-#         email = self.context['request'].user.email
-        
