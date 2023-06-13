@@ -263,6 +263,8 @@ ACCOUNT_EMAIL_REQUIRED = True            # email 필드 사용 o
 ACCOUNT_USERNAME_REQUIRED = False        # username 필드 사용 x
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 
+IMP_KEY = os.environ.get('IMP_KEY')
+IMP_SECRET = os.environ.get('IMP_SECRET')
 
 APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
 SCHEDULER_DEFAULT = True
