@@ -44,6 +44,7 @@ class ShopOrder(models.Model):
     업데이트 일자:
     '''
     order_quantity = models.PositiveIntegerField(default=0)
+    order_totalprice = models.PositiveIntegerField(default=0)
     order_date = models.DateTimeField(auto_now_add=True)
     zip_code = models.CharField(max_length=20)
     address = models.CharField(max_length=100)
