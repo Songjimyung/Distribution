@@ -2,8 +2,10 @@ from rest_framework.generics import get_object_or_404
 from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import ShopProduct, ShopCategory, ShopOrder
-from .serializers import ProductListSerializer, CategoryListSerializer, OrderProductSerializer
+from .models import ShopProduct, ShopCategory, ShopOrder, ShopOrderDetail
+from .serializers import (
+    ProductListSerializer, CategoryListSerializer, OrderProductSerializer, OrderDetailSerializer
+)
 from config.permissions import IsAdminUserOrReadonly
 
 
@@ -102,6 +104,7 @@ class CategoryViewAPI(APIView):
     최초 작성일 : 2023.06.12
     업데이트 일자 :
     '''
+
     def post(self, request):
         serializer = CategoryListSerializer(data=request.data)
         if serializer.is_valid():
@@ -114,19 +117,26 @@ class CategoryViewAPI(APIView):
 class OrderProductViewAPI(APIView):
     '''
     작성자 : 장소은
-    내용 : 주문 생성 / 주문 목록 조회 class
+    내용 : 해당 상품에 대한 주문 생성 / 사용자가 proudct_id에 해당하는 상품 목록 조회 
     최초 작성일 : 2023.06.13
     업데이트 일자 :
     '''
-    def get(self, request):
-        orders = ShopOrder.objects.all()
+
+    def get(self, request, product_id):
+        print(request.user.id, product_id)
+        orders = ShopOrder.objects.filter(
+            user=request.user.id, product_id=product_id)
+        print(orders)
         serializer = OrderProductSerializer(orders, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def post(self, request):
+    def post(self, request, product_id):
+        product = get_object_or_404(ShopProduct, id=product_id)
         serializer = OrderProductSerializer(data=request.data)
+        print(request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(product=product)
+            print(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -135,11 +145,26 @@ class OrderProductViewAPI(APIView):
 class OrderDetailViewAPI(APIView):
     '''
     작성자 : 장소은
-    내용 : 주문 상세 조회(주문내역) class
+    내용 : order_id에 대한 주문 상세 조회(주문내역) class
     최초 작성일 : 2023.06.13
     업데이트 일자 :
     '''
+
     def get(self, request, order_id):
-        order = get_object_or_404(ShopOrder, id=order_id)
-        serializer = OrderProductSerializer(order)
+        order = get_object_or_404(ShopOrderDetail, id=order_id)
+        serializer = OrderDetailSerializer(order)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class AdminOrderViewAPI(APIView):
+    '''
+    작성자 : 장소은
+    내용 : 어드민 페이지에서 해당 상품에 대한 모든 주문내역 조회
+    최초 작성일 : 2023.06.09
+    업데이트 일자 :
+    '''
+
+    def get(self, request, product_id):
+        orders = ShopOrder.objects.filter(product_id=product_id)
+        serializer = OrderProductSerializer(orders, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
