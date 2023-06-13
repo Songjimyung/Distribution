@@ -2,10 +2,11 @@ from datetime import datetime
 from pathlib import Path
 import os
 from datetime import timedelta
+from dotenv import read_dotenv
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+read_dotenv(os.path.join(BASE_DIR, '.env'))
 
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
@@ -263,8 +264,6 @@ ACCOUNT_EMAIL_REQUIRED = True            # email 필드 사용 o
 ACCOUNT_USERNAME_REQUIRED = False        # username 필드 사용 x
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 
-IMP_KEY = os.environ.get('IMP_KEY')
-IMP_SECRET = os.environ.get('IMP_SECRET')
 
 APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
 SCHEDULER_DEFAULT = True
