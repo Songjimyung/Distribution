@@ -13,7 +13,7 @@ class ProductTest(APITestCase):
     '''
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create_user(email="testuser@test.com", name="장소은", password="Xptmxm123@456")
+        cls.username = User.objects.create_user(email="testuser@test.com", name="장소은", password="Xptmxm123@456")
         cls.user_data = {"email": "testuser@test.com", "password": "Xptmxm123@456"}
         cls.admin = User.objects.create_superuser(email="adminuser@test.com", name="관리자소은", password="Xptmxm123@456")
         cls.admin_data = {"email": "adminuser@test.com", "password": "Xptmxm123@456"}
