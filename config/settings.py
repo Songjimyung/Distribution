@@ -11,10 +11,10 @@ read_dotenv(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
 
-DEBUG = True
+DEBUG = os.environ.get("DEBUG")
 
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
 
 INSTALLED_APPS = [
@@ -160,11 +160,12 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     },
     'production': {
-        'NAME': 'user_data',
+        'NAME': os.environ.get('MYSQL_NAME'),
         'ENGINE': 'django.db.backends.mysql',
-        'USER': os.environ.get('USER'),
-        'PASSWORD': os.environ.get('PASSWORD'),
-        'PORT': os.environ.get('PORT')
+        'USER': os.environ.get('MYSQL_USER'),
+        'HOST': os.environ.get('MYSQL_HOST'),
+        'PASSWORD': os.environ.get('MYSQL_PASSWORD'),
+        'PORT': os.environ.get('MYSQL_PORT')
     },
 }
 
