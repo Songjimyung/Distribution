@@ -46,6 +46,7 @@ class ProductTest(APITestCase):
             email="adminuser@test.com", username="관리자소은", password="Xptmxm123@456")
         cls.admin_data = {"email": "adminuser@test.com",
                           "password": "Xptmxm123@456"}
+
         cls.faker = Faker()
         cls.category_data = {
             'category_name': "카테고리",
@@ -96,4 +97,5 @@ class ProductTest(APITestCase):
             data=self.product_data,
             HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
         )
+
         self.assertEquals(response.status_code, 403)
