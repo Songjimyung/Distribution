@@ -269,3 +269,14 @@ IMP_SECRET = os.environ.get('IMP_SECRET')
 
 APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
 SCHEDULER_DEFAULT = True
+
+
+REST_AUTH = {
+    'USE_JWT': True,
+    'JWT_AUTH_COOKIE': 'jwt_token',
+    'JWT_AUTH_HTTPONLY': True,
+    'JWT_AUTH_REFRESH_COOKIE': "refresh_token",
+    'JWT_AUTH_SAMESITE': 'Lax',
+    'JWT_AUTH_COOKIE_USE_CSRF': False,
+    'SESSION_LOGIN': False
+}
