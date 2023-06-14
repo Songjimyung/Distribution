@@ -5,13 +5,16 @@ from django.utils.translation import gettext_lazy as _
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from dj_rest_auth.registration.views import SocialLoginView
+from rest_framework.generics import get_object_or_404
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from allauth.socialaccount.providers.google import views as google_view
-from users.serializers import SignUpSerializer, CustomTokenObtainPairSerializer, UserSerializer
+from users.serializers import (
+    SignUpSerializer, CustomTokenObtainPairSerializer, UserSerializer, UserUpdateSerializer
+)
 from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.kakao import views as kakao_view
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
@@ -26,14 +29,7 @@ base_url = os.environ.get('BASE_URL')
 front_base_url = os.environ.get('FRONT_BASE_URL')
 
 
-class UserView(APIView):
-    '''
-    작성자 : 이주한
-    내용 : 회원가입, 회원정보 수정, 회원 비활성화에 사용되는 view 클래스
-    최초 작성일 : 2023.06.06
-    업데이트 일자 :
-    '''
-
+class SignUpView(APIView):
     def post(self, request):
         serializer = SignUpSerializer(data=request.data)
         if serializer.is_valid():
@@ -42,9 +38,21 @@ class UserView(APIView):
         else:
             return Response({"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST)
 
-    # 회원정보 수정 PUT 메소드
+
+class UserView(APIView):
+    '''
+    작성자 : 이주한
+    내용 : 회원정보 수정, 회원 비활성화에 사용되는 view 클래스 
+    최초 작성일 : 2023.06.06
+    업데이트 일자 :
+    '''
     def put(self, request):
-        pass
+        user = get_object_or_404(User, id=request.user.id)
+        serializer = UserUpdateSerializer(user, data=request.data, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "회원 수정이 완료되었습니다."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     # 회원 비활성화 DELETE 메소드
     def delete(self, request):
