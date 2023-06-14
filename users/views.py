@@ -2,6 +2,7 @@ from users.models import User
 import requests
 import os
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from dj_rest_auth.registration.views import SocialLoginView
@@ -54,12 +55,16 @@ class UserView(APIView):
         serializer = UserUpdateSerializer(user, data=request.data, context={"request": request})
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "회원 수정이 완료되었습니다."}, status=status.HTTP_200_OK)
+            return Response({"message": "회원정보 수정이 완료되었습니다."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     # 회원 비활성화 DELETE 메소드
     def delete(self, request):
-        pass
+        user = get_object_or_404(User, id=request.user.id)
+        user.withdrawal = True
+        user.withdrawal_at = timezone.now()
+        user.save()
+        return Response({"message": "회원이 비활성화 되었습니다."}, status=status.HTTP_200_OK)
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
