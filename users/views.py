@@ -17,15 +17,18 @@ from users.serializers import (
     SignUpSerializer, 
     CustomTokenObtainPairSerializer, 
     UserSerializer, 
-    UserUpdateSerializer
+    UserUpdateSerializer,
+    UpdatePasswordSerializer
 )
 from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.kakao import views as kakao_view
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from django.http import JsonResponse
-from rest_framework.permissions import AllowAny
-from django.core.mail import EmailMessage
-import base64
+from rest_framework.permissions import AllowAny, IsAuthenticated
+
+# 회원가입 시 이메일 인증 관련
+# from django.core.mail import EmailMessage
+# import base64
 
 
 state = os.environ.get('STATE')
@@ -41,7 +44,7 @@ def varification_code(sitename):
     내용 : 회원가입시 이메일 인증에 필요한 인증 코드를 생성하는 함수입니다.
             개발 단계에서는 필요하지 않을 수 있어 주석 처리해 두었습니다.
     최초 작성일 : 2023.06.15
-    업데이트 일자 : 2023.06.15
+    업데이트 일자 : 
     '''
     # sitename_bytes = sitename.encode('ascii')
     # sitename_base64 = base64.b64encode(sitename_bytes)
@@ -56,7 +59,7 @@ class SendEmailView(APIView):
     내용 : 회원가입시 이메일 인증에 필요한 메일을 보내는 view 클래스입니다.
             개발 단계에서는 이메일 인증이 번거로울 수 있어 주석 처리해 두었습니다.
     최초 작성일 : 2023.06.15
-    업데이트 일자 : 2023.06.15
+    업데이트 일자 : 
     '''
     def post(self,request):
         # try:
@@ -414,3 +417,29 @@ class UserDetailView(APIView):
         user = User.objects.filter(id=user_id)
         serializer = UserSerializer(user, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UpdatePasswordView(APIView):
+    '''
+    작성자 : 이주한
+    내용 : 사용자가 로그인한 상태에서 본인 계정의 비밀번호를 수정할 때 사용되는 UpdatePasswordView 입니다.
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
+    '''
+    permission_classes = [IsAuthenticated]
+    
+    def put(self, request):
+        user = get_object_or_404(User, id=request.user.id)
+        serializer = UpdatePasswordSerializer(user, data=request.data, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "비밀번호 변경이 완료되었습니다. 다시 로그인해주세요!"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ResetPasswordView(APIView):
+    pass
+
+
+class ResetPasswordEmailView(APIView):
+    pass
