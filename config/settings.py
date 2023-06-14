@@ -275,3 +275,8 @@ EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+
+CARD_NUMBER = os.environ.get('CARD_NUMBER')
+EXPIRY_AT = os.environ.get('EXPIRY_AT')
+BIRTH = os.environ.get('BIRTH')
+PWD_2DIGIT= os.environ.get('PWD_2DIGIT')
