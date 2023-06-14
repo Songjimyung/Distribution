@@ -24,6 +24,8 @@ from allauth.socialaccount.providers.kakao import views as kakao_view
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from django.http import JsonResponse
 from rest_framework.permissions import AllowAny
+from django.core.mail import EmailMessage
+import base64
 
 
 state = os.environ.get('STATE')
@@ -33,8 +35,38 @@ base_url = os.environ.get('BASE_URL')
 front_base_url = os.environ.get('FRONT_BASE_URL')
 
 
+def make64(sitename):
+    sitename_bytes = sitename.encode('ascii')
+    sitename_base64 = base64.b64encode(sitename_bytes)
+    sitename_base64_str = sitename_base64.decode('ascii')
+    return sitename_base64_str
+
+
+class SendEmailView(APIView):
+    def post(self,request):
+        try:
+            User.objects.get(email=email)
+            return Response({"message":"계정이 이미 존재합니다."},status=status.HTTP_400_BAD_REQUEST)
+        except:
+            pass
+        subject='EcoCanvas 인증 메일'
+        email=request.data.get("email")
+        body=make64(email)
+        email = EmailMessage(subject,body,to=[email],)
+        email.send()
+        return Response({"message":"귀하의 이메일에서 인증코드를 확인해주세요."},status=status.HTTP_200_OK)
+
+
 class SignUpView(APIView):
+    '''
+    작성자 : 이주한
+    내용 : 회원가입에 사용되는 view 클래스 
+    최초 작성일 : 2023.06.06
+    업데이트 일자 : 2023.06.14
+    '''
     def post(self, request):
+        if make64(request.data.get("email"))!=request.data.get("check_email"):
+            return Response({"message": f"잘못된 인증코드입니다."}, status=status.HTTP_400_BAD_REQUEST)
         serializer = SignUpSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -48,7 +80,7 @@ class UserView(APIView):
     작성자 : 이주한
     내용 : 회원정보 수정, 회원 비활성화에 사용되는 view 클래스 
     최초 작성일 : 2023.06.06
-    업데이트 일자 :
+    업데이트 일자 : 2023.06.14
     '''
     def put(self, request):
         user = get_object_or_404(User, id=request.user.id)
