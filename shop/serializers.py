@@ -1,6 +1,6 @@
 from rest_framework.serializers import ValidationError
 from rest_framework import serializers
-from .models import ShopProduct, ShopCategory, ShopImageFile
+from .models import ShopProduct, ShopCategory, ShopImageFile, ShopOrder, ShopOrderDetail
 
 
 class PostImageSerializer(serializers.ModelSerializer):
@@ -12,8 +12,9 @@ class PostImageSerializer(serializers.ModelSerializer):
 class ProductListSerializer(serializers.ModelSerializer):
     '''
     작성자:장소은
-    내용: 카테고리별 상품목록 조회시 필요한 Serializer 클래스
+    내용: 카테고리별 상품목록 조회/다중 이미지 업로드 시 필요한 Serializer 클래스
     작성일: 2023.06.07
+    업데이트일: 2023.06.12
     '''
     images = PostImageSerializer(many=True, read_only=True)
     uploaded_images = serializers.ListField(child=serializers.ImageField(
@@ -28,20 +29,9 @@ class ProductListSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         uploaded_images = validated_data.pop('uploaded_images', [])
         product = super().create(validated_data)
-        for image in uploaded_images:
-            ShopImageFile.objects.create(image_file=image, product=product)
+        for images in uploaded_images:
+            ShopImageFile.objects.create(image_file=images, product=product)
         return product
-
-
-class ProductSerializer(serializers.ModelSerializer):
-    '''
-    작성자:장소은
-    내용: 카테고리별 상품 상세 조회시 필요한 Serializer 클래스
-    작성일: 2023.06.07
-    '''
-    class Meta:
-        model = ShopProduct
-        fields = ('product_name', 'product_price', 'product_desc')
 
 
 class CategoryListSerializer(serializers.ModelSerializer):
@@ -53,3 +43,49 @@ class CategoryListSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShopCategory
         fields = '__all__'
+
+
+class OrderDetailSerializer(serializers.ModelSerializer):
+    '''
+    작성자:장소은
+    내용: 주문 상세 정보에 관련해서 필요한 시리얼라이저
+    작성일 : 2023.06.13
+    '''
+    class Meta:
+        model = ShopOrderDetail
+        fields = ['order', 'order_detail_status', 'product_count', 'product']
+
+
+class OrderProductSerializer(serializers.ModelSerializer):
+    '''
+    작성자:장소은
+    내용: 1. 사용자가 주문 생성 시 주문에 대한 정보도 같이 저장됩니다. 
+          2. 주문한 수량만큼 해당 상품의 재고를 출고시킵니다.
+          3. 사용자가 해당 상품에 대한 주문 목록들을 볼 수 있습니다.  
+    작성일 : 2023.06.13
+    '''
+    order_info = OrderDetailSerializer(
+        many=True, read_only=True)
+
+    class Meta:
+        model = ShopOrder
+        fields = ['id', 'order_info', 'order_quantity', 'order_date', 'zip_code', 'address',
+                  'address_detail', 'address_message', 'receiver_name', 'receiver_number', 'user', 'product', 'order_totalprice']
+
+    def create(self, validated_data):
+        print("진입확인")
+        order_quantity = validated_data.get('order_quantity')
+        product_key = validated_data.get('product')
+        print(validated_data)
+        print(product_key.id)
+        order = super().create(validated_data)
+        order_info_list = []
+        product = ShopProduct.objects.get(id=product_key.id)
+        product.product_stock -= order_quantity
+        product.save()
+        print(product.product_stock)
+        order_info = ShopOrderDetail(
+            order=order, product=product, product_count=order_quantity, order_detail_status=0)
+        order_info_list.append(order_info)
+        ShopOrderDetail.objects.bulk_create(order_info_list)
+        return order
