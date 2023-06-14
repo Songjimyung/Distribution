@@ -13,11 +13,13 @@ urlpatterns = [
     path('google/callback/', views.google_callback, name='google_callback'),
     path('google/login/finish/', views.GoogleLogin.as_view(),
          name='google_login_todjango'),
+    path('email_varification/',views.SendEmailView.as_view(),name='send_email'),
+    
     # 회원정보 관련
     path('', views.UserView.as_view(), name='update_or_withdrawal'),
+    
     # 로그인
     path('login/', views.CustomTokenObtainPairView.as_view(), name='log_in'),
-    # path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('list/', views.UserListView().as_view(), name='user_list'),
     path('<int:user_id>/', views.UserDetailView().as_view(), name='user'),
 ]
