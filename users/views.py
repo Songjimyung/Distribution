@@ -13,7 +13,10 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from allauth.socialaccount.providers.google import views as google_view
 from users.serializers import (
-    SignUpSerializer, CustomTokenObtainPairSerializer, UserSerializer, UserUpdateSerializer
+    SignUpSerializer, 
+    CustomTokenObtainPairSerializer, 
+    UserSerializer, 
+    UserUpdateSerializer
 )
 from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.kakao import views as kakao_view
