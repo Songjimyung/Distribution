@@ -27,7 +27,7 @@ class CampaignView(APIView):
     전체 캠페인 리스트를 GET하는 get함수와
     캠페인을 작성할 수 있는 post가 있는 클래스입니다.
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.08
+    업데이트 일자 : 2023.06.14
     """
 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -81,6 +81,8 @@ class CampaignView(APIView):
             }
             return Response(response_data, status=status.HTTP_201_CREATED)
         else:
+            campaign_serializer.is_valid()
+            funding_serializer.is_valid()
             return Response(
                 {
                     "message": "캠페인 및 펀딩 정보가 올바르지 않습니다.",
@@ -96,7 +98,7 @@ class CampaignDetailView(APIView):
     내용 : 캠페인 디테일 뷰 입니다.
     개별 캠페인 GET과 그 캠페인에 대한 PUT, DELETE 요청을 처리합니다.
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.07
+    업데이트 일자 : 2023.06.14
     """
 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -163,6 +165,8 @@ class CampaignDetailView(APIView):
                 }
                 return Response(response_data, status=status.HTTP_200_OK)
             else:
+                campaign_serializer.is_valid()
+                funding_serializer.is_valid()
                 return Response(
                     {
                         "message": "캠페인 수정에 실패했습니다.",
