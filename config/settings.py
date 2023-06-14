@@ -268,3 +268,9 @@ IMP_SECRET = os.environ.get('IMP_SECRET')
 
 APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
 SCHEDULER_DEFAULT = True
+
+
+CARD_NUMBER = os.environ.get('CARD_NUMBER')
+EXPIRY_AT = os.environ.get('EXPIRY_AT')
+BIRTH = os.environ.get('BIRTH')
+PWD_2DIGIT= os.environ.get('PWD_2DIGIT')
