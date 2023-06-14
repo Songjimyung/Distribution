@@ -79,6 +79,34 @@ class SignUpSerializer(serializers.ModelSerializer):
         return validated_data
 
 
+class UserUpdateSerializer(serializers.ModelSerializer):
+    '''
+    작성자 : 이주한
+    내용 : 회원정보 수정에 필요한 UserUpdateSerializer 클래스 입니다.
+    최초 작성일 : 2023.06.14
+    업데이트 일자 :
+    '''
+    class Meta:
+        model = User
+        fields = (
+            "email",
+        )
+        extra_kwargs = {
+            "email": {
+                "error_messages": {
+                    "required": "이메일을 입력해주세요.",
+                    "blank": "이메일을 입력해주세요.",
+                }
+            },
+        }
+
+    def update(self, instance, validated_data):
+        instance.email = validated_data.get("email", instance.email)
+        instance.save()
+
+        return instance
+
+
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     '''
     작성자 : 이주한
