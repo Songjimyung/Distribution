@@ -21,6 +21,7 @@ urlpatterns = [
     # 비밀번호 수정 관련
     path('update_pw/', views.UpdatePasswordView.as_view(), name='update_password'),
     path('reset_pw/', views.ResetPasswordView.as_view(),name='reset_password'),
+    path("reset_pw/<uidb64>/<token>/", views.CheckPasswordTokenView.as_view(), name="password_reset_confirm_view"),
     path('reset_pw/email_code/', views.ResetPasswordEmailView.as_view(),name='reset_password_email'),
     
     # 로그인

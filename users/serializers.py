@@ -3,6 +3,12 @@ from users.models import User
 # from .models import User, password_validator, password_pattern
 from django.contrib.auth.hashers import check_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+from django.utils.encoding import force_str
+from django.core.mail import EmailMessage
+from rest_framework_jwt.settings import api_settings
+import threading
 
 
 class SignUpSerializer(serializers.ModelSerializer):
@@ -185,6 +191,154 @@ class UpdatePasswordSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
+
+
+class EmailThread(threading.Thread):
+    '''
+    작성자 : 이주한
+    내용 : 이메일 전송을 위해 'Thread'를 사용하는 'EmailThread'클래스입니다.
+            run 메소드는 Tread의 start() 메소드로 Tread가 실행될 때 호출됩니다.
+            
+            * Tread를 사용하는 이유: 
+                이메일 전송 작업을 백그라운드에서 비동기적으로 처리하고, 
+                다른 작업과 동시에 진행할 수 있도록 하기 위함입니다.
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
+    '''
+    def __init__(self, email):
+        self.email = email
+        threading.Thread.__init__(self)
+
+    def run(self):
+        self.email.send()
+
+
+class Util:
+    '''
+    작성자 : 이주한
+    내용 : 이메일 전송 시 양식을 정의한 클래스입니다.
+            양식은 EmailMessage의 양식을 따르며, EmailThread(email).start()를 통해
+            이메일 전송 작업이 백그라운드에서 비동기적으로 처리됩니다.
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
+    '''
+    @staticmethod
+    def send_email(message):
+        email = EmailMessage(
+            subject=message["email_subject"],
+            body=message["email_body"],
+            to=[message["to_email"]],
+        )
+        EmailThread(email).start()
+
+
+class ResetPasswordEmailSerializer(serializers.Serializer):
+    '''
+    작성자 : 이주한
+    내용 : ResetPasswordEmailView API가 호출될 때 사용되는 시리얼라이저입니다.
+            사용자가 입력한 이메일이 존재하는 이메일인지 확인 후 존재할 경우
+            로직이 계속되고, 존재하지 않다면 에러 메시지를 띄워줍니다.
+            만약 이메일이 존재한다면 해당 이메일 주소로 비밀번호를 변경할 수 있는
+            링크를 보냅니다.
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
+    '''
+    email = serializers.EmailField(
+        error_messages={
+            "required": "이메일을 입력해주세요.",
+            "blank": "이메일을 입력해주세요.",
+            "invalid": "알맞은 형식의 이메일을 입력해주세요.",
+        }
+    )
+
+    class Meta:
+        fields = ("email",)
+
+    def validate(self, attrs):
+        try:
+            email = attrs.get("email")
+
+            user = User.objects.get(email=email)
+            
+            jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
+            jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
+            payload = jwt_payload_handler(user)
+            uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+            token = jwt_encode_handler(payload)
+
+            frontend_site = "127.0.0.1:5500"
+            absurl = f"http://{frontend_site}/reset_auth.html?uidb64={uidb64}&token={token}"
+
+            email_body = "비밀번호 재설정을 위해 아래 링크를 클릭해주세요. \n " + absurl
+            message = {
+                "email_body": email_body,
+                "to_email": user.email,
+                "email_subject": "비밀번호 재설정",
+            }
+            Util.send_email(message)
+
+            return super().validate(attrs)
+
+        except User.DoesNotExist:
+            raise serializers.ValidationError(detail={"email": "잘못된 이메일입니다. 다시 입력해주세요."})
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    '''
+    작성자 : 이주한
+    내용 : 사용자가 이메일로 받은 비밀번호 재생성 링크를 통해 페이지에 들어가게 될 경우
+            새로운 비밀번호와 새로운 비밀번호를 입력하고 유효성 검증을 거쳐 새로운 
+            비밀번호로 비밀번호를 변경합니다.
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
+    '''
+    password = serializers.CharField(
+        error_messages={
+            "required": "비밀번호를 입력해주세요.",
+            "blank": "비밀번호를 입력해주세요.",
+        }
+    )
+    re_password = serializers.CharField(
+        error_messages={
+            "required": "비밀번호를 입력해주세요.",
+            "blank": "비밀번호를 입력해주세요.",
+        }
+    )
+
+    class Meta:
+        fields = (
+            "password",
+            "re_password",
+            "uidb64",
+        )
+
+    def validate(self, attrs):
+        password = attrs.get("password")
+        re_password = attrs.get("re_password")
+        uidb64 = attrs.get("uidb64")
+        user_id = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(id=user_id)
+
+        if password != re_password:
+            raise serializers.ValidationError(
+                detail={"re_password": "비밀번호가 일치하지 않습니다."}
+            )
+        # # 비밀번호 유효성 검사
+        # if password_validator(password):
+        #     raise serializers.ValidationError(
+        #         detail={"password": "비밀번호는 8자 이상의 영문 대/소문자와 숫자, 특수문자를 포함하여야 합니다."}
+        #     )
+
+        # # 비밀번호 유효성 검사
+        # if password_pattern(password):
+        #     raise serializers.ValidationError(
+        #         detail={"password": "비밀번호는 연속해서 3자리 이상 동일한 영문,숫자,특수문자 사용이 불가합니다."}
+        #     )
+        
+        user.set_password(password)
+        user.save()
+
+        return super().validate(attrs)
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):

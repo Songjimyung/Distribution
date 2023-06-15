@@ -1,6 +1,8 @@
 from users.models import User
 import requests
 import os
+import jwt
+import traceback
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.http import HttpResponseRedirect
@@ -18,17 +20,17 @@ from users.serializers import (
     CustomTokenObtainPairSerializer, 
     UserSerializer, 
     UserUpdateSerializer,
-    UpdatePasswordSerializer
+    UpdatePasswordSerializer,
+    ResetPasswordSerializer,
+    ResetPasswordEmailSerializer
 )
 from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.kakao import views as kakao_view
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from django.http import JsonResponse
 from rest_framework.permissions import AllowAny, IsAuthenticated
-
-# 회원가입 시 이메일 인증 관련
-# from django.core.mail import EmailMessage
-# import base64
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
 
 
 state = os.environ.get('STATE')
@@ -36,6 +38,7 @@ kakao_callback_uri = os.environ.get('KAKAO_CALLBACK_URI')
 google_callback_uri = os.environ.get('GOOGLE_CALLBACK_URI')
 base_url = os.environ.get('BASE_URL')
 front_base_url = os.environ.get('FRONT_BASE_URL')
+secret_key = os.environ.get('SECRET_KEY')
 
 
 def varification_code(sitename):
@@ -85,7 +88,7 @@ class SignUpView(APIView):
     업데이트 일자 : 2023.06.15
     '''
     def post(self, request):
-        # if varification_code(request.data.get("email"))!=request.data.get("check_email"):
+        # if varification_code(request.data.get("email"))!=request.data.get("check_code"):
         #     return Response({"message": f"잘못된 인증코드입니다."}, status=status.HTTP_400_BAD_REQUEST)
         serializer = SignUpSerializer(data=request.data)
         if serializer.is_valid():
@@ -438,8 +441,64 @@ class UpdatePasswordView(APIView):
 
 
 class ResetPasswordView(APIView):
-    pass
+    '''
+    작성자 : 이주한
+    내용 : 사용자가 비밀번호를 분실했을 시 비밀번호를 변경할 수 있도록 비밀번호를 재설정하는 ResetPasswordView 입니다.
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
+    '''
+    permission_classes = [AllowAny]
+    
+    def put(self, request):
+        serializer = ResetPasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            return Response({"message": "비밀번호 재설정 완료"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ResetPasswordEmailView(APIView):
-    pass
+    '''
+    작성자 : 이주한
+    내용 : 사용자가 비밀번호를 분실했을 시 비밀번호를 변경할 수 있도록 
+            비밀번호를 재설정하는 링크를 사용자의 메일로 보내줍니다. 
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
+    '''
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        serializer = ResetPasswordEmailSerializer(data=request.data, context={"request": request})
+        if serializer.is_valid():
+            return Response({"message": "비밀번호 재설정 이메일을 발송했습니다. 확인부탁드립니다."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CheckPasswordTokenView(APIView):
+    '''
+    작성자 : 이주한
+    내용 : 사용자가 받은 비밀번호 재설정 링크를 클릭했을 시
+            유효한 링크인지 링크에 담겨진 url 파라미터 값으로 검증을 합니다.
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
+    '''
+    permission_classes = [AllowAny]
+
+    def get(self, request, uidb64, token):
+        try:
+            user_id = force_str(urlsafe_base64_decode(uidb64))
+            user = get_object_or_404(User, pk=user_id)
+            payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+            
+            if payload['user_id'] != user.id:
+                return Response('토큰이 올바르지 않습니다', status=status.HTTP_400_BAD_REQUEST)
+            
+            return Response({"uidb64": uidb64, "token": token}, status=status.HTTP_200_OK)
+        
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+        except jwt.ExpiredSignatureError:
+            return Response('만료된 토큰입니다', status=status.HTTP_400_BAD_REQUEST)
+        except jwt.exceptions.DecodeError:
+            return Response('잘못된 토큰입니다', status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(traceback.format_exc())
