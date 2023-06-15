@@ -123,20 +123,16 @@ class OrderProductViewAPI(APIView):
     '''
 
     def get(self, request, product_id):
-        print(request.user.id, product_id)
         orders = ShopOrder.objects.filter(
             user=request.user.id, product_id=product_id)
-        print(orders)
         serializer = OrderProductSerializer(orders, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, product_id):
         product = get_object_or_404(ShopProduct, id=product_id)
         serializer = OrderProductSerializer(data=request.data)
-        print(request.data)
         if serializer.is_valid():
             serializer.save(product=product)
-            print(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -151,8 +147,8 @@ class OrderDetailViewAPI(APIView):
     '''
 
     def get(self, request, order_id):
-        order = get_object_or_404(ShopOrderDetail, id=order_id)
-        serializer = OrderDetailSerializer(order)
+        order = get_object_or_404(ShopOrder, id=order_id)
+        serializer = OrderProductSerializer(order)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -167,4 +163,31 @@ class AdminOrderViewAPI(APIView):
     def get(self, request, product_id):
         orders = ShopOrder.objects.filter(product_id=product_id)
         serializer = OrderProductSerializer(orders, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class MypageOrderViewAPI(APIView):
+    '''
+    작성자 : 장소은
+    내용 : 마이페이지에서 유저의 모든 주문내역 조회
+    최초 작성일 : 2023.06.14
+    업데이트 일자 :
+    '''
+
+    def get(self, request):
+        orders = ShopOrder.objects.filter(user=request.user.id)
+        serializer = OrderProductSerializer(orders, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ProductRecentListViewAPI(APIView):
+    '''
+    작성자:장소은
+    내용: 최신 상품 목록 조회 API
+    작성일: 2023.06.15
+    '''
+
+    def get(self, request):
+        products = ShopProduct.objects.all().order_by('-product_date')
+        serializer = ProductListSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
