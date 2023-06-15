@@ -147,8 +147,8 @@ class OrderDetailViewAPI(APIView):
     '''
 
     def get(self, request, order_id):
-        order = get_object_or_404(ShopOrderDetail, id=order_id)
-        serializer = OrderDetailSerializer(order)
+        order = get_object_or_404(ShopOrder, id=order_id)
+        serializer = OrderProductSerializer(order)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
