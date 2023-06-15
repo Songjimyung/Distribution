@@ -178,3 +178,16 @@ class MypageOrderViewAPI(APIView):
         orders = ShopOrder.objects.filter(user=request.user.id)
         serializer = OrderProductSerializer(orders, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ProductRecentListViewAPI(APIView):
+    '''
+    작성자:장소은
+    내용: 최신 상품 목록 조회 API
+    작성일: 2023.06.15
+    '''
+
+    def get(self, request):
+        products = ShopProduct.objects.all().order_by('product_date')
+        serializer = ProductListSerializer(products, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -17,5 +17,7 @@ urlpatterns = [
          views.OrderDetailViewAPI.as_view(), name='orderdetail_view'),
     path('order/list/<int:product_id>/',
          views.AdminOrderViewAPI.as_view(), name='admin_order_view'),
-    path('mypage/order/', views.MypageOrderViewAPI.as_view(), name='my_order_view')
+    path('mypage/order/', views.MypageOrderViewAPI.as_view(), name='my_order_view'),
+    path('products/list/recent/', views.ProductRecentListViewAPI.as_view(),
+         name='order_by_recent_view')
 ]
