@@ -18,6 +18,7 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
 
 INSTALLED_APPS = [
+    # 'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -95,9 +96,6 @@ TEMPLATES = [
     },
 ]
 
-
-
-
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
@@ -173,8 +171,7 @@ DATABASES = {
     },
 }
 
-DATABASES['default'] = DATABASES['dev' if DEBUG else 'production']
-
+DATABASES['default'] = DATABASES['dev' if DEBUG == 'True' else 'production']
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -190,7 +187,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-
 
 LANGUAGE_CODE = "ko-kr"
 
@@ -215,7 +211,7 @@ SIMPLE_JWT = {
 CORS_ALLOW_ALL_ORIGINS = False
 
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
+    'http://localhost:3000', 'http://127.0.0.1:5500'
 ]
 
 CORS_ALLOW_CREDENTIALS = True  # cross-site HTTP요청에 Cookie 추가
@@ -227,8 +223,6 @@ CORS_ALLOW_HEADERS = [
 ]
 
 AUTH_USER_MODEL = 'users.User'
-
-
 
 ACCOUNT_EMAIL_REQUIRED = True            # email 필드 사용 o
 ACCOUNT_USERNAME_REQUIRED = False        # username 필드 사용 x
@@ -242,7 +236,7 @@ SCHEDULER_DEFAULT = True
 
 USE_S3 = os.environ.get('USE_S3')
 
-if USE_S3:
+if USE_S3 == "True":
     DEFAULT_FILE_STORAGE = 'config.asset_starage.MediaStorage'
 
     AWS_ACCESS_KEY_ID = os.environ.get('MY_AWS_ACCESS_KEY_ID')
@@ -269,3 +263,15 @@ else:
 
     STATIC_URL = '/static/'
     STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+
+CARD_NUMBER = os.environ.get('CARD_NUMBER')
+EXPIRY_AT = os.environ.get('EXPIRY_AT')
+BIRTH = os.environ.get('BIRTH')
+PWD_2DIGIT= os.environ.get('PWD_2DIGIT')
