@@ -188,6 +188,6 @@ class ProductRecentListViewAPI(APIView):
     '''
 
     def get(self, request):
-        products = ShopProduct.objects.all().order_by('product_date')
+        products = ShopProduct.objects.all().order_by('-product_date')
         serializer = ProductListSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
