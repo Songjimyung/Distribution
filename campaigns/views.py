@@ -264,6 +264,7 @@ class CampaignReviewView(APIView):
         캠페인 리뷰를 작성하는 Post 요청 함수입니다.
         """
         serializer = CampaignReviewCreateSerializer(data=request.data)
+        print(serializer)
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user, campaign_id=campaign_id)
         return Response(
@@ -501,6 +502,7 @@ class MyAttendCampaignView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        mycampaigns = Campaign.objects.filter(participant=request.user)
+        mycampaigns = Campaign.objects.filter(
+            participant=request.user).order_by('-activity_end_date')
         serializer = CampaignCreateSerializer(mycampaigns, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

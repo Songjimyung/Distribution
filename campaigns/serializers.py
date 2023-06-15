@@ -166,6 +166,7 @@ class CampaignReviewCreateSerializer(serializers.ModelSerializer):
         fields = (
             "title",
             "content",
+            "image"
         )
 
 

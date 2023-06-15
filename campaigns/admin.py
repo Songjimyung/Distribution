@@ -131,6 +131,7 @@ class CampaignReviewDisplay(admin.ModelAdmin):
         "campaign",
         "title",
         "content",
+        "image"
     ]
     readonly_fields = (
         "created_at",

@@ -19,7 +19,8 @@ class ProductViewAPI(APIView):
 
     def get(self, request, category_id):
         category = get_object_or_404(ShopCategory, id=category_id)
-        products = ShopProduct.objects.filter(category_id=category.id)
+        products = ShopProduct.objects.filter(
+            category_id=category.id).order_by('-product_date')
         serializer = ProductListSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -36,14 +37,18 @@ class ProductViewAPI(APIView):
 class ProductDetailViewAPI(APIView):
     '''
     작성자:장소은
-    내용: 카테고리별 상품 상세 조회/ 수정 / 삭제 (일반유저는 조회만)
+    내용: 카테고리별 상품 상세 조회/ 수정 / 삭제 (일반유저는 조회만) 
+          +) 조회수 기능 추가
     작성일: 2023.06.06
+    업데이트일: 2023.06.15
     '''
     permission_classes = [IsAdminUserOrReadonly]
 
     def get(self, request, product_id):
         product = get_object_or_404(ShopProduct, id=product_id)
         serializer = ProductListSerializer(product)
+        product.hits += 1
+        product.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def patch(self, request, product_id):
@@ -78,7 +83,7 @@ class AdminProductViewAPI(APIView):
     '''
 
     def get(self, request):
-        products = ShopProduct.objects.all()
+        products = ShopProduct.objects.all().order_by('-product_date')
         serializer = ProductListSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -138,20 +143,6 @@ class OrderProductViewAPI(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class OrderDetailViewAPI(APIView):
-    '''
-    작성자 : 장소은
-    내용 : order_id에 대한 주문 상세 조회(주문내역) class
-    최초 작성일 : 2023.06.13
-    업데이트 일자 :
-    '''
-
-    def get(self, request, order_id):
-        order = get_object_or_404(ShopOrder, id=order_id)
-        serializer = OrderProductSerializer(order)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
 class AdminOrderViewAPI(APIView):
     '''
     작성자 : 장소은
@@ -188,6 +179,51 @@ class ProductRecentListViewAPI(APIView):
     '''
 
     def get(self, request):
-        products = ShopProduct.objects.all().order_by('-product_date')
+        products = ShopProduct.objects.all()
+        serializer = ProductListSerializer(products, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CategoryProductHitsViewAPI(APIView):
+    '''
+    작성자:장소은
+    내용: 카테고리별 상품의 조회수순 정렬 
+    작성일: 2023.06.15
+    '''
+
+    def get(self, request, category_id):
+        category = get_object_or_404(ShopCategory, id=category_id)
+        products = ShopProduct.objects.filter(
+            category_id=category.id).order_by('-hits')
+        serializer = ProductListSerializer(products, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CategoryProductHighpriceViewAPI(APIView):
+    '''
+    작성자: 장소은
+    내용: 카테고리별 상품 높은 금액순 정렬
+    작성일: 2023.06.15
+    '''
+
+    def get(self, request, category_id):
+        category = get_object_or_404(ShopCategory, id=category_id)
+        products = ShopProduct.objects.filter(
+            category_id=category.id).order_by('-product_price')
+        serializer = ProductListSerializer(products, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CategoryProductLowpriceViewAPI(APIView):
+    '''
+    작성자: 장소은
+    내용: 카테고리별 상품 낮은 금액순 정렬
+    작성일: 2023.06.15
+    '''
+
+    def get(self, request, category_id):
+        category = get_object_or_404(ShopCategory, id=category_id)
+        products = ShopProduct.objects.filter(
+            category_id=category.id).order_by('product_price')
         serializer = ProductListSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
