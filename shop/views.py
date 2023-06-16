@@ -12,15 +12,28 @@ from config.permissions import IsAdminUserOrReadonly
 class ProductViewAPI(APIView):
     '''
     작성자:장소은
-    내용: 카테고리별 상품목록 조회(일반,관리자) / 상품 등록(관리자) 
+    내용: 카테고리별 상품목록 조회(조회순/높은금액/낮은금액/최신순) (일반,관리자) / 상품 등록(관리자) 
     작성일: 2023.06.06
+    업데이트일: 2023.06.16
     '''
     permission_classes = [IsAdminUserOrReadonly]
 
     def get(self, request, category_id):
         category = get_object_or_404(ShopCategory, id=category_id)
-        products = ShopProduct.objects.filter(
-            category_id=category.id).order_by('-product_date')
+
+        sort_by = request.GET.get('sort_by')
+        if sort_by == 'hits':
+            products = ShopProduct.objects.filter(
+                category_id=category.id).order_by('-hits')
+        elif sort_by == 'high_price':
+            products = ShopProduct.objects.filter(
+                category_id=category.id).order_by('-product_price')
+        elif sort_by == 'low_price':
+            products = ShopProduct.objects.filter(
+                category_id=category.id).order_by('product_price')
+        else:
+            products = ShopProduct.objects.filter(
+                category_id=category.id).order_by('-product_date')
         serializer = ProductListSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -67,13 +80,6 @@ class ProductDetailViewAPI(APIView):
         return Response({"massage": "삭제 완료"}, status=status.HTTP_204_NO_CONTENT)
 
 
-def category_list(request):
-    categories = ShopCategory.objects.all()
-    data = [{'category_id': category.id, 'category_name': category.category_name}
-            for category in categories]
-    return Response({"massage": "삭제 완료"}, status=status.HTTP_204_NO_CONTENT)
-
-
 class AdminProductViewAPI(APIView):
     '''
     작성자 : 박지홍
@@ -90,9 +96,9 @@ class AdminProductViewAPI(APIView):
 
 class AdminCategoryViewAPI(APIView):
     '''
-    작성자 : 박지홍
-    내용 : 어드민 페이지에서 전체 카테고리 목록을 받아오기위해 사용
-    최초 작성일 : 2023.06.09
+    작성자 : 박지홍, 장소은
+    내용 : 어드민 페이지에서 전체 카테고리 목록을 받아오기 및 카테고리 생성하기 위해 사용
+    최초 작성일 : 2023.06.09, 2023.06.12
     업데이트 일자 :
     '''
 
@@ -100,15 +106,6 @@ class AdminCategoryViewAPI(APIView):
         categorys = ShopCategory.objects.all()
         serializer = CategoryListSerializer(categorys, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class CategoryViewAPI(APIView):
-    '''
-    작성자 : 장소은
-    내용 : 어드민 페이지에서 카테고리 생성할 때 사용
-    최초 작성일 : 2023.06.12
-    업데이트 일자 :
-    '''
 
     def post(self, request):
         serializer = CategoryListSerializer(data=request.data)
@@ -180,50 +177,5 @@ class ProductRecentListViewAPI(APIView):
 
     def get(self, request):
         products = ShopProduct.objects.all()
-        serializer = ProductListSerializer(products, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class CategoryProductHitsViewAPI(APIView):
-    '''
-    작성자:장소은
-    내용: 카테고리별 상품의 조회수순 정렬 
-    작성일: 2023.06.15
-    '''
-
-    def get(self, request, category_id):
-        category = get_object_or_404(ShopCategory, id=category_id)
-        products = ShopProduct.objects.filter(
-            category_id=category.id).order_by('-hits')
-        serializer = ProductListSerializer(products, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class CategoryProductHighpriceViewAPI(APIView):
-    '''
-    작성자: 장소은
-    내용: 카테고리별 상품 높은 금액순 정렬
-    작성일: 2023.06.15
-    '''
-
-    def get(self, request, category_id):
-        category = get_object_or_404(ShopCategory, id=category_id)
-        products = ShopProduct.objects.filter(
-            category_id=category.id).order_by('-product_price')
-        serializer = ProductListSerializer(products, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class CategoryProductLowpriceViewAPI(APIView):
-    '''
-    작성자: 장소은
-    내용: 카테고리별 상품 낮은 금액순 정렬
-    작성일: 2023.06.15
-    '''
-
-    def get(self, request, category_id):
-        category = get_object_or_404(ShopCategory, id=category_id)
-        products = ShopProduct.objects.filter(
-            category_id=category.id).order_by('product_price')
         serializer = ProductListSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
