@@ -1,8 +1,7 @@
 from users.models import User
 import requests
 import os
-import jwt
-import traceback
+import base64
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.http import HttpResponseRedirect
@@ -29,8 +28,10 @@ from allauth.socialaccount.providers.kakao import views as kakao_view
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from django.http import JsonResponse
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from django.utils.encoding import force_str
+from django.utils.encoding import DjangoUnicodeDecodeError, force_str
 from django.utils.http import urlsafe_base64_decode
+from django.core.mail import EmailMessage
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 
 
 state = os.environ.get('STATE')
@@ -41,7 +42,7 @@ front_base_url = os.environ.get('FRONT_BASE_URL')
 secret_key = os.environ.get('SECRET_KEY')
 
 
-def varification_code(sitename):
+def verification_code(email):
     '''
     작성자 : 이주한
     내용 : 회원가입시 이메일 인증에 필요한 인증 코드를 생성하는 함수입니다.
@@ -49,10 +50,10 @@ def varification_code(sitename):
     최초 작성일 : 2023.06.15
     업데이트 일자 : 
     '''
-    # sitename_bytes = sitename.encode('ascii')
-    # sitename_base64 = base64.b64encode(sitename_bytes)
-    # sitename_base64_str = sitename_base64.decode('ascii')
-    # return sitename_base64_str
+    # email_bytes = email.encode('ascii')
+    # email_base64 = base64.b64encode(email_bytes)
+    # email_base64_str = email_base64.decode('ascii')
+    # return email_base64_str
     pass
 
 
@@ -65,17 +66,19 @@ class SendEmailView(APIView):
     업데이트 일자 : 
     '''
     def post(self,request):
-        # try:
-        #     User.objects.get(email=email)
-        #     return Response({"message":"계정이 이미 존재합니다."},status=status.HTTP_400_BAD_REQUEST)
-        # except:
-        #     pass
-        # subject='EcoCanvas 인증 메일'
         # email=request.data.get("email")
-        # body=varification_code(email)
-        # email = EmailMessage(subject,body,to=[email],)
-        # email.send()
-        # return Response({"message":"귀하의 이메일에서 인증코드를 확인해주세요."},status=status.HTTP_200_OK)
+        # if email == "":
+        #     return Response({'error':'이메일을 입력해주세요.'},status=status.HTTP_400_BAD_REQUEST)
+        # else:
+        #     try:
+        #         User.objects.get(email=email)
+        #         return Response({"message":"계정이 이미 존재합니다."},status=status.HTTP_400_BAD_REQUEST)
+        #     except:
+        #         subject='EcoCanvas 인증 코드 메일'
+        #         body=verification_code(email)
+        #         email_content = EmailMessage(subject,body,to=[email],)
+        #         email_content.send()
+        #         return Response({"message":"귀하의 이메일에서 인증코드를 확인해주세요."},status=status.HTTP_200_OK)
         pass
 
 
@@ -88,7 +91,7 @@ class SignUpView(APIView):
     업데이트 일자 : 2023.06.15
     '''
     def post(self, request):
-        # if varification_code(request.data.get("email"))!=request.data.get("check_code"):
+        # if verification_code(request.data.get("email"))!=request.data.get("check_code"):
         #     return Response({"message": f"잘못된 인증코드입니다."}, status=status.HTTP_400_BAD_REQUEST)
         serializer = SignUpSerializer(data=request.data)
         if serializer.is_valid():
@@ -486,19 +489,11 @@ class CheckPasswordTokenView(APIView):
     def get(self, request, uidb64, token):
         try:
             user_id = force_str(urlsafe_base64_decode(uidb64))
-            user = get_object_or_404(User, pk=user_id)
-            payload = jwt.decode(token, secret_key, algorithms=['HS256'])
-            
-            if payload['user_id'] != user.id:
-                return Response('토큰이 올바르지 않습니다', status=status.HTTP_400_BAD_REQUEST)
-            
+            user = get_object_or_404(User, id=user_id)
+            if not PasswordResetTokenGenerator().check_token(user, token):
+                return Response({"message": "링크가 유효하지 않습니다."}, status=status.HTTP_401_UNAUTHORIZED)
+
             return Response({"uidb64": uidb64, "token": token}, status=status.HTTP_200_OK)
-        
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            user = None
-        except jwt.ExpiredSignatureError:
-            return Response('만료된 토큰입니다', status=status.HTTP_400_BAD_REQUEST)
-        except jwt.exceptions.DecodeError:
-            return Response('잘못된 토큰입니다', status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            print(traceback.format_exc())
+
+        except DjangoUnicodeDecodeError as identifier:
+            return Response({"message": "링크가 유효하지 않습니다."}, status=status.HTTP_401_UNAUTHORIZED)
