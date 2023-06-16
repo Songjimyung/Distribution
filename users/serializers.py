@@ -1,10 +1,11 @@
-from rest_framework import serializers
+from rest_framework import serializers, exceptions
 from users.models import User
-# from .models import User, password_validator, password_pattern
+from .models import User, password_validator, password_pattern
 from django.contrib.auth.hashers import check_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes
+from django.utils.encoding import smart_bytes, force_bytes
 from django.utils.encoding import force_str
 from django.core.mail import EmailMessage
 from rest_framework_jwt.settings import api_settings
@@ -247,7 +248,6 @@ class ResetPasswordEmailSerializer(serializers.Serializer):
         error_messages={
             "required": "이메일을 입력해주세요.",
             "blank": "이메일을 입력해주세요.",
-            "invalid": "알맞은 형식의 이메일을 입력해주세요.",
         }
     )
 
@@ -259,12 +259,8 @@ class ResetPasswordEmailSerializer(serializers.Serializer):
             email = attrs.get("email")
 
             user = User.objects.get(email=email)
-            
-            jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
-            jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
-            payload = jwt_payload_handler(user)
-            uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-            token = jwt_encode_handler(payload)
+            uidb64 = urlsafe_base64_encode(smart_bytes(user.id))
+            token = PasswordResetTokenGenerator().make_token(user)
 
             frontend_site = "127.0.0.1:5500"
             absurl = f"http://{frontend_site}/reset_auth.html?uidb64={uidb64}&token={token}"
@@ -304,11 +300,14 @@ class ResetPasswordSerializer(serializers.Serializer):
             "blank": "비밀번호를 입력해주세요.",
         }
     )
+    token = serializers.CharField(max_length=100, write_only=True)
+    uidb64 = serializers.CharField(max_length=100, write_only=True)
 
     class Meta:
         fields = (
             "password",
             "re_password",
+            "token",
             "uidb64",
         )
 
@@ -316,25 +315,26 @@ class ResetPasswordSerializer(serializers.Serializer):
         password = attrs.get("password")
         re_password = attrs.get("re_password")
         uidb64 = attrs.get("uidb64")
+        token = attrs.get("token")
         user_id = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(id=user_id)
+        
+        # # 토큰이 유효여부
+        # if PasswordResetTokenGenerator().check_token(user, token) == False:
+        #     raise exceptions.AuthenticationFailed("링크가 유효하지 않습니다.", 401)
 
+        # 비밀번호 일치
         if password != re_password:
-            raise serializers.ValidationError(
-                detail={"re_password": "비밀번호가 일치하지 않습니다."}
-            )
+            raise serializers.ValidationError(detail={"password": "비밀번호가 일치하지 않습니다."})
+
         # # 비밀번호 유효성 검사
         # if password_validator(password):
-        #     raise serializers.ValidationError(
-        #         detail={"password": "비밀번호는 8자 이상의 영문 대/소문자와 숫자, 특수문자를 포함하여야 합니다."}
-        #     )
+        #     raise serializers.ValidationError(detail={"password": "비밀번호는 8자 이상 16자이하의 영문 대/소문자, 숫자, 특수문자 조합이어야 합니다."})
 
-        # # 비밀번호 유효성 검사
+        # # 비밀번호 문자열 동일여부 검사
         # if password_pattern(password):
-        #     raise serializers.ValidationError(
-        #         detail={"password": "비밀번호는 연속해서 3자리 이상 동일한 영문,숫자,특수문자 사용이 불가합니다."}
-        #     )
-        
+        #     raise serializers.ValidationError(detail={"password": "비밀번호는 3자리 이상 동일한 영문/사용 사용 불가합니다."})
+
         user.set_password(password)
         user.save()
 
