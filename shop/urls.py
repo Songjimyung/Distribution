@@ -2,8 +2,10 @@ from django.urls import path
 from shop import views
 
 urlpatterns = [
+    path('products/list/', views.ProductListViewAPI.as_view(),
+         name='product_sortby_view'),
     path('products/list/<int:category_id>/',
-         views.ProductViewAPI.as_view(), name='product_view'),
+         views.ProductCategoryListViewAPI.as_view(), name='category_sortby_product_view'),
     path('products/<int:product_id>/',
          views.ProductDetailViewAPI.as_view(), name='product_detail_view'),
     path('products/list/', views.AdminProductViewAPI.as_view(),
@@ -15,6 +17,4 @@ urlpatterns = [
     path('order/list/<int:product_id>/',
          views.AdminOrderViewAPI.as_view(), name='admin_order_view'),
     path('mypage/order/', views.MypageOrderViewAPI.as_view(), name='my_order_view'),
-    path('products/list/recent/', views.ProductRecentListViewAPI.as_view(),
-         name='order_by_recent_view')
 ]

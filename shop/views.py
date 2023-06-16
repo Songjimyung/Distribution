@@ -7,9 +7,41 @@ from .serializers import (
     ProductListSerializer, CategoryListSerializer, OrderProductSerializer, OrderDetailSerializer
 )
 from config.permissions import IsAdminUserOrReadonly
+from rest_framework.pagination import PageNumberPagination
 
 
-class ProductViewAPI(APIView):
+class CustomPagination(PageNumberPagination):
+    page_size = 3
+    page_size_query_param = 'page_size'
+    max_page_size = 60
+
+
+class ProductListViewAPI(APIView):
+    '''
+    작성자:장소은
+    내용: 전체 상품 목록 쿼리 매개변수 통해 조건별 정렬 조회 API
+    작성일: 2023.06.16
+    '''
+    pagination_class = CustomPagination
+
+    def get(self, request):
+        sort_by = request.GET.get('sort_by')
+        if sort_by == 'hits':
+            products = ShopProduct.objects.all().order_by('-hits')
+        elif sort_by == 'high_price':
+            products = ShopProduct.objects.all().order_by('-product_price')
+        elif sort_by == 'low_price':
+            products = ShopProduct.objects.all().order_by('product_price')
+        else:
+            products = ShopProduct.objects.all().order_by('-product_date')
+        paginator = self.pagination_class()
+        result_page = paginator.paginate_queryset(products, request)
+        serializer = ProductListSerializer(result_page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
+
+
+class ProductCategoryListViewAPI(APIView):
     '''
     작성자:장소은
     내용: 카테고리별 상품목록 조회(조회순/높은금액/낮은금액/최신순) (일반,관리자) / 상품 등록(관리자) 
@@ -17,6 +49,7 @@ class ProductViewAPI(APIView):
     업데이트일: 2023.06.16
     '''
     permission_classes = [IsAdminUserOrReadonly]
+    pagination_class = CustomPagination
 
     def get(self, request, category_id):
         category = get_object_or_404(ShopCategory, id=category_id)
@@ -34,8 +67,12 @@ class ProductViewAPI(APIView):
         else:
             products = ShopProduct.objects.filter(
                 category_id=category.id).order_by('-product_date')
-        serializer = ProductListSerializer(products, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        paginator = self.pagination_class()
+        result_page = paginator.paginate_queryset(products, request)
+        serializer = ProductListSerializer(result_page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
 
     def post(self, request, category_id):
         category = get_object_or_404(ShopCategory, id=category_id)
@@ -165,17 +202,4 @@ class MypageOrderViewAPI(APIView):
     def get(self, request):
         orders = ShopOrder.objects.filter(user=request.user.id)
         serializer = OrderProductSerializer(orders, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class ProductRecentListViewAPI(APIView):
-    '''
-    작성자:장소은
-    내용: 최신 상품 목록 조회 API
-    작성일: 2023.06.15
-    '''
-
-    def get(self, request):
-        products = ShopProduct.objects.all()
-        serializer = ProductListSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
