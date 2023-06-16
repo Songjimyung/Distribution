@@ -33,7 +33,7 @@ class Campaign(BaseModel):
     글 게시 시, 활동이 없는 캠페인모금만 있다면 비워놔도 좋다고 써줘야할 것 같습니다
     is_funding이 False라면 Backoffice 검토 없이 그냥 게시해보는 것도 좋을 것 같아요
 
-    캠페인 참여 유저 필드는 아직 미구현
+    캠페인 참여 구현완료
     최초 작성일 : 2023.06.06
     업데이트 일자 : 2023.06.08
     """
@@ -77,8 +77,9 @@ class CampaignReview(BaseModel):
     """
     작성자 : 최준영
     내용 : 캠페인 리뷰 모델입니다.
+    리뷰 모델에 이미지 추가했습니다.
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.08
+    업데이트 일자 : 2023.06.16
     """
 
     class Meta:
@@ -88,6 +89,7 @@ class CampaignReview(BaseModel):
     campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="reviews")
     title = models.CharField("캠페인 리뷰 제목", max_length=50)
     content = models.TextField("캠페인 리뷰 내용")
+    image = models.ImageField("캠페인 리뷰 이미지", blank=True, null=True, upload_to="review/%Y/%m/")
 
     def __str__(self):
         return str(self.title)
@@ -135,7 +137,7 @@ class Funding(BaseModel):
     )
     goal = models.PositiveIntegerField("펀딩 목표 금액")
     current = models.PositiveIntegerField("펀딩 현재 금액", default=0)
-    approve_file = models.FileField("펀딩 승인 파일", upload_to="%Y/%m/", null=True, blank=True)
+    approve_file = models.FileField("펀딩 승인 파일", upload_to="funding/%Y/%m/", null=True, blank=True)
 
     def __str__(self):
         return str(self.goal)
