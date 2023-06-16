@@ -27,7 +27,7 @@ class CampaignView(APIView):
     전체 캠페인 리스트를 GET하는 get함수와
     캠페인을 작성할 수 있는 post가 있는 클래스입니다.
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.08
+    업데이트 일자 : 2023.06.14
     """
 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -82,6 +82,8 @@ class CampaignView(APIView):
             }
             return Response(response_data, status=status.HTTP_201_CREATED)
         else:
+            campaign_serializer.is_valid()
+            funding_serializer.is_valid()
             return Response(
                 {
                     "message": "캠페인 및 펀딩 정보가 올바르지 않습니다.",
@@ -97,7 +99,7 @@ class CampaignDetailView(APIView):
     내용 : 캠페인 디테일 뷰 입니다.
     개별 캠페인 GET과 그 캠페인에 대한 PUT, DELETE 요청을 처리합니다.
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.07
+    업데이트 일자 : 2023.06.14
     """
 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -165,6 +167,8 @@ class CampaignDetailView(APIView):
                 }
                 return Response(response_data, status=status.HTTP_200_OK)
             else:
+                campaign_serializer.is_valid()
+                funding_serializer.is_valid()
                 return Response(
                     {
                         "message": "캠페인 수정에 실패했습니다.",
@@ -202,21 +206,31 @@ class CampaignLikeView(APIView):
     작성자 : 최준영
     내용 : 캠페인 좋아요 뷰 입니다.
     캠페인에 대한 좋아요 POST 요청을 처리합니다.
+    is_liked라는 value를 모델에 정의하지 않아도 임시값으로 프론트에 넘겨줄 수 있는 듯 합니다.
+    좋아요 버튼을 누른 상태 판별을 위해 is_liked값 GET요청을 추가했습니다.
     최초 작성일 : 2023.06.09
-    업데이트 일자 : 2023.06.11
+    업데이트 일자 : 2023.06.15
     """
 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    
+    def get(self, request, campaign_id):
+        queryset = get_object_or_404(Campaign, id=campaign_id)
+        is_liked = queryset.like.filter(id=request.user.id).exists()
+        return Response({'is_liked': is_liked}, status=status.HTTP_200_OK)
 
     def post(self, request, campaign_id):
         queryset = get_object_or_404(Campaign, id=campaign_id)
         if queryset.like.filter(id=request.user.id).exists():
             queryset.like.remove(request.user)
-            return Response({'message': '좋아요 취소!'}, status=status.HTTP_200_OK)
+            is_liked = False
+            message = '좋아요 취소!'
         else:
             queryset.like.add(request.user)
-            return Response({'message': '좋아요 성공!'}, status=status.HTTP_200_OK)
-
+            is_liked = True
+            message = '좋아요 성공!'
+           
+        return Response({'is_liked': is_liked, 'message': message}, status=status.HTTP_200_OK)
 
 class CampaignParticipationView(APIView):
     """

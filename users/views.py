@@ -1,6 +1,8 @@
 from users.models import User
 import requests
 import os
+import jwt
+import traceback
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.http import HttpResponseRedirect
@@ -17,15 +19,18 @@ from users.serializers import (
     SignUpSerializer, 
     CustomTokenObtainPairSerializer, 
     UserSerializer, 
-    UserUpdateSerializer
+    UserUpdateSerializer,
+    UpdatePasswordSerializer,
+    ResetPasswordSerializer,
+    ResetPasswordEmailSerializer
 )
 from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.kakao import views as kakao_view
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from django.http import JsonResponse
-from rest_framework.permissions import AllowAny
-from django.core.mail import EmailMessage
-import base64
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
 
 
 state = os.environ.get('STATE')
@@ -33,6 +38,7 @@ kakao_callback_uri = os.environ.get('KAKAO_CALLBACK_URI')
 google_callback_uri = os.environ.get('GOOGLE_CALLBACK_URI')
 base_url = os.environ.get('BASE_URL')
 front_base_url = os.environ.get('FRONT_BASE_URL')
+secret_key = os.environ.get('SECRET_KEY')
 
 
 def varification_code(sitename):
@@ -41,7 +47,7 @@ def varification_code(sitename):
     내용 : 회원가입시 이메일 인증에 필요한 인증 코드를 생성하는 함수입니다.
             개발 단계에서는 필요하지 않을 수 있어 주석 처리해 두었습니다.
     최초 작성일 : 2023.06.15
-    업데이트 일자 : 2023.06.15
+    업데이트 일자 : 
     '''
     # sitename_bytes = sitename.encode('ascii')
     # sitename_base64 = base64.b64encode(sitename_bytes)
@@ -56,7 +62,7 @@ class SendEmailView(APIView):
     내용 : 회원가입시 이메일 인증에 필요한 메일을 보내는 view 클래스입니다.
             개발 단계에서는 이메일 인증이 번거로울 수 있어 주석 처리해 두었습니다.
     최초 작성일 : 2023.06.15
-    업데이트 일자 : 2023.06.15
+    업데이트 일자 : 
     '''
     def post(self,request):
         # try:
@@ -82,7 +88,7 @@ class SignUpView(APIView):
     업데이트 일자 : 2023.06.15
     '''
     def post(self, request):
-        # if varification_code(request.data.get("email"))!=request.data.get("check_email"):
+        # if varification_code(request.data.get("email"))!=request.data.get("check_code"):
         #     return Response({"message": f"잘못된 인증코드입니다."}, status=status.HTTP_400_BAD_REQUEST)
         serializer = SignUpSerializer(data=request.data)
         if serializer.is_valid():
@@ -414,3 +420,85 @@ class UserDetailView(APIView):
         user = User.objects.filter(id=user_id)
         serializer = UserSerializer(user, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UpdatePasswordView(APIView):
+    '''
+    작성자 : 이주한
+    내용 : 사용자가 로그인한 상태에서 본인 계정의 비밀번호를 수정할 때 사용되는 UpdatePasswordView 입니다.
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
+    '''
+    permission_classes = [IsAuthenticated]
+    
+    def put(self, request):
+        user = get_object_or_404(User, id=request.user.id)
+        serializer = UpdatePasswordSerializer(user, data=request.data, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "비밀번호 변경이 완료되었습니다. 다시 로그인해주세요!"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ResetPasswordView(APIView):
+    '''
+    작성자 : 이주한
+    내용 : 사용자가 비밀번호를 분실했을 시 비밀번호를 변경할 수 있도록 비밀번호를 재설정하는 ResetPasswordView 입니다.
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
+    '''
+    permission_classes = [AllowAny]
+    
+    def put(self, request):
+        serializer = ResetPasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            return Response({"message": "비밀번호 재설정 완료"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ResetPasswordEmailView(APIView):
+    '''
+    작성자 : 이주한
+    내용 : 사용자가 비밀번호를 분실했을 시 비밀번호를 변경할 수 있도록 
+            비밀번호를 재설정하는 링크를 사용자의 메일로 보내줍니다. 
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
+    '''
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        serializer = ResetPasswordEmailSerializer(data=request.data, context={"request": request})
+        if serializer.is_valid():
+            return Response({"message": "비밀번호 재설정 이메일을 발송했습니다. 확인부탁드립니다."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CheckPasswordTokenView(APIView):
+    '''
+    작성자 : 이주한
+    내용 : 사용자가 받은 비밀번호 재설정 링크를 클릭했을 시
+            유효한 링크인지 링크에 담겨진 url 파라미터 값으로 검증을 합니다.
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
+    '''
+    permission_classes = [AllowAny]
+
+    def get(self, request, uidb64, token):
+        try:
+            user_id = force_str(urlsafe_base64_decode(uidb64))
+            user = get_object_or_404(User, pk=user_id)
+            payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+            
+            if payload['user_id'] != user.id:
+                return Response('토큰이 올바르지 않습니다', status=status.HTTP_400_BAD_REQUEST)
+            
+            return Response({"uidb64": uidb64, "token": token}, status=status.HTTP_200_OK)
+        
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+        except jwt.ExpiredSignatureError:
+            return Response('만료된 토큰입니다', status=status.HTTP_400_BAD_REQUEST)
+        except jwt.exceptions.DecodeError:
+            return Response('잘못된 토큰입니다', status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(traceback.format_exc())

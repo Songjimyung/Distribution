@@ -44,7 +44,6 @@ class CampaignCreateTest(APITestCase):
             "title": "탄소발자국 캠페인 모집",
             "content": "더 나은 세상을 위한 지구별 눈물 닦아주기, 이제 우리가 행동에 나설 때입니다.",
             "members": "200",
-            "current_members": "0",
             "campaign_start_date": "2023-06-09",
             "campaign_end_date": "2023-06-16",
             "activity_start_date": "2023-06-17",
@@ -96,7 +95,7 @@ class CampaignReadTest(APITestCase):
     작성자 : 최준영
     내용 : 캠페인 GET요청이 올바르게 이루어지는지 검증하는 테스트 클래스입니다.
     최초 작성일 : 2023.06.08
-    업데이트 일자 :
+    업데이트 일자 : 2023.06.15
     """
 
     @classmethod
@@ -129,14 +128,13 @@ class CampaignReadTest(APITestCase):
                     content=cls.faker.text(),
                     user=cls.user,
                     members=random.randrange(100, 200),
-                    current_members=random.randrange(0, 10),
                     campaign_start_date=date,
                     campaign_end_date=date,
                     activity_start_date=date,
                     activity_end_date=date,
                     image="",
+                    status=6,
                     is_funding="False",
-                    status="1",
                 )
             )
 
@@ -176,7 +174,6 @@ class CampaignDetailTest(APITestCase):
             "title": "탄소발자국 캠페인 모집",
             "content": "더 나은 세상을 위한 지구별 눈물 닦아주기, 이제 우리가 행동에 나설 때입니다.",
             "members": "200",
-            "current_members": "0",
             "campaign_start_date": date,
             "campaign_end_date": date,
             "activity_start_date": date,
@@ -190,7 +187,6 @@ class CampaignDetailTest(APITestCase):
             "content": "더 나은 세상을 위한 지구별 눈물 닦아주기, 이제 우리가 행동에 나설 때입니다.\
                 인류 역사상 가장 위대한 미션: 2050년까지 탄소중립을 실현하라",
             "members": "300",
-            "current_members": "4",
             "campaign_start_date": "2023-06-19",
             "campaign_end_date": "2023-06-30",
             "activity_start_date": "2023-06-20",
@@ -286,7 +282,6 @@ class CampaignLikeTest(APITestCase):
             "title": "탄소발자국 캠페인 모집",
             "content": "더 나은 세상을 위한 지구별 눈물 닦아주기, 이제 우리가 행동에 나설 때입니다.",
             "members": "200",
-            "current_members": "0",
             "campaign_start_date": date,
             "campaign_end_date": date,
             "activity_start_date": date,
@@ -365,7 +360,6 @@ class CampaignParticipationTest(APITestCase):
             "title": "탄소발자국 캠페인 모집",
             "content": "더 나은 세상을 위한 지구별 눈물 닦아주기, 이제 우리가 행동에 나설 때입니다.",
             "members": "200",
-            "current_members": "0",
             "campaign_start_date": date,
             "campaign_end_date": date,
             "activity_start_date": date,

@@ -44,7 +44,6 @@ class PaymentTest(APITestCase):
             "title": "탄소발자국 캠페인 모집",
             "content": "더 나은 세상을 위한 지구별 눈물 닦아주기, 이제 우리가 행동에 나설 때입니다.",
             "members": "200",
-            "current_members": "0",
             "campaign_start_date": "2023-06-09",
             "campaign_end_date": "2023-06-16",
             "activity_start_date": "2023-06-17",

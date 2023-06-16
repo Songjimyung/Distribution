@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.safestring import mark_safe
 from campaigns.models import (
     Campaign,
     CampaignComment,
@@ -15,25 +16,20 @@ class CampaignDisplay(admin.ModelAdmin):
     내용 : 캠페인 admin 페이지 등록 클래스입니다.
     list_display는 ManyToManyField를 지원하지 않아 like는 넣지 않았습니다.
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.08
+    업데이트 일자 : 2023.06.14
     """
 
     list_display = [
         "title",
-        "content",
         "user",
         "members",
-        "current_members",
-        "image",
+        "image_tag",
         "status",
         "is_funding",
         "campaign_start_date",
         "campaign_end_date",
         "activity_start_date",
         "activity_end_date",
-        "created_at",
-        "updated_at",
-        "image",
         "created_at",
         "updated_at",
     ]
@@ -45,7 +41,6 @@ class CampaignDisplay(admin.ModelAdmin):
         "participant",
         "like",
         "members",
-        "current_members",
         "image",
         "is_funding",
         "campaign_start_date",
@@ -67,6 +62,10 @@ class CampaignDisplay(admin.ModelAdmin):
         "user",
         "content",
     ]
+
+    def image_tag(self, campaign):
+        if campaign.image:
+            return mark_safe(f'<img src="{campaign.image.url}" style="width:50px;" />')
 
 
 @admin.register(Funding)
