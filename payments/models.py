@@ -16,7 +16,7 @@ class Payment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, null=True)
     merchant_uid = models.CharField(max_length=255)
-    imp_uid = models.CharField(max_length=255)
+    imp_uid = models.CharField(max_length=255, null=True)
     product = models.ForeignKey(ShopProduct, on_delete=models.CASCADE, null=True)
 
 class RegisterPayment(models.Model):
