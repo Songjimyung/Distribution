@@ -34,6 +34,7 @@ class FundingSerializer(BaseSerializer):
     최초 작성일 : 2023.06.07
     업데이트 일자 :
     """
+    approve_file = serializers.FileField(required=False)
 
     class Meta:
         model = Funding

@@ -37,9 +37,16 @@ class CampaignView(APIView):
         캠페인의 진행 상태인 status가 1 이상의 캠페인만 필터로 받아
         비승인은 제외하고 GET 요청에 대해 Response합니다.
         select_related를 사용해 eager-loading쪽으로 잡아봤습니다. (변경가능성높음)
+        +) 
+        작성자: 장소은
+        내용: 관리자는 백오피스에서 미승인 캠페인도 볼 수 있게 추가
+        수정일: 2023.06.16
         """
-        queryset = Campaign.objects.filter(
-            status__gte=1).select_related("fundings")
+        if request.user.is_admin:
+            queryset = Campaign.objects.all().select_related("fundings")
+        else:
+            queryset = Campaign.objects.filter(
+                status__gte=1).select_related("fundings")
         serializer = CampaignSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -128,9 +135,11 @@ class CampaignDetailView(APIView):
         is_funding이 False라면 캠페인만 request로 받아
         시리얼라이저를 검증한 후, 저장합니다.
         """
+        print("123")
         queryset = get_object_or_404(Campaign, id=campaign_id)
         if request.user == queryset.user:
-            serializer = CampaignCreateSerializer(queryset, data=request.data)
+            serializer = CampaignCreateSerializer(
+                queryset, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
                 return Response(
@@ -152,11 +161,14 @@ class CampaignDetailView(APIView):
         is_funding이 True라면 캠페인과 펀딩 모두 request로 받아
         시리얼라이저로 동시에 검증한 후, 저장합니다.
         """
+        print("456")
         queryset = get_object_or_404(Campaign, id=campaign_id)
         if request.user == queryset.user:
             campaign_serializer = CampaignCreateSerializer(
-                queryset, data=request.data)
-            funding_serializer = FundingCreateSerializer(data=request.data)
+                queryset, data=request.data, partial=True)
+            print(request.data)
+            funding_serializer = FundingCreateSerializer(
+                data=request.data, partial=True)
             if campaign_serializer.is_valid() and funding_serializer.is_valid():
                 campaign = campaign_serializer.save()
                 funding_serializer.validated_data["campaign"] = campaign
@@ -213,7 +225,7 @@ class CampaignLikeView(APIView):
     """
 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    
+
     def get(self, request, campaign_id):
         queryset = get_object_or_404(Campaign, id=campaign_id)
         is_liked = queryset.like.filter(id=request.user.id).exists()
@@ -229,8 +241,9 @@ class CampaignLikeView(APIView):
             queryset.like.add(request.user)
             is_liked = True
             message = '좋아요 성공!'
-           
+
         return Response({'is_liked': is_liked, 'message': message}, status=status.HTTP_200_OK)
+
 
 class CampaignParticipationView(APIView):
     """
@@ -520,3 +533,18 @@ class MyAttendCampaignView(APIView):
             participant=request.user).order_by('-activity_end_date')
         serializer = CampaignCreateSerializer(mycampaigns, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CampaignStatusUpdateAPIView(APIView):
+    '''
+    작성자: 장소은
+    내용: 백오피스에서 신청내역의 캠페인의 상태값만 수정
+          별도의 시리얼라이저나 응답데이터가 필요X
+    작성일: 2023.06.17
+    '''
+
+    def put(self, request, campaign_id):
+        campaign = get_object_or_404(Campaign, id=campaign_id)
+        campaign.status = request.data.get('status')
+        campaign.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
