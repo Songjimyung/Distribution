@@ -27,7 +27,7 @@ class CampaignView(APIView):
     전체 캠페인 리스트를 GET하는 get함수와
     캠페인을 작성할 수 있는 post가 있는 클래스입니다.
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.08
+    업데이트 일자 : 2023.06.14
     """
 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -38,7 +38,8 @@ class CampaignView(APIView):
         비승인은 제외하고 GET 요청에 대해 Response합니다.
         select_related를 사용해 eager-loading쪽으로 잡아봤습니다. (변경가능성높음)
         """
-        queryset = Campaign.objects.filter(status__gte=1).select_related("fundings")
+        queryset = Campaign.objects.filter(
+            status__gte=1).select_related("fundings")
         serializer = CampaignSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -51,7 +52,7 @@ class CampaignView(APIView):
             return self.create_campaign(request)
         else:
             return self.create_campaign_with_funding(request)
-        
+
     def create_campaign(self, request):
         """
         is_funding이 False라면 캠페인만 request로 받아
@@ -81,6 +82,8 @@ class CampaignView(APIView):
             }
             return Response(response_data, status=status.HTTP_201_CREATED)
         else:
+            campaign_serializer.is_valid()
+            funding_serializer.is_valid()
             return Response(
                 {
                     "message": "캠페인 및 펀딩 정보가 올바르지 않습니다.",
@@ -96,7 +99,7 @@ class CampaignDetailView(APIView):
     내용 : 캠페인 디테일 뷰 입니다.
     개별 캠페인 GET과 그 캠페인에 대한 PUT, DELETE 요청을 처리합니다.
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.07
+    업데이트 일자 : 2023.06.14
     """
 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -151,7 +154,8 @@ class CampaignDetailView(APIView):
         """
         queryset = get_object_or_404(Campaign, id=campaign_id)
         if request.user == queryset.user:
-            campaign_serializer = CampaignCreateSerializer(queryset, data=request.data)
+            campaign_serializer = CampaignCreateSerializer(
+                queryset, data=request.data)
             funding_serializer = FundingCreateSerializer(data=request.data)
             if campaign_serializer.is_valid() and funding_serializer.is_valid():
                 campaign = campaign_serializer.save()
@@ -163,6 +167,8 @@ class CampaignDetailView(APIView):
                 }
                 return Response(response_data, status=status.HTTP_200_OK)
             else:
+                campaign_serializer.is_valid()
+                funding_serializer.is_valid()
                 return Response(
                     {
                         "message": "캠페인 수정에 실패했습니다.",
@@ -200,21 +206,31 @@ class CampaignLikeView(APIView):
     작성자 : 최준영
     내용 : 캠페인 좋아요 뷰 입니다.
     캠페인에 대한 좋아요 POST 요청을 처리합니다.
+    is_liked라는 value를 모델에 정의하지 않아도 임시값으로 프론트에 넘겨줄 수 있는 듯 합니다.
+    좋아요 버튼을 누른 상태 판별을 위해 is_liked값 GET요청을 추가했습니다.
     최초 작성일 : 2023.06.09
-    업데이트 일자 : 2023.06.11
+    업데이트 일자 : 2023.06.15
     """
 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    
+    def get(self, request, campaign_id):
+        queryset = get_object_or_404(Campaign, id=campaign_id)
+        is_liked = queryset.like.filter(id=request.user.id).exists()
+        return Response({'is_liked': is_liked}, status=status.HTTP_200_OK)
 
     def post(self, request, campaign_id):
         queryset = get_object_or_404(Campaign, id=campaign_id)
         if queryset.like.filter(id=request.user.id).exists():
             queryset.like.remove(request.user)
-            return Response({'message':'좋아요 취소!'}, status=status.HTTP_200_OK)
+            is_liked = False
+            message = '좋아요 취소!'
         else:
             queryset.like.add(request.user)
-            return Response({'message':'좋아요 성공!'}, status=status.HTTP_200_OK)
-
+            is_liked = True
+            message = '좋아요 성공!'
+           
+        return Response({'is_liked': is_liked, 'message': message}, status=status.HTTP_200_OK)
 
 class CampaignParticipationView(APIView):
     """
@@ -231,10 +247,10 @@ class CampaignParticipationView(APIView):
         queryset = get_object_or_404(Campaign, id=campaign_id)
         if queryset.participant.filter(id=request.user.id).exists():
             queryset.participant.remove(request.user)
-            return Response({'message':'캠페인 참가 취소!'}, status=status.HTTP_200_OK)
+            return Response({'message': '캠페인 참가 취소!'}, status=status.HTTP_200_OK)
         else:
             queryset.participant.add(request.user)
-            return Response({'message':'캠페인 참가 성공!'}, status=status.HTTP_200_OK)
+            return Response({'message': '캠페인 참가 성공!'}, status=status.HTTP_200_OK)
 
 
 class CampaignReviewView(APIView):
@@ -287,7 +303,8 @@ class CampaignReviewDetailView(APIView):
         """
         queryset = get_object_or_404(CampaignReview, id=review_id)
         if request.user == queryset.user:
-            serializer = CampaignReviewCreateSerializer(queryset, data=request.data)
+            serializer = CampaignReviewCreateSerializer(
+                queryset, data=request.data)
             if serializer.is_valid():
                 serializer.save()
                 return Response(
@@ -370,7 +387,8 @@ class CampaignCommentDetailView(APIView):
         """
         queryset = get_object_or_404(CampaignComment, id=comment_id)
         if request.user == queryset.user:
-            serializer = CampaignCommentCreateSerializer(queryset, data=request.data)
+            serializer = CampaignCommentCreateSerializer(
+                queryset, data=request.data)
             if serializer.is_valid():
                 serializer.save()
                 return Response(
@@ -458,7 +476,8 @@ class CampaignUserCommentView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        review = CampaignComment.objects.filter(user=request.user).select_related("campaign")
+        review = CampaignComment.objects.filter(
+            user=request.user).select_related("campaign")
         serializer = CampaignCommentSerializer(review, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -484,3 +503,18 @@ def check_campaign_status():
         if campaign.enddate <= now:
             campaign.status = 4
             campaign.save()
+
+
+class MyAttendCampaignView(APIView):
+    """
+    작성자 : 장소은
+    내용 : 유저가 참여한 캠페인을 보여주는 기능.
+    최초 작성일 : 2023.06.08
+    업데이트 일자 : 
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        mycampaigns = Campaign.objects.filter(participant=request.user)
+        serializer = CampaignCreateSerializer(mycampaigns, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
