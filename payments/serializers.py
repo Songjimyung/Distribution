@@ -90,7 +90,6 @@ class PaymentScheduleSerializer(serializers.ModelSerializer):
         
     def create(self, data):
         campaign = data.get('campaign')
-        print(campaign)
         campaign_date = campaign.campaign_end_date     
         schedules_date = campaign_date.replace(tzinfo=None)
         schedules_at = int(schedules_date.timestamp())
@@ -99,8 +98,6 @@ class PaymentScheduleSerializer(serializers.ModelSerializer):
         amount = data.get('amount')
         merchant_uid = f"imp{int(time.time())}"
         user_id = self.context['request'].user
-        print(amount)
-        print(customer_uid)
         schedules = {
             "merchant_uid": merchant_uid,
             "schedule_at": schedules_at,
