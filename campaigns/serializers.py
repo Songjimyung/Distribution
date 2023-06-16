@@ -130,7 +130,6 @@ class CampaignCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Campaign
         fields = (
-            "id"
             "title",
             "content",
             "members",
@@ -177,7 +176,7 @@ class CampaignReviewCreateSerializer(serializers.ModelSerializer):
         fields = (
             "title",
             "content",
-            "image,"
+            "image"
         )
 
 
