@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework import status, permissions
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 from django.utils import timezone
@@ -26,22 +27,29 @@ class CampaignView(APIView):
     내용 : 캠페인 뷰 입니다.
     전체 캠페인 리스트를 GET하는 get함수와
     캠페인을 작성할 수 있는 post가 있는 클래스입니다.
+    페이지네이션 기능 추가중입니다.
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.14
+    업데이트 일자 : 2023.06.17
     """
 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = PageNumberPagination
 
     def get(self, request):
         """
         캠페인의 진행 상태인 status가 1 이상의 캠페인만 필터로 받아
         비승인은 제외하고 GET 요청에 대해 Response합니다.
         select_related를 사용해 eager-loading쪽으로 잡아봤습니다. (변경가능성높음)
+        페이지 기반 API 페이지네이션 적용완료
         """
         queryset = Campaign.objects.filter(
             status__gte=1).select_related("fundings")
         serializer = CampaignSerializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        pagination_instance = self.pagination_class()
+        paginated_data = pagination_instance.paginate_queryset(serializer.data, request)
+        
+        return pagination_instance.get_paginated_response(paginated_data)
 
     def post(self, request):
         """
