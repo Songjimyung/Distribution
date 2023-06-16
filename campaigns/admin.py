@@ -15,6 +15,7 @@ class CampaignDisplay(admin.ModelAdmin):
     작성자 : 최준영
     내용 : 캠페인 admin 페이지 등록 클래스입니다.
     list_display는 ManyToManyField를 지원하지 않아 like는 넣지 않았습니다.
+    image_tag 함수로 admin 페이지에서 이미지를 바로 확인할 수 있게 했습니다.
     최초 작성일 : 2023.06.06
     업데이트 일자 : 2023.06.14
     """
@@ -114,12 +115,13 @@ class CampaignReviewDisplay(admin.ModelAdmin):
     작성자 : 최준영
     내용 : 캠페인 리뷰 admin 페이지 등록 클래스입니다.
     최초 작성일 : 2023.06.08
-    업데이트 일자 :
+    업데이트 일자 : 2023.06.16
     """
 
     list_display = [
         "user",
         "campaign",
+        "image_tag",
         "title",
         "content",
         "created_at",
@@ -128,6 +130,7 @@ class CampaignReviewDisplay(admin.ModelAdmin):
     fields = [
         "user",
         "campaign",
+        "image",
         "title",
         "content",
     ]
@@ -144,6 +147,10 @@ class CampaignReviewDisplay(admin.ModelAdmin):
         "title",
         "content",
     ]
+
+    def image_tag(self, review):
+        if review.image:
+            return mark_safe(f'<img src="{review.image.url}" style="width:50px;" />')
 
 
 @admin.register(CampaignComment)
