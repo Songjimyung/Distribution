@@ -50,11 +50,11 @@ def verification_code(email):
     최초 작성일 : 2023.06.15
     업데이트 일자 : 
     '''
-    email_bytes = email.encode('ascii')
-    email_base64 = base64.b64encode(email_bytes)
-    email_base64_str = email_base64.decode('ascii')
-    return email_base64_str
-    # pass
+    # email_bytes = email.encode('ascii')
+    # email_base64 = base64.b64encode(email_bytes)
+    # email_base64_str = email_base64.decode('ascii')
+    # return email_base64_str
+    pass
 
 
 class SendEmailView(APIView):
@@ -66,20 +66,20 @@ class SendEmailView(APIView):
     업데이트 일자 : 
     '''
     def post(self,request):
-        email=request.data.get("email")
-        if email == "":
-            return Response({'error':'이메일을 입력해주세요.'},status=status.HTTP_400_BAD_REQUEST)
-        else:
-            try:
-                User.objects.get(email=email)
-                return Response({"message":"계정이 이미 존재합니다."},status=status.HTTP_400_BAD_REQUEST)
-            except:
-                subject='EcoCanvas 인증 코드 메일'
-                body=verification_code(email)
-                email_content = EmailMessage(subject,body,to=[email],)
-                email_content.send()
-                return Response({"message":"귀하의 이메일에서 인증코드를 확인해주세요."},status=status.HTTP_200_OK)
-        # pass
+        # email=request.data.get("email")
+        # if email == "":
+        #     return Response({'error':'이메일을 입력해주세요.'},status=status.HTTP_400_BAD_REQUEST)
+        # else:
+        #     try:
+        #         User.objects.get(email=email)
+        #         return Response({"message":"계정이 이미 존재합니다."},status=status.HTTP_400_BAD_REQUEST)
+        #     except:
+        #         subject='EcoCanvas 인증 코드 메일'
+        #         body=verification_code(email)
+        #         email_content = EmailMessage(subject,body,to=[email],)
+        #         email_content.send()
+        #         return Response({"message":"귀하의 이메일에서 인증코드를 확인해주세요."},status=status.HTTP_200_OK)
+        pass
 
 
 class SignUpView(APIView):
@@ -91,8 +91,8 @@ class SignUpView(APIView):
     업데이트 일자 : 2023.06.15
     '''
     def post(self, request):
-        if verification_code(request.data.get("email"))!=request.data.get("check_code"):
-            return Response({"message": f"잘못된 인증코드입니다."}, status=status.HTTP_400_BAD_REQUEST)
+        # if verification_code(request.data.get("email"))!=request.data.get("check_code"):
+        #     return Response({"message": f"잘못된 인증코드입니다."}, status=status.HTTP_400_BAD_REQUEST)
         serializer = SignUpSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()

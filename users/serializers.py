@@ -65,13 +65,13 @@ class SignUpSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 detail={"password": "비밀번호와 비밀번호 확인이 일치하지 않습니다!"})
 
-        if password_validator(password):
-            raise serializers.ValidationError(
-                detail={"password": "비밀번호는 8자 이상의 영문 대소문자와 숫자, 특수문자를 포함하여야 합니다!"})
+        # if password_validator(password):
+        #     raise serializers.ValidationError(
+        #         detail={"password": "비밀번호는 8자 이상의 영문 대소문자와 숫자, 특수문자를 포함하여야 합니다!"})
 
-        if password_pattern(password):
-            raise serializers.ValidationError(
-                detail={"password": "비밀번호는 연속해서 3자리 이상 동일한 영문,숫자,특수문자 사용이 불가합니다!"})
+        # if password_pattern(password):
+        #     raise serializers.ValidationError(
+        #         detail={"password": "비밀번호는 연속해서 3자리 이상 동일한 영문,숫자,특수문자 사용이 불가합니다!"})
 
         return data
 
@@ -176,13 +176,13 @@ class UpdatePasswordSerializer(serializers.ModelSerializer):
         if password != re_password:
             raise serializers.ValidationError(detail={"password": "비밀번호가 일치하지 않습니다."})
 
-        # 비밀번호 유효성 검사
-        if password_validator(password):
-            raise serializers.ValidationError(detail={"password": "비밀번호는 8자 이상 16자이하의 영문 대/소문자, 숫자, 특수문자 조합이어야 합니다."})
+        # # 비밀번호 유효성 검사
+        # if password_validator(password):
+        #     raise serializers.ValidationError(detail={"password": "비밀번호는 8자 이상 16자이하의 영문 대/소문자, 숫자, 특수문자 조합이어야 합니다."})
 
-        # 비밀번호 문자열 동일여부 검사
-        if password_pattern(password):
-            raise serializers.ValidationError(detail={"password": "비밀번호는 3자리 이상 동일한 영문/사용 사용 불가합니다."})
+        # # 비밀번호 문자열 동일여부 검사
+        # if password_pattern(password):
+        #     raise serializers.ValidationError(detail={"password": "비밀번호는 3자리 이상 동일한 영문/사용 사용 불가합니다."})
 
         return data
 
@@ -256,15 +256,6 @@ class ResetPasswordEmailSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         try:
-            # email = attrs.get("email")
-
-            # user = User.objects.get(email=email)
-            
-            # jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
-            # jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
-            # payload = jwt_payload_handler(user)
-            # uidb64 = urlsafe_base64_encode(force_bytes(user.id))
-            # token = jwt_encode_handler(payload)
             email = attrs.get("email")
 
             user = User.objects.get(email=email)
@@ -328,21 +319,21 @@ class ResetPasswordSerializer(serializers.Serializer):
         user_id = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(id=user_id)
         
-        # 토큰이 유효여부
-        if PasswordResetTokenGenerator().check_token(user, token) == False:
-            raise exceptions.AuthenticationFailed("링크가 유효하지 않습니다.", 401)
+        # # 토큰이 유효여부
+        # if PasswordResetTokenGenerator().check_token(user, token) == False:
+        #     raise exceptions.AuthenticationFailed("링크가 유효하지 않습니다.", 401)
 
         # 비밀번호 일치
         if password != re_password:
             raise serializers.ValidationError(detail={"password": "비밀번호가 일치하지 않습니다."})
 
-        # 비밀번호 유효성 검사
-        if password_validator(password):
-            raise serializers.ValidationError(detail={"password": "비밀번호는 8자 이상 16자이하의 영문 대/소문자, 숫자, 특수문자 조합이어야 합니다."})
+        # # 비밀번호 유효성 검사
+        # if password_validator(password):
+        #     raise serializers.ValidationError(detail={"password": "비밀번호는 8자 이상 16자이하의 영문 대/소문자, 숫자, 특수문자 조합이어야 합니다."})
 
-        # 비밀번호 문자열 동일여부 검사
-        if password_pattern(password):
-            raise serializers.ValidationError(detail={"password": "비밀번호는 3자리 이상 동일한 영문/사용 사용 불가합니다."})
+        # # 비밀번호 문자열 동일여부 검사
+        # if password_pattern(password):
+        #     raise serializers.ValidationError(detail={"password": "비밀번호는 3자리 이상 동일한 영문/사용 사용 불가합니다."})
 
         user.set_password(password)
         user.save()
