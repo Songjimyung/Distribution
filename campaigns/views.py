@@ -38,7 +38,8 @@ class CampaignView(APIView):
         비승인은 제외하고 GET 요청에 대해 Response합니다.
         select_related를 사용해 eager-loading쪽으로 잡아봤습니다. (변경가능성높음)
         """
-        queryset = Campaign.objects.filter(status__gte=1).select_related("fundings")
+        queryset = Campaign.objects.filter(
+            status__gte=1).select_related("fundings")
         serializer = CampaignSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -51,7 +52,7 @@ class CampaignView(APIView):
             return self.create_campaign(request)
         else:
             return self.create_campaign_with_funding(request)
-        
+
     def create_campaign(self, request):
         """
         is_funding이 False라면 캠페인만 request로 받아
@@ -153,7 +154,8 @@ class CampaignDetailView(APIView):
         """
         queryset = get_object_or_404(Campaign, id=campaign_id)
         if request.user == queryset.user:
-            campaign_serializer = CampaignCreateSerializer(queryset, data=request.data)
+            campaign_serializer = CampaignCreateSerializer(
+                queryset, data=request.data)
             funding_serializer = FundingCreateSerializer(data=request.data)
             if campaign_serializer.is_valid() and funding_serializer.is_valid():
                 campaign = campaign_serializer.save()
@@ -245,10 +247,10 @@ class CampaignParticipationView(APIView):
         queryset = get_object_or_404(Campaign, id=campaign_id)
         if queryset.participant.filter(id=request.user.id).exists():
             queryset.participant.remove(request.user)
-            return Response({'message':'캠페인 참가 취소!'}, status=status.HTTP_200_OK)
+            return Response({'message': '캠페인 참가 취소!'}, status=status.HTTP_200_OK)
         else:
             queryset.participant.add(request.user)
-            return Response({'message':'캠페인 참가 성공!'}, status=status.HTTP_200_OK)
+            return Response({'message': '캠페인 참가 성공!'}, status=status.HTTP_200_OK)
 
 
 class CampaignReviewView(APIView):
@@ -301,7 +303,8 @@ class CampaignReviewDetailView(APIView):
         """
         queryset = get_object_or_404(CampaignReview, id=review_id)
         if request.user == queryset.user:
-            serializer = CampaignReviewCreateSerializer(queryset, data=request.data)
+            serializer = CampaignReviewCreateSerializer(
+                queryset, data=request.data)
             if serializer.is_valid():
                 serializer.save()
                 return Response(
@@ -384,7 +387,8 @@ class CampaignCommentDetailView(APIView):
         """
         queryset = get_object_or_404(CampaignComment, id=comment_id)
         if request.user == queryset.user:
-            serializer = CampaignCommentCreateSerializer(queryset, data=request.data)
+            serializer = CampaignCommentCreateSerializer(
+                queryset, data=request.data)
             if serializer.is_valid():
                 serializer.save()
                 return Response(
@@ -472,7 +476,8 @@ class CampaignUserCommentView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        review = CampaignComment.objects.filter(user=request.user).select_related("campaign")
+        review = CampaignComment.objects.filter(
+            user=request.user).select_related("campaign")
         serializer = CampaignCommentSerializer(review, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -498,3 +503,18 @@ def check_campaign_status():
         if campaign.enddate <= now:
             campaign.status = 4
             campaign.save()
+
+
+class MyAttendCampaignView(APIView):
+    """
+    작성자 : 장소은
+    내용 : 유저가 참여한 캠페인을 보여주는 기능.
+    최초 작성일 : 2023.06.08
+    업데이트 일자 : 
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        mycampaigns = Campaign.objects.filter(participant=request.user)
+        serializer = CampaignCreateSerializer(mycampaigns, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

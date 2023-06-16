@@ -140,6 +140,7 @@ class CampaignCreateSerializer(serializers.ModelSerializer):
             "image",
             "is_funding",
             "status",
+            "id"
         )
 
 
@@ -147,13 +148,15 @@ class CampaignReviewSerializer(BaseSerializer):
     """
     작성자 : 최준영
     내용 : 캠페인 리뷰 시리얼라이저 입니다.
+          +) author필드 추가 
     최초 작성일 : 2023.06.06
-    업데이트 일자 :
+    업데이트 일자 :2023.06.14 
     """
+    author = serializers.CharField(source='user.username', read_only=True)
 
     class Meta:
         model = CampaignReview
-        fields = "__all__"
+        fields = ['campaign', 'title', 'content', 'author']
 
     user = serializers.SerializerMethodField()
 
@@ -181,13 +184,17 @@ class CampaignCommentSerializer(BaseSerializer):
     """
     작성자 : 최준영
     내용 : 캠페인 댓글 시리얼라이저 입니다.
+          +) author필드 추가 
     최초 작성일 : 2023.06.06
-    업데이트 일자 :
+    업데이트 일자 :2023.06.14
     """
+    campaign_title = serializers.CharField(
+        source='campaign.title', read_only=True)
+    author = serializers.CharField(source='user.username', read_only=True)
 
     class Meta:
         model = CampaignComment
-        fields = "__all__"
+        fields = ['campaign', 'content', 'campaign_title', 'author']
 
     user = serializers.SerializerMethodField()
 
