@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.safestring import mark_safe
 from campaigns.models import (
     Campaign,
     CampaignComment,
@@ -22,16 +23,13 @@ class CampaignDisplay(admin.ModelAdmin):
         "title",
         "user",
         "members",
-        "image",
+        "image_tag",
         "status",
         "is_funding",
         "campaign_start_date",
         "campaign_end_date",
         "activity_start_date",
         "activity_end_date",
-        "created_at",
-        "updated_at",
-        "image",
         "created_at",
         "updated_at",
     ]
@@ -64,6 +62,10 @@ class CampaignDisplay(admin.ModelAdmin):
         "user",
         "content",
     ]
+
+    def image_tag(self, campaign):
+        if campaign.image:
+            return mark_safe(f'<img src="{campaign.image.url}" style="width:50px;" />')
 
 
 @admin.register(Funding)

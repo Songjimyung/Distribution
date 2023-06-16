@@ -61,9 +61,7 @@ class CampaignSerializer(BaseSerializer):
     """
     작성자 : 최준영
     내용 : 캠페인 시리얼라이저 입니다.
-    obj.user.email를 name으로 나중에 변경하여 name값이 뜨도록 변경예정
-    펀딩이 있는 캠페인이라면 "fundings"값이 정상적으로 뜨고,
-    펀딩이 없는 캠페인이라면 "fundings"값이 null로 표기됩니다.
+    obj.user.email를 name으로 나중에 변경하여 name값이 뜨도록 변경 완료
     최초 작성일 : 2023.06.06
     업데이트 일자 : 2023.06.14
     """
@@ -97,7 +95,7 @@ class CampaignSerializer(BaseSerializer):
     status = serializers.SerializerMethodField()
 
     def get_user(self, obj):
-        return obj.user.email
+        return obj.user.username
 
     def get_campaign_start_date(self, obj):
         return obj.campaign_start_date.strftime("%Y년 %m월 %d일 %R")
@@ -157,6 +155,11 @@ class CampaignReviewSerializer(BaseSerializer):
         model = CampaignReview
         fields = "__all__"
 
+    user = serializers.SerializerMethodField()
+
+    def get_user(self, obj):
+        return obj.user.username
+
 
 class CampaignReviewCreateSerializer(serializers.ModelSerializer):
     """
@@ -185,6 +188,11 @@ class CampaignCommentSerializer(BaseSerializer):
     class Meta:
         model = CampaignComment
         fields = "__all__"
+
+    user = serializers.SerializerMethodField()
+
+    def get_user(self, obj):
+        return obj.user.username
 
 
 class CampaignCommentCreateSerializer(serializers.ModelSerializer):

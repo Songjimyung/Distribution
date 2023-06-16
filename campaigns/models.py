@@ -43,7 +43,7 @@ class Campaign(BaseModel):
 
     STATUS_CHOICES = (
         (0, "미승인"),
-        (1, "캠페인 예약"),
+        (1, "캠페인 예약중"),
         (2, "캠페인 모집중"),
         (3, "캠페인 활동중"),
         (4, "캠페인 종료"),
@@ -62,7 +62,7 @@ class Campaign(BaseModel):
     campaign_end_date = models.DateTimeField("캠페인 마감일")
     activity_start_date = models.DateTimeField("활동 시작일", blank=True, null=True)
     activity_end_date = models.DateTimeField("활동 마감일", blank=True, null=True)
-    image = models.ImageField("이미지", blank=True, null=True, upload_to="%Y/%m/")
+    image = models.ImageField("이미지", blank=True, null=True, upload_to="campaign/%Y/%m/")
     is_funding = models.BooleanField("펀딩여부", default=False)
     status = models.PositiveSmallIntegerField("진행 상태", choices=STATUS_CHOICES, default=0)
 
@@ -135,7 +135,7 @@ class Funding(BaseModel):
     )
     goal = models.PositiveIntegerField("펀딩 목표 금액")
     current = models.PositiveIntegerField("펀딩 현재 금액", default=0)
-    approve_file = models.FileField("펀딩 승인 파일", upload_to="%Y/%m/", blank=True)
+    approve_file = models.FileField("펀딩 승인 파일", upload_to="%Y/%m/", null=True, blank=True)
 
     def __str__(self):
         return str(self.goal)
