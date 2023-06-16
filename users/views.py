@@ -1,22 +1,36 @@
 from users.models import User
 import requests
 import os
+import jwt
+import traceback
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from dj_rest_auth.registration.views import SocialLoginView
+from rest_framework.generics import get_object_or_404
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from allauth.socialaccount.providers.google import views as google_view
-from users.serializers import SignUpSerializer, CustomTokenObtainPairSerializer, UserSerializer
+from users.serializers import (
+    SignUpSerializer, 
+    CustomTokenObtainPairSerializer, 
+    UserSerializer, 
+    UserUpdateSerializer,
+    UpdatePasswordSerializer,
+    ResetPasswordSerializer,
+    ResetPasswordEmailSerializer
+)
 from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.kakao import views as kakao_view
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from django.http import JsonResponse
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
 
 
 state = os.environ.get('STATE')
@@ -24,17 +38,58 @@ kakao_callback_uri = os.environ.get('KAKAO_CALLBACK_URI')
 google_callback_uri = os.environ.get('GOOGLE_CALLBACK_URI')
 base_url = os.environ.get('BASE_URL')
 front_base_url = os.environ.get('FRONT_BASE_URL')
+secret_key = os.environ.get('SECRET_KEY')
 
 
-class UserView(APIView):
+def varification_code(sitename):
     '''
     작성자 : 이주한
-    내용 : 회원가입, 회원정보 수정, 회원 비활성화에 사용되는 view 클래스
-    최초 작성일 : 2023.06.06
-    업데이트 일자 :
+    내용 : 회원가입시 이메일 인증에 필요한 인증 코드를 생성하는 함수입니다.
+            개발 단계에서는 필요하지 않을 수 있어 주석 처리해 두었습니다.
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
     '''
+    # sitename_bytes = sitename.encode('ascii')
+    # sitename_base64 = base64.b64encode(sitename_bytes)
+    # sitename_base64_str = sitename_base64.decode('ascii')
+    # return sitename_base64_str
+    pass
 
+
+class SendEmailView(APIView):
+    '''
+    작성자 : 이주한
+    내용 : 회원가입시 이메일 인증에 필요한 메일을 보내는 view 클래스입니다.
+            개발 단계에서는 이메일 인증이 번거로울 수 있어 주석 처리해 두었습니다.
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
+    '''
+    def post(self,request):
+        # try:
+        #     User.objects.get(email=email)
+        #     return Response({"message":"계정이 이미 존재합니다."},status=status.HTTP_400_BAD_REQUEST)
+        # except:
+        #     pass
+        # subject='EcoCanvas 인증 메일'
+        # email=request.data.get("email")
+        # body=varification_code(email)
+        # email = EmailMessage(subject,body,to=[email],)
+        # email.send()
+        # return Response({"message":"귀하의 이메일에서 인증코드를 확인해주세요."},status=status.HTTP_200_OK)
+        pass
+
+
+class SignUpView(APIView):
+    '''
+    작성자 : 이주한
+    내용 : 회원가입에 사용되는 view 클래스 입니다.
+            개발 단계에서는 이메일 인증이 번거로울 수 있어 주석 처리해 두었습니다.
+    최초 작성일 : 2023.06.06
+    업데이트 일자 : 2023.06.15
+    '''
     def post(self, request):
+        # if varification_code(request.data.get("email"))!=request.data.get("check_code"):
+        #     return Response({"message": f"잘못된 인증코드입니다."}, status=status.HTTP_400_BAD_REQUEST)
         serializer = SignUpSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -42,13 +97,29 @@ class UserView(APIView):
         else:
             return Response({"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST)
 
-    # 회원정보 수정 PUT 메소드
+
+class UserView(APIView):
+    '''
+    작성자 : 이주한
+    내용 : 회원정보 수정, 회원 비활성화에 사용되는 view 클래스 
+    최초 작성일 : 2023.06.06
+    업데이트 일자 : 2023.06.14
+    '''
     def put(self, request):
-        pass
+        user = get_object_or_404(User, id=request.user.id)
+        serializer = UserUpdateSerializer(user, data=request.data, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "회원정보 수정이 완료되었습니다."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     # 회원 비활성화 DELETE 메소드
     def delete(self, request):
-        pass
+        user = get_object_or_404(User, id=request.user.id)
+        user.withdrawal = True
+        user.withdrawal_at = timezone.now()
+        user.save()
+        return Response({"message": "회원이 비활성화 되었습니다."}, status=status.HTTP_200_OK)
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -349,3 +420,85 @@ class UserDetailView(APIView):
         user = User.objects.filter(id=user_id)
         serializer = UserSerializer(user, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UpdatePasswordView(APIView):
+    '''
+    작성자 : 이주한
+    내용 : 사용자가 로그인한 상태에서 본인 계정의 비밀번호를 수정할 때 사용되는 UpdatePasswordView 입니다.
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
+    '''
+    permission_classes = [IsAuthenticated]
+    
+    def put(self, request):
+        user = get_object_or_404(User, id=request.user.id)
+        serializer = UpdatePasswordSerializer(user, data=request.data, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "비밀번호 변경이 완료되었습니다. 다시 로그인해주세요!"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ResetPasswordView(APIView):
+    '''
+    작성자 : 이주한
+    내용 : 사용자가 비밀번호를 분실했을 시 비밀번호를 변경할 수 있도록 비밀번호를 재설정하는 ResetPasswordView 입니다.
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
+    '''
+    permission_classes = [AllowAny]
+    
+    def put(self, request):
+        serializer = ResetPasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            return Response({"message": "비밀번호 재설정 완료"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ResetPasswordEmailView(APIView):
+    '''
+    작성자 : 이주한
+    내용 : 사용자가 비밀번호를 분실했을 시 비밀번호를 변경할 수 있도록 
+            비밀번호를 재설정하는 링크를 사용자의 메일로 보내줍니다. 
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
+    '''
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        serializer = ResetPasswordEmailSerializer(data=request.data, context={"request": request})
+        if serializer.is_valid():
+            return Response({"message": "비밀번호 재설정 이메일을 발송했습니다. 확인부탁드립니다."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CheckPasswordTokenView(APIView):
+    '''
+    작성자 : 이주한
+    내용 : 사용자가 받은 비밀번호 재설정 링크를 클릭했을 시
+            유효한 링크인지 링크에 담겨진 url 파라미터 값으로 검증을 합니다.
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
+    '''
+    permission_classes = [AllowAny]
+
+    def get(self, request, uidb64, token):
+        try:
+            user_id = force_str(urlsafe_base64_decode(uidb64))
+            user = get_object_or_404(User, pk=user_id)
+            payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+            
+            if payload['user_id'] != user.id:
+                return Response('토큰이 올바르지 않습니다', status=status.HTTP_400_BAD_REQUEST)
+            
+            return Response({"uidb64": uidb64, "token": token}, status=status.HTTP_200_OK)
+        
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+        except jwt.ExpiredSignatureError:
+            return Response('만료된 토큰입니다', status=status.HTTP_400_BAD_REQUEST)
+        except jwt.exceptions.DecodeError:
+            return Response('잘못된 토큰입니다', status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(traceback.format_exc())

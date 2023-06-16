@@ -41,7 +41,6 @@ class CampaignReviewCreateReadTest(APITestCase):
             "title": "탄소발자국 캠페인 모집",
             "content": "더 나은 세상을 위한 지구별 눈물 닦아주기, 이제 우리가 행동에 나설 때입니다.",
             "members": "200",
-            "current_members": "0",
             "campaign_start_date": date,
             "campaign_end_date": date,
             "activity_start_date": date,
@@ -62,7 +61,8 @@ class CampaignReviewCreateReadTest(APITestCase):
         cls.campaign = Campaign.objects.create(**cls.campaign_data)
         cls.review_data = {
             "title": "탄소발자국 캠페인 모집 후기",
-            "content": "보람찼다"
+            "content": "보람찼다",
+            "image": ""
         }
 
     def setUp(self):
@@ -113,7 +113,6 @@ class CampaignReviewUpdateDeleteTest(APITestCase):
             "title": "탄소발자국 캠페인 모집",
             "content": "더 나은 세상을 위한 지구별 눈물 닦아주기, 이제 우리가 행동에 나설 때입니다.",
             "members": "200",
-            "current_members": "0",
             "campaign_start_date": date,
             "campaign_end_date": date,
             "activity_start_date": date,
@@ -135,12 +134,14 @@ class CampaignReviewUpdateDeleteTest(APITestCase):
 
         cls.review_data = {
             "title": "탄소발자국 캠페인 모집 후기",
-            "content": "보람찼다"
+            "content": "보람찼다",
+            "image": "",
         }
         cls.new_review_data = {
             "title": "탄소발자국 캠페인 모집 후기",
             "content": "오늘도 채식 캠페인과 함께했는데, \
-                작고 사소한 일이지만 탄소배출 감소에 이바지했다고 생각하니 뿌듯했습니다."
+                작고 사소한 일이지만 탄소배출 감소에 이바지했다고 생각하니 뿌듯했습니다.",
+            "image": "",
         }
         cls.review_data['user'] = User.objects.get(id=1)
         cls.review_data['campaign'] = Campaign.objects.get(id=1)
