@@ -61,11 +61,9 @@ class CampaignSerializer(BaseSerializer):
     """
     작성자 : 최준영
     내용 : 캠페인 시리얼라이저 입니다.
-    obj.user.email를 name으로 나중에 변경하여 name값이 뜨도록 변경예정
-    펀딩이 있는 캠페인이라면 "fundings"값이 정상적으로 뜨고,
-    펀딩이 없는 캠페인이라면 "fundings"값이 null로 표기됩니다.
+    obj.user.email를 name으로 나중에 변경하여 name값이 뜨도록 변경 완료
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.08
+    업데이트 일자 : 2023.06.14
     """
 
     class Meta:
@@ -78,7 +76,6 @@ class CampaignSerializer(BaseSerializer):
             "title",
             "content",
             "members",
-            "current_members",
             "campaign_start_date",
             "campaign_end_date",
             "activity_start_date",
@@ -95,9 +92,10 @@ class CampaignSerializer(BaseSerializer):
     campaign_end_date = serializers.SerializerMethodField()
     activity_start_date = serializers.SerializerMethodField()
     activity_end_date = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
 
     def get_user(self, obj):
-        return obj.user.email
+        return obj.user.username
 
     def get_campaign_start_date(self, obj):
         return obj.campaign_start_date.strftime("%Y년 %m월 %d일 %R")
@@ -106,10 +104,19 @@ class CampaignSerializer(BaseSerializer):
         return obj.campaign_end_date.strftime("%Y년 %m월 %d일 %R")
 
     def get_activity_start_date(self, obj):
-        return obj.activity_start_date.strftime("%Y년 %m월 %d일 %R")
+        if obj.activity_start_date:
+            return obj.activity_start_date.strftime("%Y년 %m월 %d일 %R")
+        else:
+            pass
 
     def get_activity_end_date(self, obj):
-        return obj.activity_end_date.strftime("%Y년 %m월 %d일 %R")
+        if obj.activity_end_date:
+            return obj.activity_end_date.strftime("%Y년 %m월 %d일 %R")
+        else:
+            pass
+
+    def get_status(self, obj):
+        return obj.get_status_display()
 
 
 class CampaignCreateSerializer(serializers.ModelSerializer):
@@ -126,7 +133,6 @@ class CampaignCreateSerializer(serializers.ModelSerializer):
             "title",
             "content",
             "members",
-            "current_members",
             "campaign_start_date",
             "campaign_end_date",
             "activity_start_date",
@@ -151,6 +157,11 @@ class CampaignReviewSerializer(BaseSerializer):
     class Meta:
         model = CampaignReview
         fields = ['campaign', 'title', 'content', 'author']
+
+    user = serializers.SerializerMethodField()
+
+    def get_user(self, obj):
+        return obj.user.username
 
 
 class CampaignReviewCreateSerializer(serializers.ModelSerializer):
@@ -184,6 +195,11 @@ class CampaignCommentSerializer(BaseSerializer):
     class Meta:
         model = CampaignComment
         fields = ['campaign', 'content', 'campaign_title', 'author']
+
+    user = serializers.SerializerMethodField()
+
+    def get_user(self, obj):
+        return obj.user.username
 
 
 class CampaignCommentCreateSerializer(serializers.ModelSerializer):

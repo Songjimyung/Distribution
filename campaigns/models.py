@@ -8,7 +8,7 @@ class BaseModel(models.Model):
     작성자 : 최준영
     내용 : 베이스 모델입니다.
     중복되는 Field인 created_at과 updated_at을
-    상속받을 추상화 클래스입니다.
+    상속시킬 추상화 클래스입니다.
     최초 작성일 : 2023.06.07
     업데이트 일자 :
     """
@@ -43,13 +43,13 @@ class Campaign(BaseModel):
 
     STATUS_CHOICES = (
         (0, "미승인"),
-        (1, "승인"),
-        (2, "모집중"),
+        (1, "캠페인 예약중"),
+        (2, "캠페인 모집중"),
         (3, "캠페인 활동중"),
-        (4, "종료"),
-        (5, "종료 - 펀딩 모금실패"),
-        (6, "종료 - 인원 모집실패"),
-        (7, "종료 - 둘 다 실패"),
+        (4, "캠페인 종료"),
+        (5, "캠페인 종료 - 펀딩 모금실패"),
+        (6, "캠페인 종료 - 인원 모집실패"),
+        (7, "캠페인 종료 - 모금/모집 실패"),
     )
 
     user = models.ForeignKey(User, verbose_name="작성자", on_delete=models.CASCADE, related_name="campaigns")
@@ -58,12 +58,11 @@ class Campaign(BaseModel):
     title = models.CharField("제목", max_length=50)
     content = models.TextField("내용")
     members = models.PositiveIntegerField("모집 인원")
-    current_members = models.PositiveIntegerField("현재 참가인원", default=0)
     campaign_start_date = models.DateTimeField("캠페인 시작일")
     campaign_end_date = models.DateTimeField("캠페인 마감일")
-    activity_start_date = models.DateTimeField("활동 시작일", blank=True)
-    activity_end_date = models.DateTimeField("활동 마감일", blank=True)
-    image = models.ImageField("이미지", null=True, blank=True, upload_to="%Y/%m/")
+    activity_start_date = models.DateTimeField("활동 시작일", blank=True, null=True)
+    activity_end_date = models.DateTimeField("활동 마감일", blank=True, null=True)
+    image = models.ImageField("이미지", blank=True, null=True, upload_to="campaign/%Y/%m/")
     is_funding = models.BooleanField("펀딩여부", default=False)
     status = models.PositiveSmallIntegerField("진행 상태", choices=STATUS_CHOICES, default=0)
 
@@ -136,7 +135,7 @@ class Funding(BaseModel):
     )
     goal = models.PositiveIntegerField("펀딩 목표 금액")
     current = models.PositiveIntegerField("펀딩 현재 금액", default=0)
-    approve_file = models.FileField("펀딩 승인 파일", upload_to="%Y/%m/", blank=True)
+    approve_file = models.FileField("펀딩 승인 파일", upload_to="%Y/%m/", null=True, blank=True)
 
     def __str__(self):
         return str(self.goal)
