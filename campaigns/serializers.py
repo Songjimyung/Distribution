@@ -63,7 +63,7 @@ class CampaignSerializer(BaseSerializer):
     내용 : 캠페인 시리얼라이저 입니다.
     obj.user.email를 name으로 나중에 변경하여 name값이 뜨도록 변경 완료
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.14
+    업데이트 일자 : 2023.06.18
     """
 
     class Meta:
@@ -71,8 +71,8 @@ class CampaignSerializer(BaseSerializer):
         fields = (
             "id",
             "user",
-            "like",
-            "participant",
+            "like_count",
+            "participant_count",
             "title",
             "content",
             "members",
@@ -83,6 +83,8 @@ class CampaignSerializer(BaseSerializer):
             "image",
             "status",
             "is_funding",
+            "created_at",
+            "updated_at",
             "fundings",
         )
 
@@ -93,6 +95,9 @@ class CampaignSerializer(BaseSerializer):
     activity_start_date = serializers.SerializerMethodField()
     activity_end_date = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
+    like_count = serializers.SerializerMethodField()
+    participant_count = serializers.SerializerMethodField()
+
 
     def get_user(self, obj):
         return obj.user.username
@@ -117,6 +122,12 @@ class CampaignSerializer(BaseSerializer):
 
     def get_status(self, obj):
         return obj.get_status_display()
+    
+    def get_like_count(self, obj):
+        return obj.like.count()
+
+    def get_participant_count(self, obj):
+        return obj.participant.count()
 
 
 class CampaignCreateSerializer(serializers.ModelSerializer):
