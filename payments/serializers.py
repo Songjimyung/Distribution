@@ -27,17 +27,20 @@ class RegisterSerializer(serializers.ModelSerializer):
             "blank": "유효기간은 필수 입력 사항입니다!"
         }, write_only=True)
     birth = serializers.CharField(error_messages={
-            "required": "유효기간은 필수 입력 사항입니다!",
-            "blank": "유효기간은 필수 입력 사항입니다!"
+            "required": "생년월일은 필수 입력 사항입니다!",
+            "blank": "생년월일은 필수 입력 사항입니다!"
         }, write_only=True)
     pwd_2digit = serializers.CharField(error_messages={
-            "required": "유효기간은 필수 입력 사항입니다!",
-            "blank": "유효기간은 필수 입력 사항입니다!"
+            "required": "비밀번호는 필수 입력 사항입니다!",
+            "blank": "비밀번호는 필수 입력 사항입니다!"
         }, write_only=True)
     class Meta:
         model = RegisterPayment
         fields = ('created_at','customer_uid', 'card_number', 'expiry_at', 'birth', 'pwd_2digit')
         
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs['context']['request'].user
+        super().__init__(*args, **kwargs)
     
     def create(self, data):
         iamport = Iamport(imp_key=settings.IMP_KEY, imp_secret=settings.IMP_SECRET)
@@ -79,36 +82,28 @@ class PaymentScheduleSerializer(serializers.ModelSerializer):
     '''
     campaign = serializers.PrimaryKeyRelatedField(queryset=Campaign.objects.all())
     amount = serializers.CharField(max_length=10, write_only=True)
-    selected_card = serializers.PrimaryKeyRelatedField(queryset=RegisterPayment.objects.none())
+    selected_card = serializers.PrimaryKeyRelatedField(queryset=RegisterPayment.objects.all())
 
     class Meta:
         model = Payment
         fields = ('campaign','amount', 'selected_card')
         
-    def __init__(self, *args, **kwargs):
-        self.user = kwargs['context']['request'].user
-        super().__init__(*args, **kwargs)
-        self.fields['selected_card'].queryset = RegisterPayment.objects.filter(user=self.user)
-        
     def create(self, data):
-        
-        campaign_id  = data.get('campaign').id
-        campaign = Campaign.objects.get(id=campaign_id)
-        campaign_date = campaign.campaign_end_date 
-
+        campaign = data.get('campaign')
+        campaign_date = campaign.campaign_end_date     
         schedules_date = campaign_date.replace(tzinfo=None)
         schedules_at = int(schedules_date.timestamp())
-        request = self.context['request']
         iamport = Iamport(imp_key=settings.IMP_KEY, imp_secret=settings.IMP_SECRET)
         customer_uid = data.get('selected_card').customer_uid
         amount = data.get('amount')
         merchant_uid = f"imp{int(time.time())}"
+        user_id = self.context['request'].user
         schedules = {
             "merchant_uid": merchant_uid,
             "schedule_at": schedules_at,
             "currency": "KRW",
             "amount": amount,
-            "name": request.user.username
+            "name": user_id.username
         }
         payload = {
             'customer_uid': customer_uid,
@@ -117,7 +112,7 @@ class PaymentScheduleSerializer(serializers.ModelSerializer):
         with transaction.atomic():
             response = iamport.pay_schedule(**payload)
             # 모든 작업이 성공한 경우에만 Payment 객체 생성 및 저장
-            data = Payment.objects.create(user=self.user, amount=amount, campaign=campaign, merchant_uid=merchant_uid)
+            data = Payment.objects.create(user=user_id, amount=amount, campaign=campaign, merchant_uid=merchant_uid)
 
 
         return response

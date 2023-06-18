@@ -27,15 +27,14 @@ class Campaign(BaseModel):
     is_funding의 BooleanField로 펀딩 여부를 체크하고
     status의 ChoiceField로 캠페인의 진행 상태를 체크합니다.
     status가 0일 때는 캠페인이 게시되지 않고, 1가 되었을 때 캠페인이 게시된 후,
-    2이 되었을 때 캠페인의 모집이 시작됩니다.
-    캠페인 활동기간이 시작되면 3으로 바뀌고, 정상 종료되었다면 4로 바뀝니다.
-    status 5, 6, 7은 실패 여부에 따라 나누었습니다.
+    캠페인 기간이 시작된 날짜부터 프론트에 렌더링됩니다.
+    캠페인이 정상 종료되었다면 2로 바뀌고, 캠페인이 펀딩에 실패했다면 3으로 바뀝니다.
     글 게시 시, 활동이 없는 캠페인모금만 있다면 비워놔도 좋다고 써줘야할 것 같습니다
     is_funding이 False라면 Backoffice 검토 없이 그냥 게시해보는 것도 좋을 것 같아요
 
-    캠페인 참여 유저 필드는 아직 미구현
+    캠페인 참여 구현완료
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.08
+    업데이트 일자 : 2023.06.17
     """
 
     class Meta:
@@ -43,13 +42,9 @@ class Campaign(BaseModel):
 
     STATUS_CHOICES = (
         (0, "미승인"),
-        (1, "캠페인 예약중"),
-        (2, "캠페인 모집중"),
-        (3, "캠페인 활동중"),
-        (4, "캠페인 종료"),
-        (5, "캠페인 종료 - 펀딩 모금실패"),
-        (6, "캠페인 종료 - 인원 모집실패"),
-        (7, "캠페인 종료 - 모금/모집 실패"),
+        (1, "캠페인 모집중"),
+        (2, "캠페인 종료"),
+        (3, "캠페인 실패"),
     )
 
     user = models.ForeignKey(User, verbose_name="작성자",
@@ -81,8 +76,9 @@ class CampaignReview(BaseModel):
     """
     작성자 : 최준영
     내용 : 캠페인 리뷰 모델입니다.
+    리뷰 모델에 이미지 추가했습니다.
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.08
+    업데이트 일자 : 2023.06.16
     """
 
     class Meta:
@@ -94,7 +90,7 @@ class CampaignReview(BaseModel):
         Campaign, on_delete=models.CASCADE, related_name="reviews")
     title = models.CharField("캠페인 리뷰 제목", max_length=50)
     content = models.TextField("캠페인 리뷰 내용")
-    image = models.ImageField("이미지", null=True, blank=True, upload_to="%Y/%m/")
+    image = models.ImageField("캠페인 리뷰 이미지", blank=True, null=True, upload_to="review/%Y/%m/")
 
     def __str__(self):
         return str(self.title)
@@ -144,7 +140,7 @@ class Funding(BaseModel):
     )
     goal = models.PositiveIntegerField("펀딩 목표 금액")
     current = models.PositiveIntegerField("펀딩 현재 금액", default=0)
-    approve_file = models.FileField("펀딩 승인 파일", upload_to="%Y/%m/", null=True, blank=True)
+    approve_file = models.FileField("펀딩 승인 파일", upload_to="funding/%Y/%m/", null=True, blank=True)
 
     def __str__(self):
         return str(self.goal)

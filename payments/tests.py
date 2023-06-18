@@ -7,6 +7,7 @@ from faker import Faker
 from config import settings
 import tempfile, json
 from PIL import Image
+from datetime import timedelta, date
 
 def arbitrary_image(temp_text):
     """
@@ -40,14 +41,15 @@ class PaymentTest(APITestCase):
             "pwd_2digit": settings.PWD_2DIGIT
         }
             
+        today = date.today()
         cls.campaign_data = {
             "title": "탄소발자국 캠페인 모집",
             "content": "더 나은 세상을 위한 지구별 눈물 닦아주기, 이제 우리가 행동에 나설 때입니다.",
             "members": "200",
-            "campaign_start_date": "2023-06-09",
-            "campaign_end_date": "2023-06-16",
-            "activity_start_date": "2023-06-17",
-            "activity_end_date": "2023-06-27",
+            "campaign_start_date": today,
+            "campaign_end_date": today + timedelta(days=1),
+            "activity_start_date": today + timedelta(days=2),
+            "activity_end_date": today + timedelta(days=3),
             "image": "",
             "is_funding": "True",
             "status": "1",

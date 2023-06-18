@@ -64,7 +64,7 @@ class CampaignSerializer(BaseSerializer):
     내용 : 캠페인 시리얼라이저 입니다.
     obj.user.email를 name으로 나중에 변경하여 name값이 뜨도록 변경 완료
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.14
+    업데이트 일자 : 2023.06.18
     """
 
     class Meta:
@@ -72,8 +72,8 @@ class CampaignSerializer(BaseSerializer):
         fields = (
             "id",
             "user",
-            "like",
-            "participant",
+            "like_count",
+            "participant_count",
             "title",
             "content",
             "members",
@@ -84,6 +84,8 @@ class CampaignSerializer(BaseSerializer):
             "image",
             "status",
             "is_funding",
+            "created_at",
+            "updated_at",
             "fundings",
         )
 
@@ -94,6 +96,9 @@ class CampaignSerializer(BaseSerializer):
     activity_start_date = serializers.SerializerMethodField()
     activity_end_date = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
+    like_count = serializers.SerializerMethodField()
+    participant_count = serializers.SerializerMethodField()
+
 
     def get_user(self, obj):
         return obj.user.username
@@ -118,6 +123,12 @@ class CampaignSerializer(BaseSerializer):
 
     def get_status(self, obj):
         return obj.get_status_display()
+    
+    def get_like_count(self, obj):
+        return obj.like.count()
+
+    def get_participant_count(self, obj):
+        return obj.participant.count()
 
 
 class CampaignCreateSerializer(serializers.ModelSerializer):
@@ -141,7 +152,6 @@ class CampaignCreateSerializer(serializers.ModelSerializer):
             "image",
             "is_funding",
             "status",
-            "id"
         )
 
 
@@ -151,14 +161,14 @@ class CampaignReviewSerializer(BaseSerializer):
     내용 : 캠페인 리뷰 시리얼라이저 입니다.
           +) author필드 추가 
     최초 작성일 : 2023.06.06
-    업데이트 일자 :2023.06.14 
+    업데이트 일자 :2023.06.16
     """
-    author = serializers.CharField(source='user.username', read_only=True)
 
     class Meta:
         model = CampaignReview
-        fields = ['campaign', 'title', 'content', 'author']
+        fields = "__all__"
 
+    author = serializers.CharField(source="user.username", read_only=True)
     user = serializers.SerializerMethodField()
 
     def get_user(self, obj):
@@ -170,7 +180,7 @@ class CampaignReviewCreateSerializer(serializers.ModelSerializer):
     작성자 : 최준영
     내용 : 캠페인 리뷰 생성 시리얼라이저 입니다.
     최초 작성일 : 2023.06.06
-    업데이트 일자 :
+    업데이트 일자 :2023.06.16
     """
 
     class Meta:
@@ -190,14 +200,14 @@ class CampaignCommentSerializer(BaseSerializer):
     최초 작성일 : 2023.06.06
     업데이트 일자 :2023.06.14
     """
-    campaign_title = serializers.CharField(
-        source='campaign.title', read_only=True)
-    author = serializers.CharField(source='user.username', read_only=True)
 
     class Meta:
         model = CampaignComment
-        fields = ['campaign', 'content', 'campaign_title', 'author']
+        fields = "__all__"
 
+    author = serializers.CharField(source="user.username", read_only=True)
+    campaign_title = serializers.CharField(
+        source="campaign.title", read_only=True)
     user = serializers.SerializerMethodField()
 
     def get_user(self, obj):
