@@ -1,4 +1,4 @@
-from users.models import User, UserProfile
+from users.models import User
 import requests
 import os
 import base64
@@ -15,14 +15,13 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from allauth.socialaccount.providers.google import views as google_view
 from users.serializers import (
-    SignUpSerializer,
-    CustomTokenObtainPairSerializer,
-    UserSerializer,
+    SignUpSerializer, 
+    CustomTokenObtainPairSerializer, 
+    UserSerializer, 
     UserUpdateSerializer,
     UpdatePasswordSerializer,
     ResetPasswordSerializer,
-    ResetPasswordEmailSerializer,
-    UserProfileSerializer
+    ResetPasswordEmailSerializer
 )
 from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.kakao import views as kakao_view
@@ -31,7 +30,6 @@ from django.http import JsonResponse
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.utils.encoding import DjangoUnicodeDecodeError, force_str
 from django.utils.http import urlsafe_base64_decode
-from django.db import IntegrityError
 from django.core.mail import EmailMessage
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 
@@ -67,15 +65,7 @@ class SendEmailView(APIView):
     최초 작성일 : 2023.06.15
     업데이트 일자 : 
     '''
-
-    def post(self, request):
-        # try:
-        #     User.objects.get(email=email)
-        #     return Response({"message":"계정이 이미 존재합니다."},status=status.HTTP_400_BAD_REQUEST)
-        # except:
-        #     pass
-        # subject='EcoCanvas 인증 메일'
-
+    def post(self,request):
         # email=request.data.get("email")
         # if email == "":
         #     return Response({'error':'이메일을 입력해주세요.'},status=status.HTTP_400_BAD_REQUEST)
@@ -100,7 +90,6 @@ class SignUpView(APIView):
     최초 작성일 : 2023.06.06
     업데이트 일자 : 2023.06.15
     '''
-
     def post(self, request):
         # if verification_code(request.data.get("email"))!=request.data.get("check_code"):
         #     return Response({"message": f"잘못된 인증코드입니다."}, status=status.HTTP_400_BAD_REQUEST)
@@ -119,11 +108,9 @@ class UserView(APIView):
     최초 작성일 : 2023.06.06
     업데이트 일자 : 2023.06.14
     '''
-
     def put(self, request):
         user = get_object_or_404(User, id=request.user.id)
-        serializer = UserUpdateSerializer(
-            user, data=request.data, context={"request": request})
+        serializer = UserUpdateSerializer(user, data=request.data, context={"request": request})
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "회원정보 수정이 완료되었습니다."}, status=status.HTTP_200_OK)
@@ -446,11 +433,10 @@ class UpdatePasswordView(APIView):
     업데이트 일자 : 
     '''
     permission_classes = [IsAuthenticated]
-
+    
     def put(self, request):
         user = get_object_or_404(User, id=request.user.id)
-        serializer = UpdatePasswordSerializer(
-            user, data=request.data, context={"request": request})
+        serializer = UpdatePasswordSerializer(user, data=request.data, context={"request": request})
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "비밀번호 변경이 완료되었습니다. 다시 로그인해주세요!"}, status=status.HTTP_200_OK)
@@ -465,7 +451,7 @@ class ResetPasswordView(APIView):
     업데이트 일자 : 
     '''
     permission_classes = [AllowAny]
-
+    
     def put(self, request):
         serializer = ResetPasswordSerializer(data=request.data)
         if serializer.is_valid():
@@ -482,10 +468,9 @@ class ResetPasswordEmailView(APIView):
     업데이트 일자 : 
     '''
     permission_classes = [AllowAny]
-
+    
     def post(self, request):
-        serializer = ResetPasswordEmailSerializer(
-            data=request.data, context={"request": request})
+        serializer = ResetPasswordEmailSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             return Response({"message": "비밀번호 재설정 이메일을 발송했습니다. 확인부탁드립니다."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -504,58 +489,11 @@ class CheckPasswordTokenView(APIView):
     def get(self, request, uidb64, token):
         try:
             user_id = force_str(urlsafe_base64_decode(uidb64))
-            user = get_object_or_404(User, pk=user_id)
-            payload = jwt.decode(token, secret_key, algorithms=['HS256'])
-
-            if payload['user_id'] != user.id:
-                return Response('토큰이 올바르지 않습니다', status=status.HTTP_400_BAD_REQUEST)
+            user = get_object_or_404(User, id=user_id)
+            if not PasswordResetTokenGenerator().check_token(user, token):
+                return Response({"message": "링크가 유효하지 않습니다."}, status=status.HTTP_401_UNAUTHORIZED)
 
             return Response({"uidb64": uidb64, "token": token}, status=status.HTTP_200_OK)
 
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            user = None
-        except jwt.ExpiredSignatureError:
-            return Response('만료된 토큰입니다', status=status.HTTP_400_BAD_REQUEST)
-        except jwt.exceptions.DecodeError:
-            return Response('잘못된 토큰입니다', status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            print(traceback.format_exc())
-
-
-class UserProfileAPIView(APIView):
-
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        try:
-            user_profile = UserProfile.objects.get(user=request.user)
-            serializer = UserProfileSerializer(user_profile)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except UserProfile.DoesNotExist:
-            return Response({'error': '프로필이 존재하지 않습니다.'}, status=status.HTTP_404_NOT_FOUND)
-
-    def put(self, request):
-        try:
-            user_profile = UserProfile.objects.get(user=request.user)
-            serializer = UserProfileSerializer(
-                instance=user_profile, data=request.data
-            )
-            if serializer.is_valid():
-                serializer.save()
-                return Response(
-                    {"message": "회원정보 수정 완료!"}, status=status.HTTP_200_OK
-                )
-            return Response(
-                serializer.errors, status=status.HTTP_400_BAD_REQUEST
-            )
-        except UserProfile.DoesNotExist:
-            # 프로필이 없는 경우 프로필 생성
-            serializer = UserProfileSerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save(user=request.user)
-                return Response(
-                    {"message": "프로필 생성 완료!"}, status=status.HTTP_201_CREATED
-                )
-            return Response(
-                serializer.errors, status=status.HTTP_400_BAD_REQUEST
-            )
+        except DjangoUnicodeDecodeError as identifier:
+            return Response({"message": "링크가 유효하지 않습니다."}, status=status.HTTP_401_UNAUTHORIZED)
