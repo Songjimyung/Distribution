@@ -185,7 +185,7 @@ class CampaignDetailView(APIView):
         """
         queryset = get_object_or_404(Campaign, id=campaign_id)
         if request.user == queryset.user:
-            serializer = CampaignCreateSerializer(queryset, data=request.data)
+            serializer = CampaignCreateSerializer(queryset, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
                 return Response(
@@ -210,8 +210,8 @@ class CampaignDetailView(APIView):
         queryset = get_object_or_404(Campaign, id=campaign_id)
         if request.user == queryset.user:
             campaign_serializer = CampaignCreateSerializer(
-                queryset, data=request.data)
-            funding_serializer = FundingCreateSerializer(data=request.data)
+                queryset, data=request.data, partial=True)
+            funding_serializer = FundingCreateSerializer(data=request.data, partial=True)
             if campaign_serializer.is_valid() and funding_serializer.is_valid():
                 campaign = campaign_serializer.save()
                 funding_serializer.validated_data["campaign"] = campaign
@@ -579,6 +579,21 @@ class MyAttendCampaignView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        mycampaigns = Campaign.objects.filter(participant=request.user)
+        mycampaigns = Campaign.objects.filter(participant=request.user).order_by('-activity_end_date')
         serializer = CampaignCreateSerializer(mycampaigns, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CampaignStatusUpdateAPIView(APIView):
+    '''
+    작성자: 장소은
+    내용: 백오피스에서 신청내역의 캠페인의 상태값만 수정
+          별도의 시리얼라이저나 응답데이터가 필요X
+    작성일: 2023.06.17
+    '''
+
+    def put(self, request, campaign_id):
+        campaign = get_object_or_404(Campaign, id=campaign_id)
+        campaign.status = request.data.get('status')
+        campaign.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
