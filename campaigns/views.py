@@ -27,7 +27,7 @@ class CampaignView(APIView):
     내용 : 캠페인 뷰 입니다.
     전체 캠페인 리스트를 GET하는 get함수와
     캠페인을 작성할 수 있는 post가 있는 클래스입니다.
-    페이지네이션 기능 추가중입니다.
+
     최초 작성일 : 2023.06.06
     업데이트 일자 : 2023.06.18
     """
@@ -39,24 +39,38 @@ class CampaignView(APIView):
         """
         캠페인의 진행 상태인 status가 1 이상의 캠페인만 필터로 받아
         비승인은 제외하고 GET 요청에 대해 Response합니다.
-        페이지 기반 API 페이지네이션 적용완료
 
+        페이지 기반 API 페이지네이션 적용완료
         querystring으로 filtering/ordering 구현 시도중
         Query optimization부분 고민중
         select_related와 prefetch_related로 중복쿼리는 삭제해본 상태
+
+        쿼리스트링은 wadiz사이트를 기준으로 진행했습니다.
+        end : 캠페인의 status가 진행중인지 끝났는지에 대한 filter입니다.
+        order : 캠페인을 order_by 메소드로 정렬합니다.
+        recent - 최신순기준
+        closing - 마감일기준
+        count - 조회수기준(아직 조회수가 미구현)
+        like - 좋아요수기준(좋아요 수 필드를 만들어야 할지 고민중입니다)
+        amount - 펀딩 모금금액순(current로 한 상태, goal로 해야할지는 고민)
         """
         # end = request.GET.get("end", None)
-        end = self.request.query_params.get('end', None)
-        order = self.request.query_params.get('order', None)
-        print(end, order)
+        end = self.request.query_params.get("end", None)
+        order = self.request.query_params.get("order", None)
 
-        queryset = Campaign.objects.select_related("user").select_related("fundings").prefetch_related("like").prefetch_related("participant").all()
-        
+        queryset = (
+            Campaign.objects.select_related("user")
+            .select_related("fundings")
+            .prefetch_related("like")
+            .prefetch_related("participant")
+            .all()
+        )
+
         if end == "N":
             queryset = queryset.filter(
-                Q(status=1) & 
-                Q(campaign_start_date__lte=timezone.now()) &
-                Q(campaign_end_date__gte=timezone.now())
+                Q(status=1)
+                & Q(campaign_start_date__lte=timezone.now())
+                & Q(campaign_end_date__gte=timezone.now())
             )
         elif end == "Y":
             queryset = queryset.filter(status__gte=2)
@@ -65,13 +79,12 @@ class CampaignView(APIView):
 
         orders_dict = {
             "recent": queryset.order_by("-created_at"),
-            "closing":  queryset.order_by("campaign_end_date"),
+            "closing": queryset.order_by("campaign_end_date"),
             "count": queryset,
             "like": queryset.annotate(like_count=Count("like")).order_by("-like_count"),
             "amount": queryset.filter(
-                ~Q(fundings=None) & 
-                ~Q(fundings__goal=0)
-            ).order_by("-fundings__goal"),
+                ~Q(fundings=None) & Q(fundings__goal__gt=0)
+            ).order_by("-fundings__current"),
         }
         
         queryset = orders_dict[order]
