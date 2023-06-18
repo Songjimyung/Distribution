@@ -33,12 +33,12 @@ class ProductListViewAPI(APIView):
         sort_by = request.GET.get('sort_by')
         if sort_by == 'hits':
             products = ShopProduct.objects.all().order_by('-hits')
+        elif sort_by == 'latest':
+            products = ShopProduct.objects.all().order_by('-product_date')
         elif sort_by == 'high_price':
             products = ShopProduct.objects.all().order_by('-product_price')
         elif sort_by == 'low_price':
             products = ShopProduct.objects.all().order_by('product_price')
-        else:
-            products = ShopProduct.objects.all().order_by('-product_date')
         paginator = self.pagination_class()
         result_page = paginator.paginate_queryset(products, request)
         serializer = ProductListSerializer(result_page, many=True)
@@ -129,6 +129,7 @@ class AdminProductViewAPI(APIView):
     최초 작성일 : 2023.06.09
     업데이트 일자 :
     '''
+    pagination_class = CustomPagination
 
     def get(self, request):
         products = ShopProduct.objects.all().order_by('-product_date')
@@ -176,8 +177,10 @@ class OrderProductViewAPI(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, product_id):
+        print("ㅋㅌㅊㅋㅌㅊㅌ")
         product = get_object_or_404(ShopProduct, id=product_id)
         serializer = OrderProductSerializer(data=request.data)
+        print("진입", request.data)
         if serializer.is_valid():
             serializer.save(product=product)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -188,18 +191,17 @@ class OrderProductViewAPI(APIView):
 class AdminOrderViewAPI(APIView):
     '''
     작성자 : 장소은
-    내용 : 어드민 페이지에서 해당 상품에 대한 모든 주문내역 조회
+    내용 : 어드민 페이지에서 상품에 대한 모든 주문내역 조회
     최초 작성일 : 2023.06.09
     업데이트 일자 :
     '''
     pagination_class = CustomPagination
 
-    def get(self, request, product_id):
-        orders = ShopOrder.objects.filter(product_id=product_id)
+    def get(self, request):
+        orders = ShopOrder.objects.all().order_by('-order_date')
         paginator = self.pagination_class()
         result_page = paginator.paginate_queryset(orders, request)
         serializer = OrderProductSerializer(result_page, many=True)
-
         return paginator.get_paginated_response(serializer.data)
 
 
