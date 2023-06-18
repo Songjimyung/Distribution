@@ -1,3 +1,6 @@
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.core.mail import EmailMessage
+from django.db import IntegrityError
 from users.models import User, UserProfile
 import requests
 import os
@@ -32,8 +35,6 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.utils.encoding import DjangoUnicodeDecodeError, force_str
 from django.utils.http import urlsafe_base64_decode
 from django.db import IntegrityError
-from django.core.mail import EmailMessage
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
 
 
 state = os.environ.get('STATE')
@@ -503,7 +504,8 @@ class CheckPasswordTokenView(APIView):
     def get(self, request, uidb64, token):
         try:
             user_id = force_str(urlsafe_base64_decode(uidb64))
-            user = get_object_or_404(User, id=user_id)
+
+            user = get_object_or_404(User, pk=user_id)
             if not PasswordResetTokenGenerator().check_token(user, token):
                 return Response({"message": "링크가 유효하지 않습니다."}, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -511,45 +513,6 @@ class CheckPasswordTokenView(APIView):
 
         except DjangoUnicodeDecodeError as identifier:
             return Response({"message": "링크가 유효하지 않습니다."}, status=status.HTTP_401_UNAUTHORIZED)
-
-
-class UserProfileAPIView(APIView):
-
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        try:
-            user_profile = UserProfile.objects.get(user=request.user)
-            serializer = UserProfileSerializer(user_profile)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except UserProfile.DoesNotExist:
-            return Response({'error': '프로필이 존재하지 않습니다.'}, status=status.HTTP_404_NOT_FOUND)
-
-    def put(self, request):
-        try:
-            user_profile = UserProfile.objects.get(user=request.user)
-            serializer = UserProfileSerializer(
-                instance=user_profile, data=request.data
-            )
-            if serializer.is_valid():
-                serializer.save()
-                return Response(
-                    {"message": "회원정보 수정 완료!"}, status=status.HTTP_200_OK
-                )
-            return Response(
-                serializer.errors, status=status.HTTP_400_BAD_REQUEST
-            )
-        except UserProfile.DoesNotExist:
-            # 프로필이 없는 경우 프로필 생성
-            serializer = UserProfileSerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save(user=request.user)
-                return Response(
-                    {"message": "프로필 생성 완료!"}, status=status.HTTP_201_CREATED
-                )
-            return Response(
-                serializer.errors, status=status.HTTP_400_BAD_REQUEST
-            )
 
 
 class UserProfileAPIView(APIView):

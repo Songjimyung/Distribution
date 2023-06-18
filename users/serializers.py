@@ -1,14 +1,16 @@
-import threading
+from .models import User, password_validator, password_pattern, UserProfile
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.contrib.auth.hashers import check_password
+from users.models import User
+from rest_framework import serializers, exceptions
+from rest_framework import serializers
 from rest_framework_jwt.settings import api_settings
 from django.core.mail import EmailMessage
 from django.utils.encoding import force_str
 from django.utils.encoding import smart_bytes, force_bytes
+import threading
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from django.contrib.auth.hashers import check_password
-from .models import User, password_validator, password_pattern, UserProfile
-from rest_framework import serializers, exceptions
 
 
 class SignUpSerializer(serializers.ModelSerializer):

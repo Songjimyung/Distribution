@@ -30,7 +30,7 @@ urlpatterns = [
     path('login/', views.CustomTokenObtainPairView.as_view(), name='log_in'),
     path('list/', views.UserListView().as_view(), name='user_list'),
     path('<int:user_id>/', views.UserDetailView().as_view(), name='user'),
-
+    
     # 유저프로필
     path('profile/', views.UserProfileAPIView.as_view(), name='user_profile')
 ]
