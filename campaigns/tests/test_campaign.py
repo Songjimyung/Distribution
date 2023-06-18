@@ -118,7 +118,7 @@ class CampaignReadTest(APITestCase):
         dns_org = cls.faker.random_choices(elements=list_of_domains, length=1)[0]
         email_faker = f"{first_name}.{last_name}@{company}.{dns_org}".lower()
         date = timezone.now() + timedelta(seconds=random.randint(0, 86400))
-        for _ in range(10):
+        for _ in range(6):
             cls.user = User.objects.create_user(
                 cls.faker.name() + "A1!", email_faker, cls.faker.word() + "B2@"
             )
@@ -133,7 +133,7 @@ class CampaignReadTest(APITestCase):
                     activity_start_date=date,
                     activity_end_date=date,
                     image="",
-                    status=6,
+                    status=1,
                     is_funding="False",
                 )
             )
@@ -146,12 +146,12 @@ class CampaignReadTest(APITestCase):
         response와 serializer가 일치하는지 테스트합니다.
         """
         for i, campaign in enumerate(self.campaigns):
-            url = reverse("campaign_view")
+            url = reverse("campaign_view") + "?page=1&order=like"
             response = self.client.get(url)
             serializer = CampaignSerializer(campaign).data
             self.assertEqual(response.status_code, 200)
             for key, value in serializer.items():
-                self.assertEqual(response.data[i][key], value)
+                self.assertEqual(response.data['results'][i][key], value)
 
 
 class CampaignDetailTest(APITestCase):

@@ -1,8 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework import status, permissions
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
-from django.db.models import Q
+from django.db.models import Q, F, Count
 from django.utils import timezone
 from campaigns.models import (
     Campaign,
@@ -26,11 +27,13 @@ class CampaignView(APIView):
     내용 : 캠페인 뷰 입니다.
     전체 캠페인 리스트를 GET하는 get함수와
     캠페인을 작성할 수 있는 post가 있는 클래스입니다.
+
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.14
+    업데이트 일자 : 2023.06.18
     """
 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = PageNumberPagination
 
     def get(self, request):
         """
@@ -47,8 +50,15 @@ class CampaignView(APIView):
         else:
             queryset = Campaign.objects.filter(
                 status__gte=1).select_related("fundings")
+
         serializer = CampaignSerializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        pagination_instance = self.pagination_class()
+        total_count = queryset.count()
+        pagination_instance.total_count = total_count
+        paginated_data = pagination_instance.paginate_queryset(serializer.data, request)
+        
+        return pagination_instance.get_paginated_response(paginated_data)
 
     def post(self, request):
         """
@@ -229,14 +239,14 @@ class CampaignLikeView(APIView):
     def get(self, request, campaign_id):
         queryset = get_object_or_404(Campaign, id=campaign_id)
         is_liked = queryset.like.filter(id=request.user.id).exists()
-        return Response({'is_liked': is_liked}, status=status.HTTP_200_OK)
+        return Response({"is_liked": is_liked}, status=status.HTTP_200_OK)
 
     def post(self, request, campaign_id):
         queryset = get_object_or_404(Campaign, id=campaign_id)
         if queryset.like.filter(id=request.user.id).exists():
             queryset.like.remove(request.user)
             is_liked = False
-            message = '좋아요 취소!'
+            message = "좋아요 취소!"
         else:
             queryset.like.add(request.user)
             is_liked = True
@@ -251,19 +261,51 @@ class CampaignParticipationView(APIView):
     내용 : 캠페인 유저 참가 뷰 입니다.
     캠페인에 대한 참가 POST 요청을 처리합니다.
     최초 작성일 : 2023.06.11
-    업데이트 일자 : 
+    업데이트 일자 : 2023.06.16
     """
 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get(self, request, campaign_id):
+        queryset = get_object_or_404(Campaign, id=campaign_id)
+        is_participated = queryset.participant.filter(id=request.user.id).exists()
+        return Response({"is_participated": is_participated}, status=status.HTTP_200_OK)
 
     def post(self, request, campaign_id):
         queryset = get_object_or_404(Campaign, id=campaign_id)
         if queryset.participant.filter(id=request.user.id).exists():
             queryset.participant.remove(request.user)
-            return Response({'message': '캠페인 참가 취소!'}, status=status.HTTP_200_OK)
+            is_participated = False
+            message = "캠페인 참가 취소!"
         else:
             queryset.participant.add(request.user)
-            return Response({'message': '캠페인 참가 성공!'}, status=status.HTTP_200_OK)
+            is_participated = True
+            message = "캠페인 참가 성공!"
+
+        return Response({"is_participated": is_participated, "message": message}, status=status.HTTP_200_OK)
+
+
+def check_campaign_status():
+    """
+    작성자 : 최준영
+    내용 : 캠페인 status 체크 함수입니다.
+    status가 2인 캠페인 중 완료 날짜가 되거나 지난 캠페인의 status를
+    3으로 바꿔주는 함수입니다.
+    timezone.now()는 UTC기준 시각으로 찍히고,
+    timezone.localtime()은 로컬 시각(한국)으로 찍히는데, 뭘 사용해야 할지는
+    settings.py 시각과 MySQL에 찍히는 DB 시간 고려해서 정해야할 것 같습니다.
+    최초 작성일 : 2023.06.08
+    업데이트 일자 : 2023.06.17
+    """
+    now = timezone.now()  # UTC로 찍힘
+    # now = timezone.localtime() # 한국 로컬타임 찍힘
+    print(now)
+    campaigns = Campaign.objects.filter(status=1)
+
+    for campaign in campaigns:
+        if campaign.enddate <= now:
+            campaign.status = 2
+            campaign.save()
 
 
 class CampaignReviewView(APIView):
@@ -494,29 +536,6 @@ class CampaignUserCommentView(APIView):
             user=request.user).select_related("campaign")
         serializer = CampaignCommentSerializer(review, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-def check_campaign_status():
-    """
-    작성자 : 최준영
-    내용 : 캠페인 status 체크 함수입니다.
-    status가 2인 캠페인 중 완료 날짜가 되거나 지난 캠페인의 status를
-    3으로 바꿔주는 함수입니다.
-    timezone.now()는 UTC기준 시각으로 찍히고,
-    timezone.localtime()은 로컬 시각(한국)으로 찍히는데, 뭘 사용해야 할지는
-    settings.py 시각과 MySQL에 찍히는 DB 시간 고려해서 정해야할 것 같습니다.
-    최초 작성일 : 2023.06.08
-    업데이트 일자 : 2023.06.08
-    """
-    now = timezone.now()  # UTC로 찍힘
-    # now = timezone.localtime() # 한국 로컬타임 찍힘
-    print(now)
-    campaigns = Campaign.objects.filter(Q(status=2) | Q(status=3))
-
-    for campaign in campaigns:
-        if campaign.enddate <= now:
-            campaign.status = 4
-            campaign.save()
 
 
 class MyAttendCampaignView(APIView):

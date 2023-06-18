@@ -26,6 +26,7 @@ urlpatterns = [
     path('reset_pw/email_code/', views.ResetPasswordEmailView.as_view(),
          name='reset_password_email'),
 
+
     # 로그인
     path('login/', views.CustomTokenObtainPairView.as_view(), name='log_in'),
     path('list/', views.UserListView().as_view(), name='user_list'),
