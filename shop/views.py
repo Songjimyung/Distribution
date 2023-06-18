@@ -92,8 +92,7 @@ class ProductCategoryListViewAPI(APIView):
 class ProductDetailViewAPI(APIView):
     '''
     작성자:장소은
-    내용: 카테고리별 상품 상세 조회/ 수정 / 삭제 (일반유저는 조회만) 
-          +) 조회수 기능 추가
+    내용: 카테고리별 상품 상세 조회/ 수정 / 삭제 (일반유저는 조회만)
     작성일: 2023.06.06
     업데이트일: 2023.06.15
     '''
@@ -129,7 +128,6 @@ class AdminProductViewAPI(APIView):
     최초 작성일 : 2023.06.09
     업데이트 일자 :
     '''
-    pagination_class = CustomPagination
 
     def get(self, request):
         products = ShopProduct.objects.all().order_by('-product_date')
@@ -142,9 +140,9 @@ class AdminProductViewAPI(APIView):
 
 class AdminCategoryViewAPI(APIView):
     '''
-    작성자 : 박지홍, 장소은
-    내용 : 어드민 페이지에서 전체 카테고리 목록을 받아오기 및 카테고리 생성하기 위해 사용
-    최초 작성일 : 2023.06.09, 2023.06.12
+    작성자 : 박지홍
+    내용 : 어드민 페이지에서 전체 카테고리 목록을 받아오기위해 사용
+    최초 작성일 : 2023.06.09
     업데이트 일자 :
     '''
 
@@ -197,12 +195,10 @@ class AdminOrderViewAPI(APIView):
     '''
     pagination_class = CustomPagination
 
-    def get(self, request):
-        orders = ShopOrder.objects.all().order_by('-order_date')
-        paginator = self.pagination_class()
-        result_page = paginator.paginate_queryset(orders, request)
-        serializer = OrderProductSerializer(result_page, many=True)
-        return paginator.get_paginated_response(serializer.data)
+    def get(self, request, product_id):
+        orders = ShopOrder.objects.filter(product_id=product_id)
+        serializer = OrderProductSerializer(orders, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class MypageOrderViewAPI(APIView):

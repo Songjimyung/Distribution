@@ -186,7 +186,8 @@ class CampaignDetailView(APIView):
         """
         queryset = get_object_or_404(Campaign, id=campaign_id)
         if request.user == queryset.user:
-            serializer = CampaignCreateSerializer(queryset, data=request.data)
+            serializer = CampaignCreateSerializer(
+                queryset, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
                 return Response(
@@ -211,8 +212,9 @@ class CampaignDetailView(APIView):
         queryset = get_object_or_404(Campaign, id=campaign_id)
         if request.user == queryset.user:
             campaign_serializer = CampaignCreateSerializer(
-                queryset, data=request.data)
-            funding_serializer = FundingCreateSerializer(data=request.data)
+                queryset, data=request.data, partial=True)
+            funding_serializer = FundingCreateSerializer(
+                data=request.data, partial=True)
             if campaign_serializer.is_valid() and funding_serializer.is_valid():
                 campaign = campaign_serializer.save()
                 funding_serializer.validated_data["campaign"] = campaign
@@ -582,7 +584,8 @@ class MyAttendCampaignView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        mycampaigns = Campaign.objects.filter(participant=request.user)
+        mycampaigns = Campaign.objects.filter(
+            participant=request.user).order_by('-activity_end_date')
         serializer = CampaignCreateSerializer(mycampaigns, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

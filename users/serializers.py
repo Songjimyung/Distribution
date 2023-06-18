@@ -1,10 +1,9 @@
-from .models import User, password_validator, password_pattern, UserProfile
+from rest_framework import serializers
+from .models import User, UserProfile
+from django.contrib.auth.hashers import check_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.contrib.auth.hashers import check_password
-from users.models import User
 from rest_framework import serializers, exceptions
-from rest_framework import serializers
 from rest_framework_jwt.settings import api_settings
 from django.core.mail import EmailMessage
 from django.utils.encoding import force_str

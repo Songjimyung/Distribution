@@ -1,6 +1,3 @@
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.core.mail import EmailMessage
-from django.db import IntegrityError
 from users.models import User, UserProfile
 import requests
 import os
@@ -34,7 +31,8 @@ from django.http import JsonResponse
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.utils.encoding import DjangoUnicodeDecodeError, force_str
 from django.utils.http import urlsafe_base64_decode
-from django.db import IntegrityError
+from django.core.mail import EmailMessage
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 
 
 state = os.environ.get('STATE')
@@ -70,12 +68,6 @@ class SendEmailView(APIView):
     '''
 
     def post(self, request):
-        # try:
-        #     User.objects.get(email=email)
-        #     return Response({"message":"계정이 이미 존재합니다."},status=status.HTTP_400_BAD_REQUEST)
-        # except:
-        #     pass
-        # subject='EcoCanvas 인증 메일'
         # email=request.data.get("email")
         # if email == "":
         #     return Response({'error':'이메일을 입력해주세요.'},status=status.HTTP_400_BAD_REQUEST)
@@ -508,7 +500,6 @@ class CheckPasswordTokenView(APIView):
             user = get_object_or_404(User, pk=user_id)
             if not PasswordResetTokenGenerator().check_token(user, token):
                 return Response({"message": "링크가 유효하지 않습니다."}, status=status.HTTP_401_UNAUTHORIZED)
-
             return Response({"uidb64": uidb64, "token": token}, status=status.HTTP_200_OK)
 
         except DjangoUnicodeDecodeError as identifier:
