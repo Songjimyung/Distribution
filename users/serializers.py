@@ -1,6 +1,5 @@
-from rest_framework import serializers, exceptions
-from users.models import User
-from .models import User, password_validator, password_pattern
+from rest_framework import serializers
+from .models import User, UserProfile
 from django.contrib.auth.hashers import check_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -367,3 +366,25 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'email', 'username', 'is_active']
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    '''
+    작성자: 장소은
+    내용: 유저 프로필 시리얼라이저 
+    작성일: 2023.06.17
+    '''
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = UserProfile
+        fields = ['user', 'image', 'address', 'zip_code',
+                  'detail_address', 'delivery_message', 'receiver_number']
+        extra_kwargs = {
+            'image': {'required': False},
+            'address': {'required': False},
+            'zip_code': {'required': False},
+            'detail_address': {'required': False},
+            'delivery_message': {'required': False},
+            'receiver_number': {'required': False}
+        }
