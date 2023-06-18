@@ -34,7 +34,6 @@ class ShopProduct(models.Model):
     product_date = models.DateTimeField(auto_now_add=True)
     category = models.ForeignKey(
         ShopCategory, on_delete=models.CASCADE, related_name='products')
-    hits = models.PositiveIntegerField(default=0)
 
 
 class ShopOrder(models.Model):

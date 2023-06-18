@@ -24,7 +24,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShopProduct
         fields = ['id', 'product_name', 'product_price', 'product_stock',
-                        'product_desc', 'product_date', 'category', 'images', 'uploaded_images', 'hits']
+                        'product_desc', 'product_date', 'category', 'images', 'uploaded_images']
 
     def create(self, validated_data):
         uploaded_images = validated_data.pop('uploaded_images', [])

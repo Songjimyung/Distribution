@@ -81,8 +81,7 @@ class ProductTest(APITestCase):
         image_file = arbitrary_image()
         self.product_data["images"][0]["image_file"] = image_file
         self.product_data["uploaded_images"] = [image_file]
-        url = reverse("category_sortby_product_view", kwargs={
-                      "category_id": self.category.id})
+        url = reverse("product_view", kwargs={"category_id": self.category.id})
         response = self.client.post(
             path=url,
             data=self.product_data,
@@ -93,7 +92,7 @@ class ProductTest(APITestCase):
 
     def test_notadmin_post_product(self):
         response = self.client.post(
-            path=reverse("category_sortby_product_view", kwargs={
+            path=reverse("product_view", kwargs={
                          "category_id": self.category.id}),
             data=self.product_data,
             HTTP_AUTHORIZATION=f"Bearer {self.access_token}",

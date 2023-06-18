@@ -31,6 +31,7 @@ from django.http import JsonResponse
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.utils.encoding import DjangoUnicodeDecodeError, force_str
 from django.utils.http import urlsafe_base64_decode
+from django.db import IntegrityError
 from django.core.mail import EmailMessage
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 
@@ -49,7 +50,7 @@ def verification_code(email):
     내용 : 회원가입시 이메일 인증에 필요한 인증 코드를 생성하는 함수입니다.
             개발 단계에서는 필요하지 않을 수 있어 주석 처리해 두었습니다.
     최초 작성일 : 2023.06.15
-    업데이트 일자 : 
+    업데이트 일자 :
     '''
     # email_bytes = email.encode('ascii')
     # email_base64 = base64.b64encode(email_bytes)
@@ -64,7 +65,7 @@ class SendEmailView(APIView):
     내용 : 회원가입시 이메일 인증에 필요한 메일을 보내는 view 클래스입니다.
             개발 단계에서는 이메일 인증이 번거로울 수 있어 주석 처리해 두었습니다.
     최초 작성일 : 2023.06.15
-    업데이트 일자 : 
+    업데이트 일자 :
     '''
 
     def post(self, request):
@@ -113,7 +114,7 @@ class SignUpView(APIView):
 class UserView(APIView):
     '''
     작성자 : 이주한
-    내용 : 회원정보 수정, 회원 비활성화에 사용되는 view 클래스 
+    내용 : 회원정보 수정, 회원 비활성화에 사용되는 view 클래스
     최초 작성일 : 2023.06.06
     업데이트 일자 : 2023.06.14
     '''
@@ -190,8 +191,8 @@ def google_login(request):
 def google_callback(request):
     '''
     작성자 : 이주한
-    내용 : 받아온 구글 로그인 폼에 사용자가 id와 pw를 작성하여 제공하면 구글이 Authorization Code를 발급해줍니다. 
-            Authorization Code와 함께 넘어온 값들을 활용하여 django-allauth가 access, refresh 토큰을 발급해주고 
+    내용 : 받아온 구글 로그인 폼에 사용자가 id와 pw를 작성하여 제공하면 구글이 Authorization Code를 발급해줍니다.
+            Authorization Code와 함께 넘어온 값들을 활용하여 django-allauth가 access, refresh 토큰을 발급해주고
             dj-rest-auth의 JWTCookieAuthentication이 쿠키에 저장해줍니다.
     최초 작성일 : 2023.06.08
     업데이트 일자 :
@@ -298,7 +299,7 @@ class GoogleLogin(SocialLoginView):
 class KakaoCallbackView(APIView):
     '''
     작성자 : 장소은
-    내용 :  Kakao 로그인 콜백을 처리하는 APIView GET. Kakao 토큰 API에 POST 요청을 보냄. 
+    내용 :  Kakao 로그인 콜백을 처리하는 APIView GET. Kakao 토큰 API에 POST 요청을 보냄.
             응답을 받아와서 JSON 형식으로 파싱하여 access_token추출
             응답 데이터에 'error' 키가 포함되어 있다면 에러처리.
             그렇지 않은 경우는 access_token을 사용하여 Kakao API를 호출하여 사용자 정보를 가져옴 이메일(kakao_email), 연령대(age_range), 성별(gender) 추출
@@ -411,7 +412,7 @@ class KakaoLogin(SocialLoginView):
 class UserListView(APIView):
     '''
     작성자 : 박지홍
-    내용: 어드민 페이지에서 전체 일반 유저 리스트를 받기 위해 사용 
+    내용: 어드민 페이지에서 전체 일반 유저 리스트를 받기 위해 사용
     작성일 : 2023.06.09
     업데이트 일자 :
     '''
@@ -441,7 +442,7 @@ class UpdatePasswordView(APIView):
     작성자 : 이주한
     내용 : 사용자가 로그인한 상태에서 본인 계정의 비밀번호를 수정할 때 사용되는 UpdatePasswordView 입니다.
     최초 작성일 : 2023.06.15
-    업데이트 일자 : 
+    업데이트 일자 :
     '''
     permission_classes = [IsAuthenticated]
 
@@ -460,7 +461,7 @@ class ResetPasswordView(APIView):
     작성자 : 이주한
     내용 : 사용자가 비밀번호를 분실했을 시 비밀번호를 변경할 수 있도록 비밀번호를 재설정하는 ResetPasswordView 입니다.
     최초 작성일 : 2023.06.15
-    업데이트 일자 : 
+    업데이트 일자 :
     '''
     permission_classes = [AllowAny]
 
@@ -474,10 +475,10 @@ class ResetPasswordView(APIView):
 class ResetPasswordEmailView(APIView):
     '''
     작성자 : 이주한
-    내용 : 사용자가 비밀번호를 분실했을 시 비밀번호를 변경할 수 있도록 
-            비밀번호를 재설정하는 링크를 사용자의 메일로 보내줍니다. 
+    내용 : 사용자가 비밀번호를 분실했을 시 비밀번호를 변경할 수 있도록
+            비밀번호를 재설정하는 링크를 사용자의 메일로 보내줍니다.
     최초 작성일 : 2023.06.15
-    업데이트 일자 : 
+    업데이트 일자 :
     '''
     permission_classes = [AllowAny]
 
@@ -495,7 +496,7 @@ class CheckPasswordTokenView(APIView):
     내용 : 사용자가 받은 비밀번호 재설정 링크를 클릭했을 시
             유효한 링크인지 링크에 담겨진 url 파라미터 값으로 검증을 합니다.
     최초 작성일 : 2023.06.15
-    업데이트 일자 : 
+    업데이트 일자 :
     '''
     permission_classes = [AllowAny]
 
@@ -510,6 +511,45 @@ class CheckPasswordTokenView(APIView):
 
         except DjangoUnicodeDecodeError as identifier:
             return Response({"message": "링크가 유효하지 않습니다."}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class UserProfileAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+            serializer = UserProfileSerializer(user_profile)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except UserProfile.DoesNotExist:
+            return Response({'error': '프로필이 존재하지 않습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+    def put(self, request):
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+            serializer = UserProfileSerializer(
+                instance=user_profile, data=request.data
+            )
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    {"message": "회원정보 수정 완료!"}, status=status.HTTP_200_OK
+                )
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
+        except UserProfile.DoesNotExist:
+            # 프로필이 없는 경우 프로필 생성
+            serializer = UserProfileSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(user=request.user)
+                return Response(
+                    {"message": "프로필 생성 완료!"}, status=status.HTTP_201_CREATED
+                )
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class UserProfileAPIView(APIView):

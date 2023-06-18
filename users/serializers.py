@@ -1,15 +1,14 @@
-from rest_framework import serializers
-from users.models import User, UserProfile, password_validator, password_pattern
-from rest_framework import serializers, exceptions
-from django.contrib.auth.hashers import check_password
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import smart_bytes, force_bytes
-from django.utils.encoding import force_str
-from django.core.mail import EmailMessage
-from rest_framework_jwt.settings import api_settings
 import threading
+from rest_framework_jwt.settings import api_settings
+from django.core.mail import EmailMessage
+from django.utils.encoding import force_str
+from django.utils.encoding import smart_bytes, force_bytes
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.contrib.auth.hashers import check_password
+from .models import User, password_validator, password_pattern, UserProfile
+from rest_framework import serializers, exceptions
 
 
 class SignUpSerializer(serializers.ModelSerializer):
@@ -323,14 +322,15 @@ class ResetPasswordSerializer(serializers.Serializer):
         token = attrs.get("token")
         user_id = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(id=user_id)
-        
+
         # # 토큰이 유효여부
         # if PasswordResetTokenGenerator().check_token(user, token) == False:
         #     raise exceptions.AuthenticationFailed("링크가 유효하지 않습니다.", 401)
 
         # 비밀번호 일치
         if password != re_password:
-            raise serializers.ValidationError(detail={"password": "비밀번호가 일치하지 않습니다."})
+            raise serializers.ValidationError(
+                detail={"password": "비밀번호가 일치하지 않습니다."})
 
         # # 비밀번호 유효성 검사
         # if password_validator(password):

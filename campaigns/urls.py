@@ -28,6 +28,4 @@ urlpatterns = [
          name='campaign_comment'),
     path('mypage/attend/', views.MyAttendCampaignView.as_view(),
          name='campaign_comment'),
-    path('status/<int:campaign_id>/',
-         views.CampaignStatusUpdateAPIView.as_view(), name='status_view')
 ]
