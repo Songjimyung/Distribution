@@ -11,6 +11,11 @@ from rest_framework.pagination import PageNumberPagination
 
 
 class CustomPagination(PageNumberPagination):
+    '''
+    작성자: 장소은
+    내용 : 페이지네이션을 위한 커스텀페이지네이션
+    작성일: 2023.06.16
+    '''
     page_size = 6
     page_size_query_param = 'page_size'
     max_page_size = 60
@@ -127,8 +132,11 @@ class AdminProductViewAPI(APIView):
 
     def get(self, request):
         products = ShopProduct.objects.all().order_by('-product_date')
-        serializer = ProductListSerializer(products, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        paginator = self.pagination_class()
+        result_page = paginator.paginate_queryset(products, request)
+        serializer = ProductListSerializer(result_page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
 
 
 class AdminCategoryViewAPI(APIView):
@@ -184,38 +192,30 @@ class AdminOrderViewAPI(APIView):
     최초 작성일 : 2023.06.09
     업데이트 일자 :
     '''
+    pagination_class = CustomPagination
 
     def get(self, request, product_id):
         orders = ShopOrder.objects.filter(product_id=product_id)
-        serializer = OrderProductSerializer(orders, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        paginator = self.pagination_class()
+        result_page = paginator.paginate_queryset(orders, request)
+        serializer = OrderProductSerializer(result_page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
 
 
 class MypageOrderViewAPI(APIView):
     '''
     작성자 : 장소은
-    내용 : 마이페이지에서 유저의 모든 주문내역 조회
+    내용 : 마이페이지에서 유저의 모든 주문내역 조회, 페이지네이션 
     최초 작성일 : 2023.06.14
-    업데이트 일자 :
+    업데이트 일자 : 2023.06.18
     '''
+    pagination_class = CustomPagination
 
     def get(self, request):
         orders = ShopOrder.objects.filter(user=request.user.id)
-        serializer = OrderProductSerializer(orders, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        paginator = self.pagination_class()
+        result_page = paginator.paginate_queryset(orders, request)
+        serializer = OrderProductSerializer(result_page, many=True)
 
-
-class CategoryViewAPI(APIView):
-    '''
-    작성자 : 장소은
-    내용 : 카테고리 생성
-    최초 작성일 : 2023.06.09
-    '''
-
-    def post(self, request):
-        serializer = CategoryListSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return paginator.get_paginated_response(serializer.data)

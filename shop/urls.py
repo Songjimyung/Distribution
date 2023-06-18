@@ -17,5 +17,4 @@ urlpatterns = [
     path('order/list/<int:product_id>/',
          views.AdminOrderViewAPI.as_view(), name='admin_order_view'),
     path('mypage/order/', views.MypageOrderViewAPI.as_view(), name='my_order_view'),
-    path('category/', views.CategoryViewAPI.as_view(), name='category_view'),
 ]
