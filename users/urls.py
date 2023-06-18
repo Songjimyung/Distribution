@@ -5,7 +5,7 @@ from users import views
 urlpatterns = [
     # 회원가입
     path('signup/', views.SignUpView.as_view(), name='sign_up'),
-    path('signup/email_code/', views.SendEmailView.as_view(), name='send_email'),
+    path('signup/email_code/',views.SendEmailView.as_view(),name='send_email'),
     path('oauth/kakao/callback/',
          views.KakaoCallbackView.as_view(), name='kakao_callback'),
     path('kakao/login/finish/', views.KakaoLogin.as_view(),
@@ -14,24 +14,18 @@ urlpatterns = [
     path('google/callback/', views.google_callback, name='google_callback'),
     path('google/login/finish/', views.GoogleLogin.as_view(),
          name='google_login_todjango'),
-
+    
     # 회원정보 관련
     path('', views.UserView.as_view(), name='update_or_withdrawal'),
-
+    
     # 비밀번호 수정 관련
     path('update_pw/', views.UpdatePasswordView.as_view(), name='update_password'),
-    path('reset_pw/', views.ResetPasswordView.as_view(), name='reset_password'),
-    path("reset_pw/<uidb64>/<token>/", views.CheckPasswordTokenView.as_view(),
-         name="password_reset_confirm_view"),
-    path('reset_pw/email_code/', views.ResetPasswordEmailView.as_view(),
-         name='reset_password_email'),
-
-
+    path('reset_pw/', views.ResetPasswordView.as_view(),name='reset_password'),
+    path("reset_pw/<uidb64>/<token>/", views.CheckPasswordTokenView.as_view(), name="reset_password_token_check"),
+    path('reset_pw/email_code/', views.ResetPasswordEmailView.as_view(),name='reset_password_email'),
+    
     # 로그인
     path('login/', views.CustomTokenObtainPairView.as_view(), name='log_in'),
     path('list/', views.UserListView().as_view(), name='user_list'),
     path('<int:user_id>/', views.UserDetailView().as_view(), name='user'),
-
-    # 유저프로필
-    path('profile/', views.UserProfileAPIView.as_view(), name='user_profile')
 ]
