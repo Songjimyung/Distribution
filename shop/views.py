@@ -203,3 +203,19 @@ class MypageOrderViewAPI(APIView):
         orders = ShopOrder.objects.filter(user=request.user.id)
         serializer = OrderProductSerializer(orders, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CategoryViewAPI(APIView):
+    '''
+    작성자 : 장소은
+    내용 : 카테고리 생성
+    최초 작성일 : 2023.06.09
+    '''
+
+    def post(self, request):
+        serializer = CategoryListSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
