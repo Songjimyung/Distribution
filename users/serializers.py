@@ -1,6 +1,6 @@
-from rest_framework import serializers, exceptions
-from users.models import User
-from .models import User, password_validator, password_pattern
+from rest_framework import serializers
+from users.models import User, UserProfile
+# from .models import User, password_validator, password_pattern
 from django.contrib.auth.hashers import check_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -166,15 +166,18 @@ class UpdatePasswordSerializer(serializers.ModelSerializer):
 
         # 현재 비밀번호 예외 처리
         if not check_password(confirm_password, current_password):
-            raise serializers.ValidationError(detail={"password": "현재 비밀번호가 일치하지 않습니다."})
+            raise serializers.ValidationError(
+                detail={"password": "현재 비밀번호가 일치하지 않습니다."})
 
         # 현재 비밀번호와 바꿀 비밀번호 비교
         if check_password(password, current_password):
-            raise serializers.ValidationError(detail={"password": "현재 사용중인 비밀번호와 동일한 비밀번호는 입력할 수 없습니다."})
+            raise serializers.ValidationError(
+                detail={"password": "현재 사용중인 비밀번호와 동일한 비밀번호는 입력할 수 없습니다."})
 
         # 비밀번호 일치
         if password != re_password:
-            raise serializers.ValidationError(detail={"password": "비밀번호가 일치하지 않습니다."})
+            raise serializers.ValidationError(
+                detail={"password": "비밀번호가 일치하지 않습니다."})
 
         # # 비밀번호 유효성 검사
         # if password_validator(password):
@@ -199,13 +202,14 @@ class EmailThread(threading.Thread):
     작성자 : 이주한
     내용 : 이메일 전송을 위해 'Thread'를 사용하는 'EmailThread'클래스입니다.
             run 메소드는 Tread의 start() 메소드로 Tread가 실행될 때 호출됩니다.
-            
+
             * Tread를 사용하는 이유: 
                 이메일 전송 작업을 백그라운드에서 비동기적으로 처리하고, 
                 다른 작업과 동시에 진행할 수 있도록 하기 위함입니다.
     최초 작성일 : 2023.06.15
     업데이트 일자 : 
     '''
+
     def __init__(self, email):
         self.email = email
         threading.Thread.__init__(self)
@@ -259,8 +263,13 @@ class ResetPasswordEmailSerializer(serializers.Serializer):
             email = attrs.get("email")
 
             user = User.objects.get(email=email)
-            uidb64 = urlsafe_base64_encode(smart_bytes(user.id))
-            token = PasswordResetTokenGenerator().make_token(user)
+
+            jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
+            jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
+            payload = jwt_payload_handler(user)
+            uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+            token = jwt_encode_handler(payload)
+
 
             frontend_site = "127.0.0.1:5500"
             absurl = f"http://{frontend_site}/reset_auth.html?uidb64={uidb64}&token={token}"
@@ -276,7 +285,8 @@ class ResetPasswordEmailSerializer(serializers.Serializer):
             return super().validate(attrs)
 
         except User.DoesNotExist:
-            raise serializers.ValidationError(detail={"email": "잘못된 이메일입니다. 다시 입력해주세요."})
+            raise serializers.ValidationError(
+                detail={"email": "잘못된 이메일입니다. 다시 입력해주세요."})
 
 
 class ResetPasswordSerializer(serializers.Serializer):
@@ -333,7 +343,10 @@ class ResetPasswordSerializer(serializers.Serializer):
 
         # # 비밀번호 문자열 동일여부 검사
         # if password_pattern(password):
-        #     raise serializers.ValidationError(detail={"password": "비밀번호는 3자리 이상 동일한 영문/사용 사용 불가합니다."})
+        #     raise serializers.ValidationError(
+        #         detail={"password": "비밀번호는 연속해서 3자리 이상 동일한 영문,숫자,특수문자 사용이 불가합니다."}
+        #     )
+
 
         user.set_password(password)
         user.save()
@@ -367,3 +380,25 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'email', 'username', 'is_active']
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    '''
+    작성자: 장소은
+    내용: 유저 프로필 시리얼라이저 
+    작성일: 2023.06.17
+    '''
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = UserProfile
+        fields = ['user', 'image', 'address', 'zip_code',
+                  'detail_address', 'delivery_message', 'receiver_number']
+        extra_kwargs = {
+            'image': {'required': False},
+            'address': {'required': False},
+            'zip_code': {'required': False},
+            'detail_address': {'required': False},
+            'delivery_message': {'required': False},
+            'receiver_number': {'required': False}
+        }
