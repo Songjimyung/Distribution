@@ -104,3 +104,23 @@ class User(AbstractBaseUser):
     @property
     def is_staff(self):
         return self.is_admin
+
+
+class UserProfile(models.Model):
+    '''
+    작성자: 장소은
+    내용: 추가적인 사용자 정보를 저장해서 마이페이지나 주문 시 사용
+    작성일: 2023.06.17
+    '''
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE)
+    image = models.ImageField(
+        upload_to='profile_images/', blank=True, null=True)
+    address = models.CharField(max_length=255)
+    zip_code = models.CharField(max_length=10)
+    detail_address = models.CharField(max_length=255)
+    delivery_message = models.TextField(blank=True)
+    receiver_number = models.CharField(max_length=20)
+
+    def __str__(self):
+        return self.user.email
