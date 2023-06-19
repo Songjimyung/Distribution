@@ -518,7 +518,7 @@ class ParticipatingCampaignView(APIView):
     작성자 : 박지홍
     내용 : 유저가 작성한 캠페인을 보여주는 기능.
     최초 작성일 : 2023.06.08
-    업데이트 일자 : 
+    업데이트 일자 :
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -533,7 +533,7 @@ class CampaignUserReviewView(APIView):
     작성자 : 박지홍
     내용 : 유저가 작성한 리뷰를 보여주는 기능
     최초 작성일 : 2023.06.08
-    업데이트 일자 : 
+    업데이트 일자 :
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -548,7 +548,7 @@ class CampaignUserLikeView(APIView):
     작성자 : 박지홍
     내용 : 유저가 좋아요 누른 캠페인을 보여주는 기능.
     최초 작성일 : 2023.06.08
-    업데이트 일자 : 
+    업데이트 일자 :
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -563,7 +563,7 @@ class CampaignUserCommentView(APIView):
     작성자 : 박지홍
     내용 : 유저가 작성한 댓글을 보여주는 기능.
     최초 작성일 : 2023.06.08
-    업데이트 일자 : 
+    업데이트 일자 :
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -579,7 +579,7 @@ class MyAttendCampaignView(APIView):
     작성자 : 장소은
     내용 : 유저가 참여한 캠페인을 보여주는 기능.
     최초 작성일 : 2023.06.08
-    업데이트 일자 : 
+    업데이트 일자 :
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -603,3 +603,25 @@ class CampaignStatusUpdateAPIView(APIView):
         campaign.status = request.data.get('status')
         campaign.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CampaiginApplyListView(APIView):
+    '''
+    작성자: 장소은
+    내용: 백오피스에서 캠페인 모든 신청내역 조회
+    작성일: 2023.06.19
+    '''
+    class MyPagination(PageNumberPagination):
+        page_size = 10
+        page_query_param = 'page'
+        max_page_size = 50
+
+    pagination_class = MyPagination
+
+    def get(self, request):
+        campaigns = Campaign.objects.all()
+        paginator = self.pagination_class()
+        result_page = paginator.paginate_queryset(campaigns, request)
+        serializer = CampaignSerializer(result_page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)

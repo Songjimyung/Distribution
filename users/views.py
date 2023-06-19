@@ -321,8 +321,8 @@ class KakaoCallbackView(APIView):
             err_msg = "error"
             redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
             return redirect(redirect_url_with_status)
-
         access_token = token_req_json.get("access_token")
+        print(access_token)
         profile_request = requests.post(
             "https://kapi.kakao.com/v2/user/me",
             headers={"Authorization": f"Bearer {access_token}"},

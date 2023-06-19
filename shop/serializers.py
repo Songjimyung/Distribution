@@ -20,18 +20,53 @@ class ProductListSerializer(serializers.ModelSerializer):
     uploaded_images = serializers.ListField(child=serializers.ImageField(
         max_length=1000000, allow_empty_file=False, use_url=False), write_only=True
     )
+    category_name = serializers.CharField(
+        source="category.category_name", read_only=True)
 
     class Meta:
         model = ShopProduct
         fields = ['id', 'product_name', 'product_price', 'product_stock',
-                        'product_desc', 'product_date', 'category', 'images', 'uploaded_images', 'hits']
+                        'product_desc', 'product_date', 'category', 'images', 'uploaded_images', 'hits', 'category_name']
+
+    def validate_product_price(self, value):
+        try:
+            price = value
+            if price <= 0:
+                raise serializers.ValidationError(
+                    '상품 가격은 양의 실수이어야 합니다.')
+        except ValueError:
+            raise serializers.ValidationError('상품 가격은 숫자여야 합니다.')
+
+        return value
 
     def create(self, validated_data):
         uploaded_images = validated_data.pop('uploaded_images', [])
+        product_stock = validated_data.get('product_stock', None)
+
+        if product_stock is not None and product_stock < 0:
+            raise serializers.ValidationError('상품 재고는 음수일 수 없습니다.')
         product = super().create(validated_data)
         for images in uploaded_images:
             ShopImageFile.objects.create(image_file=images, product=product)
         return product
+
+    def update(self, instance, validated_data):
+        uploaded_images = validated_data.pop('uploaded_images', [])
+        product_stock = validated_data.get('product_stock', None)
+
+        if product_stock is not None and product_stock < 0:
+            raise serializers.ValidationError('상품 재고는 음수일 수 없습니다.')
+        images = instance.images.all()
+
+        for i, image in enumerate(uploaded_images):
+            if i < len(images):
+                images[i].image_file = image
+                images[i].save()
+            else:
+                ShopImageFile.objects.create(
+                    image_file=image, product=instance)
+
+        return super().update(instance, validated_data)
 
 
 class CategoryListSerializer(serializers.ModelSerializer):
@@ -86,7 +121,6 @@ class OrderProductSerializer(serializers.ModelSerializer):
         product_key = validated_data.get('product')
 
         product = ShopProduct.objects.get(id=product_key.id)
-
         if product.product_stock >= order_quantity:
             product.product_stock -= order_quantity
             product.save()
