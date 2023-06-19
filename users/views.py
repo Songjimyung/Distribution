@@ -31,7 +31,6 @@ from django.http import JsonResponse
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.utils.encoding import DjangoUnicodeDecodeError, force_str
 from django.utils.http import urlsafe_base64_decode
-from django.db import IntegrityError
 from django.core.mail import EmailMessage
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 
@@ -50,7 +49,7 @@ def verification_code(email):
     내용 : 회원가입시 이메일 인증에 필요한 인증 코드를 생성하는 함수입니다.
             개발 단계에서는 필요하지 않을 수 있어 주석 처리해 두었습니다.
     최초 작성일 : 2023.06.15
-    업데이트 일자 : 
+    업데이트 일자 :
     '''
     # email_bytes = email.encode('ascii')
     # email_base64 = base64.b64encode(email_bytes)
@@ -65,17 +64,10 @@ class SendEmailView(APIView):
     내용 : 회원가입시 이메일 인증에 필요한 메일을 보내는 view 클래스입니다.
             개발 단계에서는 이메일 인증이 번거로울 수 있어 주석 처리해 두었습니다.
     최초 작성일 : 2023.06.15
-    업데이트 일자 : 
+    업데이트 일자 :
     '''
 
     def post(self, request):
-        # try:
-        #     User.objects.get(email=email)
-        #     return Response({"message":"계정이 이미 존재합니다."},status=status.HTTP_400_BAD_REQUEST)
-        # except:
-        #     pass
-        # subject='EcoCanvas 인증 메일'
-
         # email=request.data.get("email")
         # if email == "":
         #     return Response({'error':'이메일을 입력해주세요.'},status=status.HTTP_400_BAD_REQUEST)
@@ -115,7 +107,7 @@ class SignUpView(APIView):
 class UserView(APIView):
     '''
     작성자 : 이주한
-    내용 : 회원정보 수정, 회원 비활성화에 사용되는 view 클래스 
+    내용 : 회원정보 수정, 회원 비활성화에 사용되는 view 클래스
     최초 작성일 : 2023.06.06
     업데이트 일자 : 2023.06.14
     '''
@@ -198,6 +190,7 @@ class GoogleCallbackView(APIView):
     최초 작성일 : 2023.06.08
     업데이트 일자 : 2023.06.19
     '''
+
     def post(self, request):
         client_id = os.environ.get("SOCIAL_AUTH_GOOGLE_CLIENT_ID")
         client_secret = os.environ.get("SOCIAL_AUTH_GOOGLE_SECRET")
@@ -229,7 +222,7 @@ class GoogleCallbackView(APIView):
             user = User.objects.get(email=email)
             refresh = RefreshToken.for_user(user)
             refresh["email"] = user.email
-            
+
             return Response(
                 {
                     "refresh": str(refresh),
@@ -243,7 +236,7 @@ class GoogleCallbackView(APIView):
             user.save()
             refresh = RefreshToken.for_user(user)
             refresh["email"] = user.email
-            
+
             return Response(
                 {
                     "refresh": str(refresh),
@@ -256,7 +249,7 @@ class GoogleCallbackView(APIView):
 class KakaoCallbackView(APIView):
     '''
     작성자 : 장소은
-    내용 :  Kakao 로그인 콜백을 처리하는 APIView GET. Kakao 토큰 API에 POST 요청을 보냄. 
+    내용 :  Kakao 로그인 콜백을 처리하는 APIView GET. Kakao 토큰 API에 POST 요청을 보냄.
             응답을 받아와서 JSON 형식으로 파싱하여 access_token추출
             응답 데이터에 'error' 키가 포함되어 있다면 에러처리.
             그렇지 않은 경우는 access_token을 사용하여 Kakao API를 호출하여 사용자 정보를 가져옴 이메일(kakao_email), 연령대(age_range), 성별(gender) 추출
@@ -285,8 +278,8 @@ class KakaoCallbackView(APIView):
             err_msg = "error"
             redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
             return redirect(redirect_url_with_status)
-
         access_token = token_req_json.get("access_token")
+        print(access_token)
         profile_request = requests.post(
             "https://kapi.kakao.com/v2/user/me",
             headers={"Authorization": f"Bearer {access_token}"},
@@ -369,7 +362,7 @@ class KakaoLogin(SocialLoginView):
 class UserListView(APIView):
     '''
     작성자 : 박지홍
-    내용: 어드민 페이지에서 전체 일반 유저 리스트를 받기 위해 사용 
+    내용: 어드민 페이지에서 전체 일반 유저 리스트를 받기 위해 사용
     작성일 : 2023.06.09
     업데이트 일자 :
     '''
@@ -399,7 +392,7 @@ class UpdatePasswordView(APIView):
     작성자 : 이주한
     내용 : 사용자가 로그인한 상태에서 본인 계정의 비밀번호를 수정할 때 사용되는 UpdatePasswordView 입니다.
     최초 작성일 : 2023.06.15
-    업데이트 일자 : 
+    업데이트 일자 :
     '''
     permission_classes = [IsAuthenticated]
 
@@ -418,7 +411,7 @@ class ResetPasswordView(APIView):
     작성자 : 이주한
     내용 : 사용자가 비밀번호를 분실했을 시 비밀번호를 변경할 수 있도록 비밀번호를 재설정하는 ResetPasswordView 입니다.
     최초 작성일 : 2023.06.15
-    업데이트 일자 : 
+    업데이트 일자 :
     '''
     permission_classes = [AllowAny]
 
@@ -432,10 +425,10 @@ class ResetPasswordView(APIView):
 class ResetPasswordEmailView(APIView):
     '''
     작성자 : 이주한
-    내용 : 사용자가 비밀번호를 분실했을 시 비밀번호를 변경할 수 있도록 
-            비밀번호를 재설정하는 링크를 사용자의 메일로 보내줍니다. 
+    내용 : 사용자가 비밀번호를 분실했을 시 비밀번호를 변경할 수 있도록
+            비밀번호를 재설정하는 링크를 사용자의 메일로 보내줍니다.
     최초 작성일 : 2023.06.15
-    업데이트 일자 : 
+    업데이트 일자 :
     '''
     permission_classes = [AllowAny]
 
@@ -453,20 +446,22 @@ class CheckPasswordTokenView(APIView):
     내용 : 사용자가 받은 비밀번호 재설정 링크를 클릭했을 시
             유효한 링크인지 링크에 담겨진 url 파라미터 값으로 검증을 합니다.
     최초 작성일 : 2023.06.15
-    업데이트 일자 : 
+    업데이트 일자 :
     '''
     permission_classes = [AllowAny]
 
     def get(self, request, uidb64, token):
         try:
             user_id = force_str(urlsafe_base64_decode(uidb64))
-            user = get_object_or_404(User, id=user_id)
+
+            user = get_object_or_404(User, pk=user_id)
             if not PasswordResetTokenGenerator().check_token(user, token):
                 return Response({"message": "링크가 유효하지 않습니다."}, status=status.HTTP_401_UNAUTHORIZED)
             return Response({"uidb64": uidb64, "token": token}, status=status.HTTP_200_OK)
 
         except DjangoUnicodeDecodeError as identifier:
             return Response({"message": "링크가 유효하지 않습니다."}, status=status.HTTP_401_UNAUTHORIZED)
+
 
 class UserProfileAPIView(APIView):
 
