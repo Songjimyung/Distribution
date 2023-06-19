@@ -93,7 +93,7 @@ class CampaignView(APIView):
                 ~Q(fundings=None) & Q(fundings__goal__gt=0)
             ).order_by("-fundings__current"),
         }
-        
+
         queryset = orders_dict[order]
 
         serializer = CampaignSerializer(queryset, many=True)
@@ -101,8 +101,9 @@ class CampaignView(APIView):
         pagination_instance = self.pagination_class()
         total_count = queryset.count()
         pagination_instance.total_count = total_count
-        paginated_data = pagination_instance.paginate_queryset(serializer.data, request)
-        
+        paginated_data = pagination_instance.paginate_queryset(
+            serializer.data, request)
+
         return pagination_instance.get_paginated_response(paginated_data)
 
     def post(self, request):
@@ -192,7 +193,8 @@ class CampaignDetailView(APIView):
         """
         queryset = get_object_or_404(Campaign, id=campaign_id)
         if request.user == queryset.user:
-            serializer = CampaignCreateSerializer(queryset, data=request.data, partial=True)
+            serializer = CampaignCreateSerializer(
+                queryset, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
                 return Response(
@@ -218,7 +220,8 @@ class CampaignDetailView(APIView):
         if request.user == queryset.user:
             campaign_serializer = CampaignCreateSerializer(
                 queryset, data=request.data, partial=True)
-            funding_serializer = FundingCreateSerializer(data=request.data, partial=True)
+            funding_serializer = FundingCreateSerializer(
+                data=request.data, partial=True)
             if campaign_serializer.is_valid() and funding_serializer.is_valid():
                 campaign = campaign_serializer.save()
                 funding_serializer.validated_data["campaign"] = campaign
@@ -275,7 +278,7 @@ class CampaignLikeView(APIView):
     """
 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    
+
     def get(self, request, campaign_id):
         queryset = get_object_or_404(Campaign, id=campaign_id)
         is_liked = queryset.like.filter(id=request.user.id).exists()
@@ -291,8 +294,9 @@ class CampaignLikeView(APIView):
             queryset.like.add(request.user)
             is_liked = True
             message = "좋아요 성공!"
-           
+
         return Response({"is_liked": is_liked, "message": message}, status=status.HTTP_200_OK)
+
 
 class CampaignParticipationView(APIView):
     """
@@ -307,7 +311,8 @@ class CampaignParticipationView(APIView):
 
     def get(self, request, campaign_id):
         queryset = get_object_or_404(Campaign, id=campaign_id)
-        is_participated = queryset.participant.filter(id=request.user.id).exists()
+        is_participated = queryset.participant.filter(
+            id=request.user.id).exists()
         return Response({"is_participated": is_participated}, status=status.HTTP_200_OK)
 
     def post(self, request, campaign_id):
@@ -520,7 +525,7 @@ class ParticipatingCampaignView(APIView):
     작성자 : 박지홍
     내용 : 유저가 작성한 캠페인을 보여주는 기능.
     최초 작성일 : 2023.06.08
-    업데이트 일자 : 
+    업데이트 일자 :
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -535,7 +540,7 @@ class CampaignUserReviewView(APIView):
     작성자 : 박지홍
     내용 : 유저가 작성한 리뷰를 보여주는 기능
     최초 작성일 : 2023.06.08
-    업데이트 일자 : 
+    업데이트 일자 :
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -550,7 +555,7 @@ class CampaignUserLikeView(APIView):
     작성자 : 박지홍
     내용 : 유저가 좋아요 누른 캠페인을 보여주는 기능.
     최초 작성일 : 2023.06.08
-    업데이트 일자 : 
+    업데이트 일자 :
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -565,7 +570,7 @@ class CampaignUserCommentView(APIView):
     작성자 : 박지홍
     내용 : 유저가 작성한 댓글을 보여주는 기능.
     최초 작성일 : 2023.06.08
-    업데이트 일자 : 
+    업데이트 일자 :
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -581,12 +586,13 @@ class MyAttendCampaignView(APIView):
     작성자 : 장소은
     내용 : 유저가 참여한 캠페인을 보여주는 기능.
     최초 작성일 : 2023.06.08
-    업데이트 일자 : 
+    업데이트 일자 :
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        mycampaigns = Campaign.objects.filter(participant=request.user).order_by('-activity_end_date')
+        mycampaigns = Campaign.objects.filter(
+            participant=request.user).order_by('-activity_end_date')
         serializer = CampaignCreateSerializer(mycampaigns, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -604,3 +610,25 @@ class CampaignStatusUpdateAPIView(APIView):
         campaign.status = request.data.get('status')
         campaign.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CampaiginApplyListView(APIView):
+    '''
+    작성자: 장소은
+    내용: 백오피스에서 캠페인 모든 신청내역 조회
+    작성일: 2023.06.19
+    '''
+    class MyPagination(PageNumberPagination):
+        page_size = 10
+        page_query_param = 'page'
+        max_page_size = 50
+
+    pagination_class = MyPagination
+
+    def get(self, request):
+        campaigns = Campaign.objects.all()
+        paginator = self.pagination_class()
+        result_page = paginator.paginate_queryset(campaigns, request)
+        serializer = CampaignSerializer(result_page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
