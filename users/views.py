@@ -175,126 +175,85 @@ def generate_jwt_token(user):
     return {'refresh': str(refresh), 'access': str(refresh.access_token)}
 
 
-# Google 로그인
-def google_login(request):
-    '''
-    작성자 : 이주한
-    내용 : 구글 OAUTH2.0 서버로 client_id, callback_uri, scope를 보내서 구글 로그인 페이지를 불러옵니다.
-    최초 작성일 : 2023.06.08
-    업데이트 일자 :
-    '''
-    scope = "https://www.googleapis.com/auth/userinfo.email"
-    client_id = os.environ.get("SOCIAL_AUTH_GOOGLE_CLIENT_ID")
+class GoogleLoginFormView(APIView):
+    def get(self, request):
+        '''
+        작성자 : 이주한
+        내용 : 구글 OAUTH2.0 서버로 client_id, callback_uri, scope를 보내서 구글 로그인 페이지를 불러옵니다.
+        최초 작성일 : 2023.06.08
+        업데이트 일자 : 2023.06.19
+        '''
+        scope = "email"
+        client_id = os.environ.get("SOCIAL_AUTH_GOOGLE_CLIENT_ID")
 
-    return redirect(f"https://accounts.google.com/o/oauth2/v2/auth?client_id={client_id}&response_type=code&redirect_uri={google_callback_uri}&scope={scope}")
+        return redirect(f"https://accounts.google.com/o/oauth2/v2/auth?client_id={client_id}&response_type=code&redirect_uri={google_callback_uri}&scope={scope}")
 
 
-def google_callback(request):
+class GoogleCallbackView(APIView):
     '''
     작성자 : 이주한
     내용 : 받아온 구글 로그인 폼에 사용자가 id와 pw를 작성하여 제공하면 구글이 Authorization Code를 발급해줍니다. 
-            Authorization Code와 함께 넘어온 값들을 활용하여 django-allauth가 access, refresh 토큰을 발급해주고 
-            dj-rest-auth의 JWTCookieAuthentication이 쿠키에 저장해줍니다.
+            Authorization Code를 활용하여 우리의 앱이 API에 사용자의 정보를 요청하여 받아옵니다.
+            해당 정보들 중 email을 사용하여 사용자를 확인하고 JWT token을 발급받아 로그인을 진행합니다.
     최초 작성일 : 2023.06.08
     업데이트 일자 :
     '''
-    client_id = os.environ.get("SOCIAL_AUTH_GOOGLE_CLIENT_ID")
-    client_secret = os.environ.get("SOCIAL_AUTH_GOOGLE_SECRET")
-    code = request.GET.get('code')
+    def post(self, request):
+        client_id = os.environ.get("SOCIAL_AUTH_GOOGLE_CLIENT_ID")
+        client_secret = os.environ.get("SOCIAL_AUTH_GOOGLE_SECRET")
+        authorization_code = request.GET.get('code')
+        print(authorization_code)
 
-    token_req = requests.post(
-        f"https://oauth2.googleapis.com/token?client_id={client_id}&client_secret={client_secret}&code={code}&grant_type=authorization_code&redirect_uri={google_callback_uri}&state={state}")
-    token_req_json = token_req.json()
-    error = token_req_json.get("error")
+        access_token_request = requests.post(
+            "https://oauth2.googleapis.com/token",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            data={
+                "code": authorization_code,
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "redirect_uri": google_callback_uri,
+                "grant_type": "authorization_code",
+                "scope": "email",
+            },
+        )
+        access_token_json = access_token_request.json()
+        access_token = access_token_json.get("access_token")
 
-    if error is not None:
-        redirect_url = f'{front_base_url}'
-        err_msg = "error"
-        redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
+        # 구글 API로 사용자 정보 요청
+        user_data_request = requests.get(
+            "https://www.googleapis.com/oauth2/v1/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        user_data_json = user_data_request.json()
+        print(user_data_json)
+        email = user_data_json.get("email")
 
-        return redirect(redirect_url_with_status)
-
-    access_token = token_req_json.get('access_token')
-    email_req = requests.get(
-        f"https://www.googleapis.com/oauth2/v1/tokeninfo?access_token={access_token}")
-    email_req_status = email_req.status_code
-
-    if email_req_status != 200:
-        redirect_url = f'{front_base_url}'
-        err_msg = "failed_to_get"
-        redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
-
-        return redirect(redirect_url_with_status)
-
-    email_req_json = email_req.json()
-    email = email_req_json.get('email')
-
-    try:
-        user = User.objects.get(email=email)
-        social_user = SocialAccount.objects.get(user=user)
-
-        if social_user is None:
-            redirect_url = f'{front_base_url}'
-            status_code = 204
-            redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
-
-            return redirect(redirect_url_with_status)
-
-        if social_user.provider != 'google':
-            redirect_url = f'{front_base_url}'
-            status_code = 400
-            redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
-
-            return redirect(redirect_url_with_status)
-
-        data = {'access_token': access_token, 'code': code}
-        accept = requests.post(
-            f"{base_url}users/google/login/finish/", data=data)
-        accept_status = accept.status_code
-
-        if accept_status != 200:
-            redirect_url = f'{front_base_url}'
-            err_msg = "failed_to_signin"
-            redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
-
-            return redirect(redirect_url_with_status)
-
-        jwt_token = generate_jwt_token(user)
-        response = HttpResponseRedirect(f'{front_base_url}')
-        response.set_cookie('jwt_token', jwt_token)
-
-        return response
-
-    except User.DoesNotExist:
-        data = {'access_token': access_token, 'code': code}
-        accept = requests.post(
-            f"{base_url}users/google/login/finish/", data=data)
-        accept_status = accept.status_code
-
-        if accept_status != 200:
-            redirect_url = f'{front_base_url}'
-            err_msg = "google_signup"
-            redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
-
-            return redirect(redirect_url_with_status)
-
-        redirect_url = f'{front_base_url}'
-        status_code = 201
-        redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
-
-        return redirect(redirect_url_with_status)
-
-
-class GoogleLogin(SocialLoginView):
-    '''
-    작성자 : 이주한
-    내용: Google OAuth2 어댑터와 OAuth2Client를 사용하여 Google 로그인을 처리하는 클래스. 인증 완료 후 SocialLoginView에서 처리되는 방식
-    작성일 : 2023.06.08
-    업데이트 일자 :
-    '''
-    adapter_class = google_view.GoogleOAuth2Adapter
-    callback_url = google_callback_uri
-    client_class = OAuth2Client
+        try:
+            user = User.objects.get(email=email)
+            refresh = RefreshToken.for_user(user)
+            refresh["email"] = user.email
+            print(f"refresh_token: {refresh}")
+            print(f"access_token: {refresh.access_token}")
+            return Response(
+                {
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                },
+                status=status.HTTP_200_OK,
+            )
+        except:
+            user = User.objects.create_user(email=email)
+            user.set_unusable_password()
+            user.save()
+            refresh = RefreshToken.for_user(user)
+            refresh["email"] = user.email
+            return Response(
+                {
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                },
+                status=status.HTTP_200_OK,
+            )
 
 
 class KakaoCallbackView(APIView):
