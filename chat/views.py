@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from collections import Counter
 from chat.serializers import RoomSerializer
-
+from django.db.models import Q
 
 class RoomView(APIView):
     permission_classes = [IsAuthenticated]
@@ -33,7 +33,7 @@ class ActiveRoomView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        room = Room.objects.filter(is_active=True)
+        room = Room.objects.filter(Q(is_active=True) & Q(counselor=None))
         serializer = RoomSerializer(room, many=True)
         return Response(serializer.data, status=200)
 
