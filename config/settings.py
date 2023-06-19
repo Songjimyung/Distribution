@@ -210,9 +210,15 @@ SIMPLE_JWT = {
     "TOKEN_OBTAIN_SERIALIZER": "users.serializers.CustomTokenObtainPairSerializer",
 }
 
+BASE_URL = os.environ.get("BASE_URL")
+FRONT_BASE_URL = os.environ.get("FRONT_BASE_URL")
+
 CORS_ALLOW_ALL_ORIGINS = False
 
-CORS_ALLOWED_ORIGINS = ALLOWED_HOSTS
+CORS_ALLOWED_ORIGINS = [
+    BASE_URL,
+    FRONT_BASE_URL
+]
 
 CORS_ALLOW_CREDENTIALS = True  # cross-site HTTP요청에 Cookie 추가
 
@@ -275,4 +281,7 @@ CARD_NUMBER = os.environ.get('CARD_NUMBER')
 EXPIRY_AT = os.environ.get('EXPIRY_AT')
 BIRTH = os.environ.get('BIRTH')
 PWD_2DIGIT = os.environ.get('PWD_2DIGIT')
-CSRF_TRUSTED_ORIGINS = ALLOWED_HOSTS
+CSRF_TRUSTED_ORIGINS = [
+    FRONT_BASE_URL,
+    BASE_URL,
+]
