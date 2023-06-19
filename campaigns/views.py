@@ -3,7 +3,8 @@ from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
-from django.db.models import Q, F, Count
+from django.db import models
+from django.db.models import Q, F, Count, Case, When
 from django.utils import timezone
 from campaigns.models import (
     Campaign,
@@ -50,8 +51,8 @@ class CampaignView(APIView):
         order : 캠페인을 order_by 메소드로 정렬합니다.
         recent - 최신순기준
         closing - 마감일기준
-        count - 조회수기준(아직 조회수가 미구현)
-        like - 좋아요수기준(좋아요 수 필드를 만들어야 할지 고민중입니다)
+        popular - 인기순(참여 신청자 수)기준
+        like - 좋아요 수 기준(좋아요 수 필드를 만들어야 할지 고민중입니다)
         amount - 펀딩 모금금액순(current로 한 상태, goal로 해야할지는 고민)
         """
         # end = request.GET.get("end", None)
@@ -79,8 +80,14 @@ class CampaignView(APIView):
 
         orders_dict = {
             "recent": queryset.order_by("-created_at"),
-            "closing": queryset.order_by("campaign_end_date"),
-            "count": queryset,
+            "closing": queryset.order_by(
+                Case(
+                    When(campaign_end_date__gte=timezone.now(), then=F("campaign_end_date")),
+                    default=0,
+                    output_field=models.DateTimeField()
+                )
+            ),
+            "popular": queryset.annotate(participant_count=Count("participant")).order_by("-participant_count"),
             "like": queryset.annotate(like_count=Count("like")).order_by("-like_count"),
             "amount": queryset.filter(
                 ~Q(fundings=None) & Q(fundings__goal__gt=0)

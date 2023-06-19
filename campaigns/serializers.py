@@ -10,7 +10,7 @@ from campaigns.models import (
 class BaseSerializer(serializers.ModelSerializer):
     """
     작성자 : 최준영
-    내용 :  베이스 시리얼라이저입니다.
+    내용 : 베이스 시리얼라이저입니다.
     중복되는 속성인 created_at과 updated_at을
     상속받을 추상화 클래스입니다.
     최초 작성일 : 2023.06.07
