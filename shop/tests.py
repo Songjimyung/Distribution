@@ -49,8 +49,7 @@ class ProductTest(APITestCase):
 
         cls.faker = Faker()
         cls.category_data = {
-            'category_name': "카테고리",
-            'category_number': 1
+            'category_name': "카테고리"
         }
         cls.category = ShopCategory.objects.create(**cls.category_data)
         cls.product_data = {

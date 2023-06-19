@@ -73,7 +73,7 @@ class User(AbstractBaseUser):
             2023.06.06: User 모델 생성
             2023.06.09: User 모델에 추가로 필요한 필드 추가(사용자 생성일, 정보 수정일, 탈퇴일)
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.09
+    업데이트 일자 : 2023.06.19
     '''
     email = models.EmailField(
         verbose_name="email address",
@@ -86,7 +86,7 @@ class User(AbstractBaseUser):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     withdrawal = models.BooleanField(default=False)
-    withdrawal_at = models.DateTimeField(null=True)
+    withdrawal_at = models.DateTimeField(null=True, blank=True)
     objects = UserManager()
 
     USERNAME_FIELD = "email"

@@ -11,7 +11,6 @@ class ShopCategory(models.Model):
     업데이트 일자:
     '''
     category_name = models.CharField(max_length=30)
-    category_number = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return str(self.category_name)
@@ -35,6 +34,7 @@ class ShopProduct(models.Model):
     category = models.ForeignKey(
         ShopCategory, on_delete=models.CASCADE, related_name='products')
     hits = models.PositiveIntegerField(default=0)
+
 
 class ShopOrder(models.Model):
     '''
