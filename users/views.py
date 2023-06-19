@@ -196,13 +196,12 @@ class GoogleCallbackView(APIView):
             Authorization Code를 활용하여 우리의 앱이 API에 사용자의 정보를 요청하여 받아옵니다.
             해당 정보들 중 email을 사용하여 사용자를 확인하고 JWT token을 발급받아 로그인을 진행합니다.
     최초 작성일 : 2023.06.08
-    업데이트 일자 :
+    업데이트 일자 : 2023.06.19
     '''
     def post(self, request):
         client_id = os.environ.get("SOCIAL_AUTH_GOOGLE_CLIENT_ID")
         client_secret = os.environ.get("SOCIAL_AUTH_GOOGLE_SECRET")
         authorization_code = request.GET.get('code')
-        print(authorization_code)
 
         access_token_request = requests.post(
             "https://oauth2.googleapis.com/token",
@@ -219,21 +218,18 @@ class GoogleCallbackView(APIView):
         access_token_json = access_token_request.json()
         access_token = access_token_json.get("access_token")
 
-        # 구글 API로 사용자 정보 요청
         user_data_request = requests.get(
             "https://www.googleapis.com/oauth2/v1/userinfo",
             headers={"Authorization": f"Bearer {access_token}"},
         )
         user_data_json = user_data_request.json()
-        print(user_data_json)
         email = user_data_json.get("email")
 
         try:
             user = User.objects.get(email=email)
             refresh = RefreshToken.for_user(user)
             refresh["email"] = user.email
-            print(f"refresh_token: {refresh}")
-            print(f"access_token: {refresh.access_token}")
+            
             return Response(
                 {
                     "refresh": str(refresh),
@@ -247,6 +243,7 @@ class GoogleCallbackView(APIView):
             user.save()
             refresh = RefreshToken.for_user(user)
             refresh["email"] = user.email
+            
             return Response(
                 {
                     "refresh": str(refresh),
