@@ -22,14 +22,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         user_contact = await sync_to_async(User.objects.get)(id=user_id)
         room_contact = await sync_to_async(Room.objects.get)(id=room_id)
-        if room_contact is not None:
-            await sync_to_async(room_contact.refresh_from_db)()
-            advisee = await sync_to_async(User.objects.get)(id=room_contact.advisee_id)
-            if advisee == user_contact:
-                room_contact.advisee_read = True
-            else:
-                room_contact.counselor_read = True
-        await sync_to_async(room_contact.save)()
+        
         messages = await sync_to_async(self.last_30_messages)(room_id=room_id)
         json_message = await sync_to_async(self.messages_to_json)(messages)
         content = {"command": "messages",
@@ -53,16 +46,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message_creat = await sync_to_async(Message.objects.create)(
             user_id=user_contact, room_id=room_contact, message=data["message"]
         )
-        if room_contact is not None:
-            await sync_to_async(room_contact.refresh_from_db)()
-            advisee = await sync_to_async(User.objects.get)(id=room_contact.advisee_id)
-            if advisee == user_contact:
-                room_contact.advisee_read = True
-                room_contact.counselor_read = False
-            else:
-                room_contact.advisee_read = False
-                room_contact.counselor_read = True
-            await sync_to_async(room_contact.save)()
+        
         message = await sync_to_async(self.message_to_json)(message_creat)
         content = {
             "command": "new_message",
