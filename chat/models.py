@@ -1,6 +1,7 @@
 from users.models import User
 from django.db import models
-
+from django.dispatch import receiver
+from django.db.models.signals import post_save
 
 class Room(models.Model):
     """
@@ -16,11 +17,10 @@ class Room(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     counselor = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="counselor_user", db_column="counselor")
+        User, on_delete=models.CASCADE, related_name="counselor_user", db_column="counselor", null=True, blank=True)
     advisee = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="advisee_user", db_column="advisee")
-    counselor_read = models.BooleanField(default=False)
-    advisee_read = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=False)
 
     class Meta:
         db_table = "room"
@@ -50,3 +50,9 @@ class Message(models.Model):
 
     def __str__(self):
         return self.user_id.email
+
+
+@receiver(post_save, sender=User)
+def create_user_chatroom(sender, instance, created, **kwargs):
+    if created and not instance.is_staff:
+        Room.objects.create(advisee=instance)
