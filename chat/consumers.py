@@ -83,6 +83,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             "timestamp": str(message.created_at),
         }
 
+    async def room_set_activate(self, user, active):
+        awaituser = await sync_to_async(Room.objects.get)(advisee=self.user)
+        awaituser.is_active = active
+        await sync_to_async(awaituser.save)()
+
     commands = {"fetch_messages": fetch_messages, "new_message": new_message}
 
     async def connect(self):
@@ -94,11 +99,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
         #06.15 : 동기 기반 클레스에서 비동기 기반으로 변경
         """
         self.room_name = self.scope["url_route"]["kwargs"]["room_name"]
+        self.user = self.scope['user']
         self.room_group_name = "chat_%s" % self.room_name
 
         await self.channel_layer.group_add(
             self.room_group_name, self.channel_name
         )
+        if not self.user.is_staff:
+            await self.room_set_activate(self.user, True)
+        else:
+            room = await sync_to_async(Room.objects.get)(id=self.room_name)
+            room.counselor = self.user
+            await sync_to_async(room.save)()
+
         await self.accept()
 
     async def disconnect(self, close_code):
@@ -109,6 +122,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
         업데이트 일자 : 2023.06.15
         #06.15 : 동기 기반 클레스에서 비동기 기반으로 변경
         """
+
+        if not self.user.is_staff:
+            await self.room_set_activate(self.user, False)
+        else:
+            room = await sync_to_async(Room.objects.get)(id=self.room_name)
+            room.counselor = None
+            await sync_to_async(room.save)()
+
         await self.channel_layer.group_discard(
             self.room_group_name, self.channel_name
         )
