@@ -52,7 +52,7 @@ INSTALLED_APPS = [
 ]
 
 # 웹사이트 복수 생성시 사이트 지정을 위해 필요
-SITE_ID = 1
+SITE_ID = 2
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -212,9 +212,7 @@ SIMPLE_JWT = {
 
 CORS_ALLOW_ALL_ORIGINS = False
 
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000', 'http://127.0.0.1:3000'
-]
+CORS_ALLOWED_ORIGINS = ALLOWED_HOSTS
 
 CORS_ALLOW_CREDENTIALS = True  # cross-site HTTP요청에 Cookie 추가
 
@@ -277,4 +275,4 @@ CARD_NUMBER = os.environ.get('CARD_NUMBER')
 EXPIRY_AT = os.environ.get('EXPIRY_AT')
 BIRTH = os.environ.get('BIRTH')
 PWD_2DIGIT = os.environ.get('PWD_2DIGIT')
-
+CSRF_TRUSTED_ORIGINS = ALLOWED_HOSTS
