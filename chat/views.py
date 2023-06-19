@@ -5,12 +5,13 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from collections import Counter
+from chat.serializers import RoomSerializer
 
 
 class RoomView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
+    def get(self, request):
         """
         작성자 : 박지홍
         내용 : 채팅을위한 Room을 만드는 기능.
@@ -19,10 +20,22 @@ class RoomView(APIView):
         업데이트 일자 : 2023.06.15
         #06.15 : 1:1 통신만 존재함으로 인해 기존의 N:N 통신 기반 함수를 덜어냄.
         """
-        counselor = User.objects.filter(is_admin=True).first()
-        find_room_q = Room.objects.filter(advisee=request.user).first()
-        if find_room_q:
-            return Response(find_room_q.id, status=status.HTTP_200_OK)
+        # counselor = User.objects.filter(is_admin=True).first()
 
-        room = Room.objects.create(advisee=request.user, counselor=counselor)
-        return Response(room.id, status=status.HTTP_201_CREATED)
+        room = Room.objects.filter(advisee=request.user).first()
+        if room:
+            return Response(room.id, status=status.HTTP_201_CREATED)
+        else:
+            return Response(None, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ActiveRoomView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        room = Room.objects.filter(is_active=True)
+        serializer = RoomSerializer(room, many=True)
+        return Response(serializer.data, status=200)
+
+
+    

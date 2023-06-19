@@ -3,4 +3,5 @@ from chat import views
 
 urlpatterns = [
     path("room/", views.RoomView.as_view(), name="room_view"),
+    path("info/", views.ActiveRoomView.as_view(), name="info_view"),
 ]
