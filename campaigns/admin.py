@@ -81,7 +81,7 @@ class FundingDisplay(admin.ModelAdmin):
     list_display = [
         "campaign",
         "goal",
-        "current",
+        "amount",
         "approve_file",
         "created_at",
         "updated_at",
@@ -89,7 +89,7 @@ class FundingDisplay(admin.ModelAdmin):
     fields = [
         "campaign",
         "goal",
-        "current",
+        "amount",
         "approve_file",
     ]
     readonly_fields = (
@@ -102,7 +102,7 @@ class FundingDisplay(admin.ModelAdmin):
     search_fields = [
         "campaign",
         "goal",
-        "current",
+        "amount",
         "approve_file",
         "created_at",
         "updated_at",
