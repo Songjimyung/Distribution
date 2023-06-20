@@ -72,21 +72,20 @@ class CreatePaymentScheduleView(APIView):
         작성자 : 송지명
         작성일 : 2023.06.13
         작성내용 : 예약 결제 후 예약 정보 조회, 예약정보 없을 경우 데이터 삭제
-        업데이트 날짜 : 
+        업데이트 날짜 : 2023.06.19
         '''
         iamport = Iamport(imp_key=settings.IMP_KEY, imp_secret=settings.IMP_SECRET)
-        token = iamport.get_headers()
         users = Payment.objects.filter(user=request.user.id)
         receipt_data_list = []
         for user in users :
             merchant_uid = user.merchant_uid
-            receipt_url = f'https://api.iamport.kr/subscribe/payments/schedule/{merchant_uid}'
-            response = requests.get(receipt_url, headers=token)
-            if response.status_code == 200: 
-                receipt_data = response.json()
-                receipt_data_list.append(receipt_data)
+            response = iamport.pay_schedule_get(merchant_uid)
+            if response:
+                response['campaign_id'] = user.campaign.id
+                receipt_data_list.append(response)
             else:
                 user.delete()
+                return Response({"message":"예약정보가 없습니다."})
             
         return JsonResponse(receipt_data_list, safe=False)
     
@@ -140,28 +139,16 @@ class ReceiptAPIView(APIView):
         '''
         작성자 : 송지명
         작성일 : 2023.06.14
-        작성내용 : 유저의 결제정보 조회// 기존에는 iamport에 직접 조회였으나 모델에서 조회로 변경. 
-                  상세 정보 조회 시 프론트에서 iamport로 요청 보내서 확인.
+        작성내용 : 유저의 결제정보 전체조회(모델에서 갖고옴)
         업데이트 날짜 : 2023.06.15
         '''
-        # iamport = Iamport(imp_key=settings.IMP_KEY, imp_secret=settings.IMP_SECRET)
-        # token = iamport.get_headers()
-        # merchant_uid = request.GET.get('merchant_uid')
-        # imp_uid = request.GET.get('imp_uid')
-        # receipt_url = "https://api.iamport.kr/payments"
-        # params = {
-        #     'merchant_uid' : merchant_uid,
-        #     'imp_uid' : imp_uid
-        # }
-        # response = requests.get(receipt_url, params, headers=token)
-        # response_data =response.json()
-        # return JsonResponse(response_data)
-        # user = User.objects.get(id=user_id)
+        user = User.objects.get(id=user_id)
         receipts = Payment.objects.filter(user=user_id, product__isnull=False)
         
         receipt_data = []
         for receipt in receipts :
             receipt_data.append({
+                'id' : receipt.pk,
                 'user' : receipt.user.username,
                 'amount': receipt.amount,
                 'created_at': receipt.created_at,
@@ -171,3 +158,44 @@ class ReceiptAPIView(APIView):
             })
         return JsonResponse(receipt_data, safe=False)
     
+class DetailReciptAPIView(APIView):
+    
+    def get(self, request, pk):
+        iamport = Iamport(imp_key=settings.IMP_KEY, imp_secret=settings.IMP_SECRET)
+        token = iamport.get_headers()
+        detail_receipt = Payment.objects.get(pk=pk)
+        merchant_uid = detail_receipt.merchant_uid
+        imp_uid = detail_receipt.imp_uid
+        receipt_url = "https://api.iamport.kr/payments"
+        params = {
+            'merchant_uid' : merchant_uid,
+            'imp_uid' : imp_uid
+        }
+        response = requests.get(receipt_url, params, headers=token)
+        response_data =response.json()
+        return JsonResponse(response_data)
+    
+    def post(self, request, pk):
+        '''
+        작성자: 송지명
+        작성일: 2023.06.18
+        작성내용: 결제 취소
+        업데이트 일자 : 2023.06.20        
+        '''
+        receipt = Payment.objects.get(pk=pk)
+        imp_uid = receipt.imp_uid
+        merchant_uid = receipt.merchant_uid
+        
+        cancel_url = "https://api.iamport.kr/payments/cancel"
+        payload = {
+            'imp_uid': imp_uid,
+            'merchant_uid': merchant_uid
+        }
+        response = requests.post(cancel_url, data=payload)
+        
+        if response.status_code == 200:
+            # 결제 취소 성공
+            return JsonResponse({'message': '결제가 취소되었습니다.'})
+        else:
+            # 결제 취소 실패
+            return JsonResponse({'message': '결제 취소에 실패했습니다.'}, status=400)
