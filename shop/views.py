@@ -132,6 +132,10 @@ class ProductDetailViewAPI(APIView):
         serializer = ProductListSerializer(product)
         product.hits += 1
         product.save()
+
+        if product.sold_out:
+            return Response({"message": "해당 상품은 품절되었습니다."}, status=status.HTTP_404_NOT_FOUND)
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, product_id):

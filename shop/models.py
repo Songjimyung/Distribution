@@ -22,9 +22,9 @@ class ShopCategory(models.Model):
 class ShopProduct(models.Model):
     '''
     작성자 : 장소은
-    내용 : 상품의 정보(이름,가격,수량,설명,등록일)를 나타내는 모델
+    내용 : 상품의 정보(이름,가격,수량,설명,등록일)를 나타내는 모델, 품절처리 플래그 모델 추가 
     최초 작성일: 2023.06.06
-    업데이트 일자:
+    업데이트 일자:2023.06.20
     '''
     product_name = models.CharField(max_length=30)
     product_price = models.PositiveIntegerField(default=0)
@@ -34,6 +34,14 @@ class ShopProduct(models.Model):
     category = models.ForeignKey(
         ShopCategory, on_delete=models.CASCADE, related_name='products')
     hits = models.PositiveIntegerField(default=0)
+    sold_out = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        if self.product_stock == 0:
+            self.sold_out = True
+        else:
+            self.sold_out = False
+        super().save(*args, **kwargs)
 
 
 class ShopOrder(models.Model):

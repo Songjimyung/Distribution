@@ -335,13 +335,13 @@ class KakaoCallbackView(APIView):
             accept_status = accept.status_code
 
             if accept_status != 200:
-                redirect_url = f'${front_base_url}index.html'
+                redirect_url = f'${front_base_url}'
                 status_code = accept_status
                 err_msg = "kakao_signup"
                 redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
                 return redirect(redirect_url_with_status)
 
-            redirect_url = f'${front_base_url}index.html'
+            redirect_url = f'${front_base_url}'
             status_code = 201
             redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
             return redirect(redirect_url_with_status)
