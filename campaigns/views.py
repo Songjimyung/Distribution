@@ -3,7 +3,8 @@ from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
-from django.db.models import Q, F, Count
+from django.db import models
+from django.db.models import Q, F, Count, Case, When
 from django.utils import timezone
 from campaigns.models import (
     Campaign,
@@ -29,7 +30,7 @@ class CampaignView(APIView):
     캠페인을 작성할 수 있는 post가 있는 클래스입니다.
 
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.18
+    업데이트 일자 : 2023.06.19
     """
 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -50,9 +51,9 @@ class CampaignView(APIView):
         order : 캠페인을 order_by 메소드로 정렬합니다.
         recent - 최신순기준
         closing - 마감일기준
-        count - 조회수기준(아직 조회수가 미구현)
-        like - 좋아요수기준(좋아요 수 필드를 만들어야 할지 고민중입니다)
-        amount - 펀딩 모금금액순(current로 한 상태, goal로 해야할지는 고민)
+        popular - 인기순(참여 신청자 수)기준
+        like - 좋아요 수 기준(좋아요 수 필드를 만들어야 할지 고민중입니다)
+        amount - 펀딩 모금금액순
         """
         # end = request.GET.get("end", None)
         end = self.request.query_params.get("end", None)
@@ -80,7 +81,7 @@ class CampaignView(APIView):
         orders_dict = {
             "recent": queryset.order_by("-created_at"),
             "closing": queryset.order_by("campaign_end_date"),
-            "count": queryset,
+            "popular": queryset.annotate(participant_count=Count("participant")).order_by("-participant_count"),
             "like": queryset.annotate(like_count=Count("like")).order_by("-like_count"),
             "amount": queryset.filter(
                 ~Q(fundings=None) & Q(fundings__goal__gt=0)
@@ -104,7 +105,7 @@ class CampaignView(APIView):
         캠페인 POST요청 함수입니다.
         is_funding이 True라면 펀딩정보를 같이 POST하는 방식으로 모듈화 했습니다.
         """
-        if request.data["is_funding"] == "False":
+        if request.data["is_funding"] == "false":
             return self.create_campaign(request)
         else:
             return self.create_campaign_with_funding(request)
@@ -332,7 +333,7 @@ def check_campaign_status():
     timezone.localtime()은 로컬 시각(한국)으로 찍히는데, 뭘 사용해야 할지는
     settings.py 시각과 MySQL에 찍히는 DB 시간 고려해서 정해야할 것 같습니다.
     최초 작성일 : 2023.06.08
-    업데이트 일자 : 2023.06.17
+    업데이트 일자 : 2023.06.19
     """
     now = timezone.now()  # UTC로 찍힘
     # now = timezone.localtime() # 한국 로컬타임 찍힘
@@ -340,7 +341,7 @@ def check_campaign_status():
     campaigns = Campaign.objects.filter(status=1)
 
     for campaign in campaigns:
-        if campaign.enddate <= now:
+        if campaign.campaign_end_date <= now:
             campaign.status = 2
             campaign.save()
 
