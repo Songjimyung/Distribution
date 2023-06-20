@@ -2,13 +2,14 @@ from rest_framework.generics import get_object_or_404
 from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import ShopProduct, ShopCategory, ShopOrder
+from .models import ShopProduct, ShopCategory, ShopOrder, RestockNotification
 from .serializers import (
     ProductListSerializer, CategoryListSerializer, OrderProductSerializer
 )
 from config.permissions import IsAdminUserOrReadonly
 from rest_framework.pagination import PageNumberPagination
-from django.db.models import Q
+from django.db.models import Q, F
+from rest_framework.permissions import IsAuthenticated
 
 
 class CustomPagination(PageNumberPagination):
@@ -130,11 +131,11 @@ class ProductDetailViewAPI(APIView):
     def get(self, request, product_id):
         product = get_object_or_404(ShopProduct, id=product_id)
         serializer = ProductListSerializer(product)
-        product.hits += 1
+        product.hits = F('hits') + 1
         product.save()
 
         if product.sold_out:
-            return Response({"message": "해당 상품은 품절되었습니다."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": "해당 상품은 현재 품절되었습니다. 재입고 알림을 신청해주세요!"}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -254,3 +255,22 @@ class MypageOrderViewAPI(APIView):
         serializer = OrderProductSerializer(result_page, many=True)
 
         return paginator.get_paginated_response(serializer.data)
+
+
+class RestockNotificationViewAPI(APIView):
+    '''
+    작성자: 장소은
+    내용: 재입고 알림 신청
+    작성일: 2023.06.20
+    '''
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, product_id):
+        product = get_object_or_404(ShopProduct, id=product_id)
+        user = request.user
+
+        if product.sold_out:
+            if not RestockNotification.objects.filter(product=product, user=user).exists():
+                RestockNotification.objects.create(product=product, user=user)
+
+            return Response({"message": "재입고 알림 신청이 완료되었습니다."}, status=status.HTTP_201_CREATED)

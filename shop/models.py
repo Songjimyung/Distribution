@@ -35,6 +35,8 @@ class ShopProduct(models.Model):
         ShopCategory, on_delete=models.CASCADE, related_name='products')
     hits = models.PositiveIntegerField(default=0)
     sold_out = models.BooleanField(default=False)
+    restock_available = models.BooleanField(default=False)
+    restocked = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         if self.product_stock == 0:
@@ -105,3 +107,18 @@ class ShopImageFile(models.Model):
     image_file = models.ImageField(null=True, blank=True)
     product = models.ForeignKey(
         ShopProduct, on_delete=models.CASCADE, related_name='images')
+
+
+class RestockNotification(models.Model):
+    '''
+    작성자 : 장소은
+    내용 : 재입고 알림 신청 모델, 사용자가 재입고 신청 시 DB에 저장 
+    최초 작성일 : 2023.06.20
+    '''
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    product = models.ForeignKey(ShopProduct, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # 중복방지
+    class Meta:
+        unique_together = ('user', 'product')
