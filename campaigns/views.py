@@ -30,7 +30,7 @@ class CampaignView(APIView):
     캠페인을 작성할 수 있는 post가 있는 클래스입니다.
 
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.18
+    업데이트 일자 : 2023.06.19
     """
 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -339,7 +339,7 @@ def check_campaign_status():
     timezone.localtime()은 로컬 시각(한국)으로 찍히는데, 뭘 사용해야 할지는
     settings.py 시각과 MySQL에 찍히는 DB 시간 고려해서 정해야할 것 같습니다.
     최초 작성일 : 2023.06.08
-    업데이트 일자 : 2023.06.17
+    업데이트 일자 : 2023.06.19
     """
     now = timezone.now()  # UTC로 찍힘
     # now = timezone.localtime() # 한국 로컬타임 찍힘
@@ -347,7 +347,7 @@ def check_campaign_status():
     campaigns = Campaign.objects.filter(status=1)
 
     for campaign in campaigns:
-        if campaign.enddate <= now:
+        if campaign.campaign_end_date <= now:
             campaign.status = 2
             campaign.save()
 

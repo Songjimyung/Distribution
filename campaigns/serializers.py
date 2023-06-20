@@ -45,7 +45,7 @@ class FundingCreateSerializer(serializers.ModelSerializer):
     작성자 : 최준영
     내용 : 펀딩 생성 시리얼라이저 입니다.
     최초 작성일 : 2023.06.07
-    업데이트 일자 : 2023.06.08
+    업데이트 일자 : 2023.06.20
     """
 
     class Meta:
@@ -134,8 +134,9 @@ class CampaignCreateSerializer(serializers.ModelSerializer):
     """
     작성자 : 최준영
     내용 : 캠페인 생성 시리얼라이저 입니다.
+    validation 진행중
     최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.08
+    업데이트 일자 : 2023.06.20
     """
 
     class Meta:
@@ -153,6 +154,45 @@ class CampaignCreateSerializer(serializers.ModelSerializer):
             "status",
         )
 
+    campaign_start_date = serializers.DateTimeField()
+    campaign_end_date = serializers.DateTimeField()
+    activity_start_date = serializers.DateTimeField(required=False, allow_null=True)
+    activity_end_date = serializers.DateTimeField(required=False, allow_null=True)
+
+    def validate(self, data):
+        print(data)
+        data = super().validate(data)
+        data = self.validate_date(data)
+
+        return data
+
+    def validate_date(self, data):
+        if data["campaign_start_date"] >= data["campaign_end_date"]:
+            raise serializers.ValidationError(
+                detail={"campaign_start_date": "캠페인 시작일은 마감일보다 이전일 수 없습니다."}
+            )
+
+        activity_start_date = data.get("activity_start_date")
+        activity_end_date = data.get("activity_end_date")
+
+        if activity_start_date and not activity_end_date:
+            raise serializers.ValidationError(
+                detail={"activity_end_date": "활동 종료일은 필수입니다."}
+            )
+
+        if not activity_start_date and activity_end_date:
+            raise serializers.ValidationError(
+                detail={"activity_start_date": "활동 시작일은 필수입니다."}
+            )
+
+        if activity_start_date and activity_end_date:
+            if activity_start_date > activity_end_date:
+                raise serializers.ValidationError(
+                    detail={"activity_start_date": "활동 시작일은 마감일보다 이전일 수 없습니다."}
+                )
+
+        return data
+    
 
 class CampaignReviewSerializer(BaseSerializer):
     """
