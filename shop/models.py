@@ -22,9 +22,9 @@ class ShopCategory(models.Model):
 class ShopProduct(models.Model):
     '''
     작성자 : 장소은
-    내용 : 상품의 정보(이름,가격,수량,설명,등록일)를 나타내는 모델
+    내용 : 상품의 정보(이름,가격,수량,설명,등록일)를 나타내는 모델, 품절처리,재입고 플래그 추가 
     최초 작성일: 2023.06.06
-    업데이트 일자:
+    업데이트 일자:2023.06.20
     '''
     product_name = models.CharField(max_length=30)
     product_price = models.PositiveIntegerField(default=0)
@@ -34,6 +34,23 @@ class ShopProduct(models.Model):
     category = models.ForeignKey(
         ShopCategory, on_delete=models.CASCADE, related_name='products')
     hits = models.PositiveIntegerField(default=0)
+    sold_out = models.BooleanField(default=False)
+    restock_available = models.BooleanField(default=False)
+    restocked = models.BooleanField(default=False)
+
+    # 상품의 초기 입고 후 재고가 0이 되었을 경우 품절 처리
+    def save(self, *args, **kwargs):
+        if self.product_stock == 0:
+            self.sold_out = True
+            self.restock_available = True
+            self.restocked = False
+
+        else:  # 상품이 초기 입고가 아닌 재입고일 경우
+            if self.product_stock > 0 and self.restock_available == True:
+                self.sold_out = False
+                self.restock_available = False
+                self.restocked = True
+        super().save(*args, **kwargs)
 
 
 class ShopOrder(models.Model):
@@ -97,3 +114,18 @@ class ShopImageFile(models.Model):
     image_file = models.ImageField(null=True, blank=True)
     product = models.ForeignKey(
         ShopProduct, on_delete=models.CASCADE, related_name='images')
+
+
+class RestockNotification(models.Model):
+    '''
+    작성자 : 장소은
+    내용 : 재입고 알림 신청 모델, 사용자가 재입고 신청 시 DB에 저장 
+    최초 작성일 : 2023.06.20
+    '''
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    product = models.ForeignKey(ShopProduct, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # 중복방지
+    class Meta:
+        unique_together = ('user', 'product')

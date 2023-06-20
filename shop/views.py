@@ -2,12 +2,14 @@ from rest_framework.generics import get_object_or_404
 from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import ShopProduct, ShopCategory, ShopOrder
+from .models import ShopProduct, ShopCategory, ShopOrder, RestockNotification
 from .serializers import (
     ProductListSerializer, CategoryListSerializer, OrderProductSerializer
 )
 from config.permissions import IsAdminUserOrReadonly
 from rest_framework.pagination import PageNumberPagination
+from django.db.models import Q, F, Value
+from rest_framework.permissions import IsAuthenticated
 
 
 class CustomPagination(PageNumberPagination):
@@ -24,13 +26,19 @@ class CustomPagination(PageNumberPagination):
 class ProductListViewAPI(APIView):
     '''
     작성자:장소은
-    내용: 전체 상품 목록 쿼리 매개변수 통해 조건별 정렬 조회 API
+    내용: 전체 상품 목록 쿼리 매개변수 통해 조건별 정렬 및 검색 조회 API
     작성일: 2023.06.16
+    업데이트 일: 2023.06.20
     '''
     pagination_class = CustomPagination
 
     def get(self, request):
         sort_by = request.GET.get('sort_by')
+        search_query = request.GET.get('search_query')
+
+        products = ShopProduct.objects.all()
+
+        # 정렬 처리
         if sort_by == 'hits':
             products = ShopProduct.objects.all().order_by('-hits')
         elif sort_by == 'latest':
@@ -39,6 +47,15 @@ class ProductListViewAPI(APIView):
             products = ShopProduct.objects.all().order_by('-product_price')
         elif sort_by == 'low_price':
             products = ShopProduct.objects.all().order_by('product_price')
+
+        # 검색 처리
+        if search_query:
+            products = products.filter(
+                Q(product_name__icontains=search_query) |
+                Q(product_desc__icontains=search_query)
+            )
+
+        # 페이지네이션 처리
         paginator = self.pagination_class()
         result_page = paginator.paginate_queryset(products, request)
         serializer = ProductListSerializer(result_page, many=True)
@@ -49,9 +66,9 @@ class ProductListViewAPI(APIView):
 class ProductCategoryListViewAPI(APIView):
     '''
     작성자:장소은
-    내용: 카테고리별 상품목록 조회(조회순/높은금액/낮은금액/최신순) (일반,관리자) / 상품 등록(관리자) 
+    내용: 카테고리별 상품목록 정렬 및 검색 조회(조회순/높은금액/낮은금액/최신순) (일반,관리자) / 상품 등록(관리자) 
     작성일: 2023.06.06
-    업데이트일: 2023.06.16
+    업데이트일: 2023.06.120
     '''
     permission_classes = [IsAdminUserOrReadonly]
     pagination_class = CustomPagination
@@ -60,6 +77,11 @@ class ProductCategoryListViewAPI(APIView):
         category = get_object_or_404(ShopCategory, id=category_id)
 
         sort_by = request.GET.get('sort_by')
+        search_query = request.GET.get('search_query')
+
+        products = ShopProduct.objects.filter(category_id=category.id)
+
+        # 정렬 처리
         if sort_by == 'hits':
             products = ShopProduct.objects.filter(
                 category_id=category.id).order_by('-hits')
@@ -73,6 +95,14 @@ class ProductCategoryListViewAPI(APIView):
             products = ShopProduct.objects.filter(
                 category_id=category.id).order_by('-product_date')
 
+        # 검색 처리
+        if search_query:
+            products = products.filter(
+                Q(product_name__icontains=search_query) |
+                Q(product_desc__icontains=search_query)
+            )
+
+        # 페이지네이션 처리
         paginator = self.pagination_class()
         result_page = paginator.paginate_queryset(products, request)
         serializer = ProductListSerializer(result_page, many=True)
@@ -102,7 +132,12 @@ class ProductDetailViewAPI(APIView):
         product = get_object_or_404(ShopProduct, id=product_id)
         serializer = ProductListSerializer(product)
         product.hits += 1
+        print(product.hits)
         product.save()
+
+        if product.sold_out:
+            return Response({"message": "해당 상품은 현재 품절되었습니다. 재입고 알림을 신청해주세요!"}, status=status.HTTP_400_BAD_REQUEST)
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, product_id):
@@ -221,3 +256,22 @@ class MypageOrderViewAPI(APIView):
         serializer = OrderProductSerializer(result_page, many=True)
 
         return paginator.get_paginated_response(serializer.data)
+
+
+class RestockNotificationViewAPI(APIView):
+    '''
+    작성자: 장소은
+    내용: 재입고 알림 신청
+    작성일: 2023.06.20
+    '''
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, product_id):
+        product = get_object_or_404(ShopProduct, id=product_id)
+        user = request.user
+
+        if product.sold_out:
+            if not RestockNotification.objects.filter(product=product, user=user).exists():
+                RestockNotification.objects.create(product=product, user=user)
+
+            return Response({"message": "재입고 알림 신청이 완료되었습니다."}, status=status.HTTP_201_CREATED)
