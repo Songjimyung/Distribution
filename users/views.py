@@ -274,7 +274,7 @@ class KakaoCallbackView(APIView):
         token_req_json = token_req.json()
         error = token_req_json.get("error")
         if error is not None:
-            redirect_url = 'http://127.0.0.1:3000'
+            redirect_url = f'${front_base_url}'
             err_msg = "error"
             redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
             return redirect(redirect_url_with_status)
@@ -287,7 +287,7 @@ class KakaoCallbackView(APIView):
         profile_json = profile_request.json()
         error = profile_json.get("error")
         if error is not None:
-            redirect_url = 'http://127.0.0.1:3000'
+            redirect_url = f'${front_base_url}'
             err_msg = "error"
             redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
             return redirect(redirect_url_with_status)
@@ -303,13 +303,13 @@ class KakaoCallbackView(APIView):
             social_user = SocialAccount.objects.get(user=user)
 
             if social_user is None:
-                redirect_url = 'http://127.0.0.1:3000/'
+                redirect_url = f'${front_base_url}'
                 status_code = 204
                 redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
                 return redirect(redirect_url_with_status)
 
             if social_user.provider != 'kakao':
-                redirect_url = 'http://127.0.0.1:3000/'
+                redirect_url = f'${front_base_url}'
                 status_code = 400
                 redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
                 return redirect(redirect_url_with_status)
@@ -335,13 +335,13 @@ class KakaoCallbackView(APIView):
             accept_status = accept.status_code
 
             if accept_status != 200:
-                redirect_url = 'http://127.0.0.1:3000/index.html'
+                redirect_url = f'${front_base_url}index.html'
                 status_code = accept_status
                 err_msg = "kakao_signup"
                 redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
                 return redirect(redirect_url_with_status)
 
-            redirect_url = 'http://127.0.0.1:3000/index.html'
+            redirect_url = f'${front_base_url}index.html'
             status_code = 201
             redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
             return redirect(redirect_url_with_status)
