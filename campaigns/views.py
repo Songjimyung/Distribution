@@ -85,7 +85,7 @@ class CampaignView(APIView):
             "like": queryset.annotate(like_count=Count("like")).order_by("-like_count"),
             "amount": queryset.filter(
                 ~Q(fundings=None) & Q(fundings__goal__gt=0)
-            ).order_by("-fundings__current"),
+            ).order_by("-fundings__amount"),
         }
 
         queryset = orders_dict[order]

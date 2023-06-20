@@ -52,7 +52,7 @@ class FundingCreateSerializer(serializers.ModelSerializer):
         model = Funding
         fields = (
             "goal",
-            "current",
+            "amount",
             "approve_file",
         )
 
