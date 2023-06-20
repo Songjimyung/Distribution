@@ -3,12 +3,13 @@ from .models import User, UserProfile
 from django.contrib.auth.hashers import check_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import smart_bytes, force_bytes
-from django.utils.encoding import force_str
-from django.core.mail import EmailMessage
+from rest_framework import serializers, exceptions
 from rest_framework_jwt.settings import api_settings
+from django.core.mail import EmailMessage
+from django.utils.encoding import force_str
+from django.utils.encoding import smart_bytes, force_bytes
 import threading
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 
 
 class SignUpSerializer(serializers.ModelSerializer):
@@ -165,15 +166,18 @@ class UpdatePasswordSerializer(serializers.ModelSerializer):
 
         # 현재 비밀번호 예외 처리
         if not check_password(confirm_password, current_password):
-            raise serializers.ValidationError(detail={"password": "현재 비밀번호가 일치하지 않습니다."})
+            raise serializers.ValidationError(
+                detail={"password": "현재 비밀번호가 일치하지 않습니다."})
 
         # 현재 비밀번호와 바꿀 비밀번호 비교
         if check_password(password, current_password):
-            raise serializers.ValidationError(detail={"password": "현재 사용중인 비밀번호와 동일한 비밀번호는 입력할 수 없습니다."})
+            raise serializers.ValidationError(
+                detail={"password": "현재 사용중인 비밀번호와 동일한 비밀번호는 입력할 수 없습니다."})
 
         # 비밀번호 일치
         if password != re_password:
-            raise serializers.ValidationError(detail={"password": "비밀번호가 일치하지 않습니다."})
+            raise serializers.ValidationError(
+                detail={"password": "비밀번호가 일치하지 않습니다."})
 
         # # 비밀번호 유효성 검사
         # if password_validator(password):
@@ -198,13 +202,14 @@ class EmailThread(threading.Thread):
     작성자 : 이주한
     내용 : 이메일 전송을 위해 'Thread'를 사용하는 'EmailThread'클래스입니다.
             run 메소드는 Tread의 start() 메소드로 Tread가 실행될 때 호출됩니다.
-            
+
             * Tread를 사용하는 이유: 
                 이메일 전송 작업을 백그라운드에서 비동기적으로 처리하고, 
                 다른 작업과 동시에 진행할 수 있도록 하기 위함입니다.
     최초 작성일 : 2023.06.15
     업데이트 일자 : 
     '''
+
     def __init__(self, email):
         self.email = email
         threading.Thread.__init__(self)
@@ -275,7 +280,8 @@ class ResetPasswordEmailSerializer(serializers.Serializer):
             return super().validate(attrs)
 
         except User.DoesNotExist:
-            raise serializers.ValidationError(detail={"email": "잘못된 이메일입니다. 다시 입력해주세요."})
+            raise serializers.ValidationError(
+                detail={"email": "잘못된 이메일입니다. 다시 입력해주세요."})
 
 
 class ResetPasswordSerializer(serializers.Serializer):
@@ -317,14 +323,15 @@ class ResetPasswordSerializer(serializers.Serializer):
         token = attrs.get("token")
         user_id = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(id=user_id)
-        
+
         # # 토큰이 유효여부
         # if PasswordResetTokenGenerator().check_token(user, token) == False:
         #     raise exceptions.AuthenticationFailed("링크가 유효하지 않습니다.", 401)
 
         # 비밀번호 일치
         if password != re_password:
-            raise serializers.ValidationError(detail={"password": "비밀번호가 일치하지 않습니다."})
+            raise serializers.ValidationError(
+                detail={"password": "비밀번호가 일치하지 않습니다."})
 
         # # 비밀번호 유효성 검사
         # if password_validator(password):
