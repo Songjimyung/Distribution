@@ -111,7 +111,7 @@ class CampaignView(APIView):
         캠페인 POST요청 함수입니다.
         is_funding이 True라면 펀딩정보를 같이 POST하는 방식으로 모듈화 했습니다.
         """
-        if request.data["is_funding"] == "False":
+        if request.data["is_funding"] == "false":
             return self.create_campaign(request)
         else:
             return self.create_campaign_with_funding(request)

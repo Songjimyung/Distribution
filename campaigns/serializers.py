@@ -160,13 +160,19 @@ class CampaignCreateSerializer(serializers.ModelSerializer):
     activity_end_date = serializers.DateTimeField(required=False, allow_null=True)
 
     def validate(self, data):
-        print(data)
+        """
+        캠페인 validation 함수입니다.
+        """
         data = super().validate(data)
         data = self.validate_date(data)
 
         return data
 
     def validate_date(self, data):
+        """
+        캠페인 시작일이 마감일보다 늦는지 확인합니다.
+        캠페인 활동 시작일만 있는지, 마감일만 있는지 또 시작일이 마감이보다 늦는지 확인합니다.
+        """
         if data["campaign_start_date"] >= data["campaign_end_date"]:
             raise serializers.ValidationError(
                 detail={"campaign_start_date": "캠페인 시작일은 마감일보다 이전일 수 없습니다."}
