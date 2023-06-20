@@ -53,7 +53,7 @@ class CampaignView(APIView):
         closing - 마감일기준
         popular - 인기순(참여 신청자 수)기준
         like - 좋아요 수 기준(좋아요 수 필드를 만들어야 할지 고민중입니다)
-        amount - 펀딩 모금금액순(current로 한 상태, goal로 해야할지는 고민)
+        amount - 펀딩 모금금액순
         """
         # end = request.GET.get("end", None)
         end = self.request.query_params.get("end", None)
@@ -80,13 +80,7 @@ class CampaignView(APIView):
 
         orders_dict = {
             "recent": queryset.order_by("-created_at"),
-            "closing": queryset.order_by(
-                Case(
-                    When(campaign_end_date__gte=timezone.now(), then=F("campaign_end_date")),
-                    default=0,
-                    output_field=models.DateTimeField()
-                )
-            ),
+            "closing": queryset.order_by("campaign_end_date"),
             "popular": queryset.annotate(participant_count=Count("participant")).order_by("-participant_count"),
             "like": queryset.annotate(like_count=Count("like")).order_by("-like_count"),
             "amount": queryset.filter(
