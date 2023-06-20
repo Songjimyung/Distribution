@@ -1,9 +1,10 @@
-from .models import RestockNotification, ShopProduct
+from .models import RestockNotification, ShopProduct, ShopCategory
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 import json
+from users.models import User
 
 channel_layer = get_channel_layer()
 
@@ -16,15 +17,14 @@ def send_notifications(sender, instance, created, **kwargs):
     최초 작성일 : 2023.06.20
     '''
     if not created and instance.restocked:
-        restock_notifications = RestockNotification.objects.filter(
+        notification_group = RestockNotification.objects.filter(
             product=instance)
-        for notification in restock_notifications:
-            user = notification.user
+        for user in notification_group:
             message = {
-                'type': 'restock_notification',
-                'message': f'상품 {instance.name}이(가) 재입고되었습니다.',
+                'type': 'notification_message',
+                'message': f'상품 {instance.product_name}이(가) 재입고되었습니다.',
             }
-            async_to_sync(channel_layer.group_send)("restock_notifications", {
-                'type': 'send_notification',
+            async_to_sync(channel_layer.group_send)("notification_group", {
+                'type': 'notification_message',
                 'message': json.dumps(message)
             })

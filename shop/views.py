@@ -8,7 +8,7 @@ from .serializers import (
 )
 from config.permissions import IsAdminUserOrReadonly
 from rest_framework.pagination import PageNumberPagination
-from django.db.models import Q, F
+from django.db.models import Q, F, Value
 from rest_framework.permissions import IsAuthenticated
 
 
@@ -131,7 +131,8 @@ class ProductDetailViewAPI(APIView):
     def get(self, request, product_id):
         product = get_object_or_404(ShopProduct, id=product_id)
         serializer = ProductListSerializer(product)
-        product.hits = F('hits') + 1
+        product.hits += 1
+        print(product.hits)
         product.save()
 
         if product.sold_out:
