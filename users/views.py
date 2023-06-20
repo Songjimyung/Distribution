@@ -175,7 +175,7 @@ class GoogleLoginFormView(APIView):
         최초 작성일 : 2023.06.08
         업데이트 일자 : 2023.06.19
         '''
-        scope = "email"
+        scope = "profile%20email"
         client_id = os.environ.get("SOCIAL_AUTH_GOOGLE_CLIENT_ID")
 
         return redirect(f"https://accounts.google.com/o/oauth2/v2/auth?client_id={client_id}&response_type=code&redirect_uri={google_callback_uri}&scope={scope}")
@@ -217,6 +217,7 @@ class GoogleCallbackView(APIView):
         )
         user_data_json = user_data_request.json()
         email = user_data_json.get("email")
+        username = user_data_json.get("name")
 
         try:
             user = User.objects.get(email=email)
@@ -231,7 +232,7 @@ class GoogleCallbackView(APIView):
                 status=status.HTTP_200_OK,
             )
         except:
-            user = User.objects.create_user(email=email)
+            user = User.objects.create_user(email=email, username=username)
             user.set_unusable_password()
             user.save()
             refresh = RefreshToken.for_user(user)
