@@ -22,9 +22,9 @@ class RoomView(APIView):
         """
         # counselor = User.objects.filter(is_admin=True).first()
 
-        room = Room.objects.filter(advisee=request.user).first()
+        room = Room.objects.filter(advisee=request.user).values('id').first()
         if room:
-            return Response(room.id, status=status.HTTP_201_CREATED)
+            return Response(room, status=status.HTTP_201_CREATED)
         else:
             return Response(None, status=status.HTTP_400_BAD_REQUEST)
 
