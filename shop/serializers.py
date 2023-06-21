@@ -37,7 +37,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         except ValueError:
             raise serializers.ValidationError('상품 가격은 숫자여야 합니다.')
 
-        return value
+        return price
 
     def create(self, validated_data):
         uploaded_images = validated_data.pop('uploaded_images', [])
@@ -46,8 +46,10 @@ class ProductListSerializer(serializers.ModelSerializer):
         if product_stock is not None and product_stock < 0:
             raise serializers.ValidationError('상품 재고는 음수일 수 없습니다.')
         product = super().create(validated_data)
+
         for images in uploaded_images:
             ShopImageFile.objects.create(image_file=images, product=product)
+
         return product
 
     def update(self, instance, validated_data):
@@ -119,10 +121,15 @@ class OrderProductSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         order_quantity = validated_data.get('order_quantity')
         product_key = validated_data.get('product')
-
         product = ShopProduct.objects.get(id=product_key.id)
+
         if product.product_stock >= order_quantity:
             product.product_stock -= order_quantity
+            if product.product_stock == 0:
+                product.sold_out = True
+                product.restock_available = True
+                product.restocked = False
+
             product.save()
 
             order_info_list = []

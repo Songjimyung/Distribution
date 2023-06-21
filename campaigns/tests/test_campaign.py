@@ -53,7 +53,7 @@ class CampaignCreateTest(APITestCase):
             "status": "1",
             # funding data
             "goal": "2000000",
-            "current": "0",
+            "amount": "0",
             "approve_file": "",
         }
         cls.user = User.objects.create_user(**cls.user_data)
@@ -196,7 +196,7 @@ class CampaignDetailTest(APITestCase):
             "status": "1",
             # funding data
             "goal": "1000000",
-            "current": "10000",
+            "amount": "10000",
             "approve_file": "",
         }
         cls.user = User.objects.create_user(**cls.user_data)
