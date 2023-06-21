@@ -27,7 +27,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',
 
-    'daphne',
+    #'daphne',
     'storages',
     'corsheaders',
     'rest_framework',
