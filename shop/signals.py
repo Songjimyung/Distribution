@@ -30,3 +30,4 @@ def send_notifications(sender, instance, created, **kwargs):
             })
             notification.notification_sent = True  # 알림 보낸 상태 업뎃
             notification.save()
+

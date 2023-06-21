@@ -113,9 +113,14 @@ class UserProfile(models.Model):
     작성일: 2023.06.17
     '''
     user = models.OneToOneField(
-        User, on_delete=models.CASCADE)
+        User,
+        on_delete=models.CASCADE
+    )
     image = models.ImageField(
-        upload_to='profile_images/', blank=True, null=True)
+        upload_to='profile_images/',
+        blank=True,
+        null=True
+    )
     address = models.CharField(max_length=255,  null=True)
     zip_code = models.CharField(max_length=10,  null=True)
     detail_address = models.CharField(max_length=255, null=True)
@@ -124,3 +129,26 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.email
+
+
+class Notification(models.Model):
+    '''
+    작성자 : 장소은
+    내용 : 사용자의 알림 레코드
+    작성일 : 2023.06.22
+    '''
+    participant = models.ForeignKey(
+        'campaigns.Participant',
+        on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    message = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    def mark_as_read(self):
+        self.is_read = True
+        self.save()
+
+    def __str__(self):
+        return f"{self.participant.user.username} - {self.message}"

@@ -251,7 +251,8 @@ class MypageOrderViewAPI(APIView):
     pagination_class = CustomPagination
 
     def get(self, request):
-        orders = ShopOrder.objects.filter(user=request.user.id)
+        orders = ShopOrder.objects.filter(
+            user=request.user.id).order_by('-order_date')
         paginator = self.pagination_class()
         result_page = paginator.paginate_queryset(orders, request)
         serializer = OrderProductSerializer(result_page, many=True)

@@ -121,6 +121,7 @@ class OrderProductSerializer(serializers.ModelSerializer):
         many=True, read_only=True)
     product = serializers.CharField(
         source='product.product_name', read_only=True)
+    order_date = serializers.SerializerMethodField()
 
     class Meta:
         model = ShopOrder
@@ -161,3 +162,6 @@ class OrderProductSerializer(serializers.ModelSerializer):
             return order
         else:
             raise ValidationError("상품 재고가 주문 수량보다 적습니다.")
+
+    def get_order_date(self, obj):
+        return obj.order_date.strftime("%Y년 %m월 %d일 %R")

@@ -1,15 +1,15 @@
 from channels.generic.websocket import WebsocketConsumer
 from asgiref.sync import async_to_sync
 from users.models import User
-from .models import ShopProduct
+from .models import Campaign
 import json
 
 
-class RestockConsumer(WebsocketConsumer):
+class ParticipantConsumer(WebsocketConsumer):
     '''
     작성자 : 장소은
     내용 : 웹소켓 연결, notification_group의 모든 컨슈머에게 메세지 보내기 
-    최초 작성일: 2023.06.21
+    최초 작성일: 2023.06.22
     '''
 
     def connect(self):
@@ -27,5 +27,4 @@ class RestockConsumer(WebsocketConsumer):
 
     def notification_message(self, event):
         message = event['message']
-        print(message)
         self.send(text_data=message)
