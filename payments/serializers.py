@@ -112,7 +112,7 @@ class PaymentScheduleSerializer(serializers.ModelSerializer):
         with transaction.atomic():
             response = iamport.pay_schedule(**payload)
             # 모든 작업이 성공한 경우에만 Payment 객체 생성 및 저장
-            data = Payment.objects.create(user=user_id, amount=amount, campaign=campaign, merchant_uid=merchant_uid)
+            data = Payment.objects.create(user=user_id, amount=amount, campaign=campaign, merchant_uid=merchant_uid, status="0")
 
 
         return response
