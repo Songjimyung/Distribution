@@ -10,6 +10,7 @@ from campaigns.models import (
     Campaign,
     CampaignComment,
     CampaignReview,
+    Participant
 )
 from campaigns.serializers import (
     CampaignSerializer,
@@ -20,6 +21,7 @@ from campaigns.serializers import (
     CampaignCommentCreateSerializer,
     FundingCreateSerializer,
 )
+from .signals import send_daily_notifications
 
 
 class CampaignView(APIView):
@@ -58,7 +60,6 @@ class CampaignView(APIView):
         # end = request.GET.get("end", None)
         end = self.request.query_params.get("end", None)
         order = self.request.query_params.get("order", None)
-
         queryset = (
             Campaign.objects.select_related("user")
             .select_related("fundings")
@@ -165,6 +166,8 @@ class CampaignDetailView(APIView):
         """
         campaing_id를 Parameter로 받아 해당하는 캠페인에 GET 요청을 보내는 함수입니다.
         """
+        send_daily_notifications()
+
         queryset = get_object_or_404(Campaign, id=campaign_id)
         serializer = CampaignSerializer(queryset)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -319,6 +322,14 @@ class CampaignParticipationView(APIView):
             queryset.participant.add(request.user)
             is_participated = True
             message = "캠페인 참가 성공!"
+
+            participant = Participant.objects.create(
+                user=request.user,
+                campaign=queryset,
+                is_participated=True,
+                is_sent=False
+            )
+            participant.save()
 
         return Response({"is_participated": is_participated, "message": message}, status=status.HTTP_200_OK)
 

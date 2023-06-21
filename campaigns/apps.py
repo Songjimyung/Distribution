@@ -7,7 +7,8 @@ class CampaignsConfig(AppConfig):
     name = "campaigns"
 
     def ready(self):
-        if settings.SCHEDULER_DEFAULT:
-            from . import operator
+        import shop.signals
+        # if settings.SCHEDULER_DEFAULT:
+        #     from . import operator
 
-            operator.start()
+        #     operator.start()

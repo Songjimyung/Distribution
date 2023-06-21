@@ -1,5 +1,6 @@
 import shop.routing
 import chat.routing
+import campaigns.routing
 from chat.channelsmiddleware import TokenAuthMiddleware
 from channels.routing import ProtocolTypeRouter, URLRouter
 import os
@@ -16,7 +17,8 @@ application = ProtocolTypeRouter({
     'websocket': TokenAuthMiddleware(
         URLRouter(
             chat.routing.websocket_urlpatterns +
-            shop.routing.websocket_urlpatterns
+            shop.routing.websocket_urlpatterns +
+            campaigns.routing.websocket_urlpatterns
         )
     ),
 })

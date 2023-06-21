@@ -1,7 +1,13 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from django_apscheduler.jobstores import register_events, DjangoJobStore
-
+from datetime import datetime, timedelta
+from django.utils import timezone
+from django.apps import AppConfig
+from django.conf import settings
+from .models import Participant, Campaign
 from .views import check_campaign_status
+from apscheduler.triggers.cron import CronTrigger
+from django_apscheduler.jobstores import register_events
 
 
 def start():
@@ -25,3 +31,5 @@ def start():
         check_campaign_status()
 
     scheduler.start()
+
+

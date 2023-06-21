@@ -18,8 +18,8 @@ def send_notifications(sender, instance, created, **kwargs):
     '''
     if not created and instance.restocked:
         notification_group = RestockNotification.objects.filter(
-            product=instance)
-        for user in notification_group:
+            product=instance, notification_sent=False)
+        for notification in notification_group:
             message = {
                 'type': 'notification_message',
                 'message': f'상품 {instance.product_name}이(가) 재입고되었습니다.',
@@ -28,3 +28,6 @@ def send_notifications(sender, instance, created, **kwargs):
                 'type': 'notification_message',
                 'message': json.dumps(message)
             })
+            notification.notification_sent = True  # 알림 보낸 상태 업뎃
+            notification.save()
+

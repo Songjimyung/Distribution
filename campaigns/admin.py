@@ -6,6 +6,7 @@ from campaigns.models import (
     CampaignReview,
     Funding,
     FundingOrder,
+    Participant
 )
 
 
@@ -217,3 +218,6 @@ class FundingOrdertDisplay(admin.ModelAdmin):
         "user",
         "funding",
     ]
+
+
+admin.site.register(Participant)
