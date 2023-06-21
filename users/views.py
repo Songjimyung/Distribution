@@ -280,7 +280,6 @@ class KakaoCallbackView(APIView):
             redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
             return redirect(redirect_url_with_status)
         access_token = token_req_json.get("access_token")
-        print(access_token)
         profile_request = requests.post(
             "https://kapi.kakao.com/v2/user/me",
             headers={"Authorization": f"Bearer {access_token}"},
@@ -325,7 +324,6 @@ class KakaoCallbackView(APIView):
             response_data = {
                 'jwt_token': jwt_token
             }
-            print(response_data)
             return JsonResponse(response_data)
 
         except User.DoesNotExist:

@@ -31,6 +31,7 @@ class ProductListViewAPI(APIView):
     업데이트 일: 2023.06.20
     '''
     pagination_class = CustomPagination
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         sort_by = request.GET.get('sort_by')
@@ -160,6 +161,7 @@ class AdminProductViewAPI(APIView):
     업데이트 일자 :
     '''
     pagination_class = CustomPagination
+    permission_classes = [IsAdminUserOrReadonly]
 
     def get(self, request):
         products = ShopProduct.objects.all().order_by('-product_date')
@@ -177,6 +179,7 @@ class AdminCategoryViewAPI(APIView):
     최초 작성일 : 2023.06.09
     업데이트 일자 :
     '''
+    permission_classes = [IsAdminUserOrReadonly]
 
     def get(self, request):
         categorys = ShopCategory.objects.all()
@@ -199,6 +202,7 @@ class OrderProductViewAPI(APIView):
     최초 작성일 : 2023.06.13
     업데이트 일자 :
     '''
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, product_id):
         orders = ShopOrder.objects.filter(
@@ -209,7 +213,6 @@ class OrderProductViewAPI(APIView):
     def post(self, request, product_id):
         product = get_object_or_404(ShopProduct, id=product_id)
         serializer = OrderProductSerializer(data=request.data)
-        print(serializer)
         if serializer.is_valid():
             serializer.save(product=product)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -225,6 +228,7 @@ class AdminOrderViewAPI(APIView):
     업데이트 일자 :
     '''
     pagination_class = CustomPagination
+    permission_classes = [IsAdminUserOrReadonly]
 
     def get(self, request):
 
@@ -243,6 +247,7 @@ class MypageOrderViewAPI(APIView):
     최초 작성일 : 2023.06.14
     업데이트 일자 : 2023.06.18
     '''
+    permission_classes = [IsAuthenticated]
     pagination_class = CustomPagination
 
     def get(self, request):
@@ -265,7 +270,6 @@ class RestockNotificationViewAPI(APIView):
     def post(self, request, product_id):
         product = get_object_or_404(ShopProduct, id=product_id)
         user = request.user
-        print(product.sold_out, user)
         if product.sold_out:
             if not RestockNotification.objects.filter(product=product, user=user).exists():
                 RestockNotification.objects.create(product=product, user=user)

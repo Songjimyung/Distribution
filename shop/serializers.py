@@ -1,6 +1,7 @@
 from rest_framework.serializers import ValidationError
 from rest_framework import serializers
 from .models import ShopProduct, ShopCategory, ShopImageFile, ShopOrder, ShopOrderDetail
+import re
 
 
 class PostImageSerializer(serializers.ModelSerializer):
@@ -128,6 +129,12 @@ class OrderProductSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         order_quantity = validated_data.get('order_quantity')
+        if order_quantity <= 0:
+            raise ValidationError("주문 수량은 0보다 작을 수 없습니다.")
+
+        receiver_number = validated_data.get('receiver_number')
+        if not re.match(r'^\d{3}-\d{3,4}-\d{4}$', receiver_number):
+            raise ValidationError("유효한 연락처를 입력해주세요! 예시: 010-1234-5678")
         product_key = validated_data.get('product')
         product = ShopProduct.objects.get(id=product_key.id)
 
