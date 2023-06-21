@@ -17,7 +17,6 @@ class RestockConsumer(WebsocketConsumer):
         async_to_sync(self.channel_layer.group_add)(
             "notification_group", self.channel_name)
         self.accept()  # 웹 소켓 연결 수락
-        self.send(text_data=json.dumps({'message': '연결 테스트'}))
 
     def disconnect(self, close_code):
         async_to_sync(self.channel_layer.group_discard)(

@@ -14,7 +14,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     작성자:장소은
     내용: 카테고리별 상품목록 조회/다중 이미지 업로드 시 필요한 Serializer 클래스
     작성일: 2023.06.07
-    업데이트일: 2023.06.12
+    업데이트일: 2023.06.21
     '''
     images = PostImageSerializer(many=True, read_only=True)
     uploaded_images = serializers.ListField(child=serializers.ImageField(
@@ -26,7 +26,15 @@ class ProductListSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShopProduct
         fields = ['id', 'product_name', 'product_price', 'product_stock',
-                        'product_desc', 'product_date', 'category', 'images', 'uploaded_images', 'hits', 'category_name']
+                        'product_desc', 'product_date', 'category', 'images', 'uploaded_images', 'hits', 'category_name', 'sold_out']
+
+    def get(self, instance):
+        request = self.context.get('request')
+
+        if instance.sold_out and not request.user.is_amdin:
+            raise serializers.ValidationError('해당 상품은 현재 품절되었습니다.')
+
+        return super().get(instance)
 
     def validate_product_price(self, value):
         try:

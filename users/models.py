@@ -116,11 +116,11 @@ class UserProfile(models.Model):
         User, on_delete=models.CASCADE)
     image = models.ImageField(
         upload_to='profile_images/', blank=True, null=True)
-    address = models.CharField(max_length=255)
-    zip_code = models.CharField(max_length=10)
-    detail_address = models.CharField(max_length=255)
-    delivery_message = models.TextField(blank=True)
-    receiver_number = models.CharField(max_length=20)
+    address = models.CharField(max_length=255,  null=True)
+    zip_code = models.CharField(max_length=10,  null=True)
+    detail_address = models.CharField(max_length=255, null=True)
+    delivery_message = models.TextField(blank=True, null=True)
+    receiver_number = models.CharField(max_length=20, null=True)
 
     def __str__(self):
         return self.user.email

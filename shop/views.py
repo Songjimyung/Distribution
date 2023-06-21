@@ -132,11 +132,7 @@ class ProductDetailViewAPI(APIView):
         product = get_object_or_404(ShopProduct, id=product_id)
         serializer = ProductListSerializer(product)
         product.hits += 1
-        print(product.hits)
         product.save()
-
-        if product.sold_out:
-            return Response({"message": "해당 상품은 현재 품절되었습니다. 재입고 알림을 신청해주세요!"}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -269,9 +265,9 @@ class RestockNotificationViewAPI(APIView):
     def post(self, request, product_id):
         product = get_object_or_404(ShopProduct, id=product_id)
         user = request.user
-
+        print(product.sold_out, user)
         if product.sold_out:
             if not RestockNotification.objects.filter(product=product, user=user).exists():
                 RestockNotification.objects.create(product=product, user=user)
-
-            return Response({"message": "재입고 알림 신청이 완료되었습니다."}, status=status.HTTP_201_CREATED)
+                return Response({"message": "재입고 알림 신청이 완료되었습니다."}, status=status.HTTP_201_CREATED)
+            return Response({"message": "이미 재입고 알림을 구독 하셨습니다."}, status=status.HTTP_400_BAD_REQUEST)
