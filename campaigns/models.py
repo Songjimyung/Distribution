@@ -131,7 +131,7 @@ class Funding(BaseModel):
         Campaign, on_delete=models.CASCADE, related_name="fundings"
     )
     goal = models.PositiveIntegerField("펀딩 목표 금액")
-    current = models.PositiveIntegerField("펀딩 현재 금액", default=0)
+    amount = models.PositiveIntegerField("펀딩 현재 금액", default=0)
     approve_file = models.FileField("펀딩 승인 파일", upload_to="funding/%Y/%m/", null=True, blank=True)
 
     def __str__(self):
