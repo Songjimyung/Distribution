@@ -19,6 +19,7 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
 INSTALLED_APPS = [
     
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -27,12 +28,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',
 
-    #'daphne',
     'storages',
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
+
     'users',
     'shop',
     'campaigns',
@@ -213,7 +214,7 @@ SIMPLE_JWT = {
 BASE_URL = os.environ.get("BASE_URL")
 FRONT_BASE_URL = os.environ.get("FRONT_BASE_URL")
 
-CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOWED_ORIGINS = [
     BASE_URL,
