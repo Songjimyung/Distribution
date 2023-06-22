@@ -32,6 +32,7 @@ from django.utils.encoding import DjangoUnicodeDecodeError, force_str
 from django.utils.http import urlsafe_base64_decode
 from django.core.mail import EmailMessage
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q
 
@@ -181,7 +182,7 @@ class GoogleLoginFormView(APIView):
 class GoogleCallbackView(APIView):
     '''
     작성자 : 이주한
-    내용 : 받아온 구글 로그인 폼에 사용자가 id와 pw를 작성하여 제공하면 구글이 Authorization Code를 발급해줍니다. 
+    내용 : 받아온 구글 로그인 폼에 사용자가 id와 pw를 작성하여 제공하면 구글이 Authorization Code를 발급해줍니다.
             Authorization Code를 활용하여 우리의 앱이 API에 사용자의 정보를 요청하여 받아옵니다.
             해당 정보들 중 email을 사용하여 사용자를 확인하고 JWT token을 발급받아 로그인을 진행합니다.
     최초 작성일 : 2023.06.08
@@ -272,8 +273,8 @@ class KakaoCallbackView(APIView):
         token_req_json = token_req.json()
         error = token_req_json.get("error")
         if error is not None:
-            redirect_url = f'${front_base_url}'
-            err_msg = "error"
+            redirect_url = front_base_url
+            err_msg = error
             redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
             return redirect(redirect_url_with_status)
         access_token = token_req_json.get("access_token")
@@ -284,8 +285,8 @@ class KakaoCallbackView(APIView):
         profile_json = profile_request.json()
         error = profile_json.get("error")
         if error is not None:
-            redirect_url = f'${front_base_url}'
-            err_msg = "error"
+            redirect_url = front_base_url
+            err_msg = error
             redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
             return redirect(redirect_url_with_status)
         kakao_user_info = profile_json.get('kakao_account')
@@ -300,13 +301,12 @@ class KakaoCallbackView(APIView):
             social_user = SocialAccount.objects.get(user=user)
 
             if social_user is None:
-                redirect_url = f'${front_base_url}'
+                redirect_url = front_base_url
                 status_code = 204
                 redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
                 return redirect(redirect_url_with_status)
-
             if social_user.provider != 'kakao':
-                redirect_url = f'${front_base_url}'
+                redirect_url = front_base_url
                 status_code = 400
                 redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
                 return redirect(redirect_url_with_status)
@@ -323,7 +323,7 @@ class KakaoCallbackView(APIView):
             }
             return JsonResponse(response_data)
 
-        except User.DoesNotExist:
+        except ObjectDoesNotExist:
             # 기존에 가입된 유저가 없으면 새로 가입
             data = {"access_token": access_token, "code": code}
             accept = requests.post(
@@ -331,13 +331,13 @@ class KakaoCallbackView(APIView):
             accept_status = accept.status_code
 
             if accept_status != 200:
-                redirect_url = f'${front_base_url}'
+                redirect_url = front_base_url
                 status_code = accept_status
                 err_msg = "kakao_signup"
                 redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
                 return redirect(redirect_url_with_status)
 
-            redirect_url = f'${front_base_url}'
+            redirect_url = front_base_url
             status_code = 201
             redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
             return redirect(redirect_url_with_status)
@@ -463,7 +463,7 @@ class UserProfileAPIView(APIView):
     '''
     작성자 : 장소은
     내용 : (기존) 작성된 로직은 유저의 프로필이 없다면 생성하도록 만들고 그에 해당하는 예외처리
-          (수정) signals.py에서 receiver를 통해 유저 생성 시 프로필 생성되도록 변경하고 그로 인해 불필요한 코드 삭제 
+          (수정) signals.py에서 receiver를 통해 유저 생성 시 프로필 생성되도록 변경하고 그로 인해 불필요한 코드 삭제
     작성일 : 2023.06.15
     업데이트일 : 2023.06.21
     '''
