@@ -52,6 +52,9 @@ class ShopProduct(models.Model):
                 self.restocked = True
         super().save(*args, **kwargs)
 
+    def __str__(self):
+        return str(self.product_name)
+
 
 class ShopOrder(models.Model):
     '''
@@ -125,7 +128,11 @@ class RestockNotification(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     product = models.ForeignKey(ShopProduct, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+    notification_sent = models.BooleanField(default=False)
 
     # 중복방지
     class Meta:
         unique_together = ('user', 'product')
+
+    def __str__(self):
+        return f"User: {self.user.username}, Product: {self.product.product_name}"

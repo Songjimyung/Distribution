@@ -281,7 +281,6 @@ CARD_NUMBER = os.environ.get('CARD_NUMBER')
 EXPIRY_AT = os.environ.get('EXPIRY_AT')
 BIRTH = os.environ.get('BIRTH')
 PWD_2DIGIT = os.environ.get('PWD_2DIGIT')
-
 CSRF_TRUSTED_ORIGINS = [
     FRONT_BASE_URL,
     BASE_URL,

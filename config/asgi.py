@@ -16,7 +16,8 @@ application = ProtocolTypeRouter({
     'websocket': TokenAuthMiddleware(
         URLRouter(
             chat.routing.websocket_urlpatterns +
-            shop.routing.websocket_urlpatterns
+            shop.routing.websocket_urlpatterns +
+            campaigns.routing.websocket_urlpatterns
         )
     ),
 })

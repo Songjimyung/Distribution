@@ -4,7 +4,6 @@ import os
 import base64
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
-from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from dj_rest_auth.registration.views import SocialLoginView
 from rest_framework.generics import get_object_or_404
@@ -13,7 +12,6 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
-from allauth.socialaccount.providers.google import views as google_view
 from users.serializers import (
     SignUpSerializer,
     CustomTokenObtainPairSerializer,
@@ -33,6 +31,7 @@ from django.utils.encoding import DjangoUnicodeDecodeError, force_str
 from django.utils.http import urlsafe_base64_decode
 from django.core.mail import EmailMessage
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.core.exceptions import ObjectDoesNotExist
 
 
 state = os.environ.get('STATE')
@@ -51,11 +50,10 @@ def verification_code(email):
     최초 작성일 : 2023.06.15
     업데이트 일자 :
     '''
-    # email_bytes = email.encode('ascii')
-    # email_base64 = base64.b64encode(email_bytes)
-    # email_base64_str = email_base64.decode('ascii')
-    # return email_base64_str
-    pass
+    email_bytes = email.encode('ascii')
+    email_base64 = base64.b64encode(email_bytes)
+    email_base64_str = email_base64.decode('ascii')
+    return email_base64_str
 
 
 class SendEmailView(APIView):
@@ -68,20 +66,19 @@ class SendEmailView(APIView):
     '''
 
     def post(self, request):
-        # email=request.data.get("email")
-        # if email == "":
-        #     return Response({'error':'이메일을 입력해주세요.'},status=status.HTTP_400_BAD_REQUEST)
-        # else:
-        #     try:
-        #         User.objects.get(email=email)
-        #         return Response({"message":"계정이 이미 존재합니다."},status=status.HTTP_400_BAD_REQUEST)
-        #     except:
-        #         subject='EcoCanvas 인증 코드 메일'
-        #         body=verification_code(email)
-        #         email_content = EmailMessage(subject,body,to=[email],)
-        #         email_content.send()
-        #         return Response({"message":"귀하의 이메일에서 인증코드를 확인해주세요."},status=status.HTTP_200_OK)
-        pass
+        email = request.data.get("email")
+        if email == "":
+            return Response({'error': '이메일을 입력해주세요.'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            try:
+                User.objects.get(email=email)
+                return Response({"message": "계정이 이미 존재합니다."}, status=status.HTTP_400_BAD_REQUEST)
+            except:
+                subject = 'EcoCanvas 인증 코드 메일'
+                body = verification_code(email)
+                email_content = EmailMessage(subject, body, to=[email],)
+                email_content.send()
+                return Response({"message": "귀하의 이메일에서 인증코드를 확인해주세요."}, status=status.HTTP_200_OK)
 
 
 class SignUpView(APIView):
@@ -94,14 +91,14 @@ class SignUpView(APIView):
     '''
 
     def post(self, request):
-        # if verification_code(request.data.get("email"))!=request.data.get("check_code"):
-        #     return Response({"message": f"잘못된 인증코드입니다."}, status=status.HTTP_400_BAD_REQUEST)
+        if verification_code(request.data.get("email"))!=request.data.get("check_code"):
+            return Response({"message": f"잘못된 인증코드입니다."}, status=status.HTTP_400_BAD_REQUEST)
         serializer = SignUpSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "가입완료!"}, status=status.HTTP_201_CREATED)
         else:
-            return Response({"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserView(APIView):
@@ -121,7 +118,6 @@ class UserView(APIView):
             return Response({"message": "회원정보 수정이 완료되었습니다."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # 회원 비활성화 DELETE 메소드
     def delete(self, request):
         user = get_object_or_404(User, id=request.user.id)
         user.withdrawal = True
@@ -280,7 +276,6 @@ class KakaoCallbackView(APIView):
             redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
             return redirect(redirect_url_with_status)
         access_token = token_req_json.get("access_token")
-        print(access_token)
         profile_request = requests.post(
             "https://kapi.kakao.com/v2/user/me",
             headers={"Authorization": f"Bearer {access_token}"},
@@ -325,10 +320,9 @@ class KakaoCallbackView(APIView):
             response_data = {
                 'jwt_token': jwt_token
             }
-            print(response_data)
             return JsonResponse(response_data)
 
-        except User.DoesNotExist:
+        except ObjectDoesNotExist:
             # 기존에 가입된 유저가 없으면 새로 가입
             data = {"access_token": access_token, "code": code}
             accept = requests.post(
@@ -465,39 +459,31 @@ class CheckPasswordTokenView(APIView):
 
 
 class UserProfileAPIView(APIView):
+    '''
+    작성자 : 장소은
+    내용 : (기존) 작성된 로직은 유저의 프로필이 없다면 생성하도록 만들고 그에 해당하는 예외처리
+          (수정) signals.py에서 receiver를 통해 유저 생성 시 프로필 생성되도록 변경하고 그로 인해 불필요한 코드 삭제 
+    작성일 : 2023.06.15
+    업데이트일 : 2023.06.21
+    '''
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        try:
-            user_profile = UserProfile.objects.get(user=request.user)
-            serializer = UserProfileSerializer(user_profile)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except UserProfile.DoesNotExist:
-            return Response({'error': '프로필이 존재하지 않습니다.'}, status=status.HTTP_404_NOT_FOUND)
+        user_profile = UserProfile.objects.get(user=request.user)
+        serializer = UserProfileSerializer(user_profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request):
-        try:
-            user_profile = UserProfile.objects.get(user=request.user)
-            serializer = UserProfileSerializer(
-                instance=user_profile, data=request.data
-            )
-            if serializer.is_valid():
-                serializer.save()
-                return Response(
-                    {"message": "회원정보 수정 완료!"}, status=status.HTTP_200_OK
-                )
+        user_profile = UserProfile.objects.get(user=request.user)
+        serializer = UserProfileSerializer(
+            instance=user_profile, data=request.data
+        )
+        if serializer.is_valid():
+            serializer.save()
             return Response(
-                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+                {"message": "회원정보 수정 완료!"}, status=status.HTTP_200_OK
             )
-        except UserProfile.DoesNotExist:
-            # 프로필이 없는 경우 프로필 생성
-            serializer = UserProfileSerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save(user=request.user)
-                return Response(
-                    {"message": "프로필 생성 완료!"}, status=status.HTTP_201_CREATED
-                )
-            return Response(
-                serializer.errors, status=status.HTTP_400_BAD_REQUEST
-            )
+        return Response(
+            serializer.errors, status=status.HTTP_400_BAD_REQUEST
+        )
