@@ -13,8 +13,8 @@ channel_layer = get_channel_layer()
 def send_notifications(sender, instance, created, **kwargs):
     '''
     작성자 : 장소은
-    내용 : 상품이 재입고 된 경우 재입고 알림신청을 한 사용자들에게 알림 기능
-    최초 작성일 : 2023.06.20
+    내용 : 상품이 재입고 된 경우 재입고 알림신청을 한 사용자들에게 알림 기능, 알림 메세지 저장
+    최초 작성일 : 2023.06.22
     '''
     if not created and instance.restocked:
         notification_group = RestockNotification.objects.filter(
@@ -28,6 +28,7 @@ def send_notifications(sender, instance, created, **kwargs):
                 'type': 'notification_message',
                 'message': json.dumps(message)
             })
-            notification.notification_sent = True  # 알림 보낸 상태 업뎃
-            notification.save()
 
+            notification.notification_sent = True  # 알림 보낸 상태 업뎃
+            notification.message = f'상품 {instance.product_name}이(가) 재입고되었습니다.',
+            notification.save()

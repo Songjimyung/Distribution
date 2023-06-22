@@ -4,7 +4,6 @@ import os
 import base64
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
-from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from dj_rest_auth.registration.views import SocialLoginView
 from rest_framework.generics import get_object_or_404
@@ -13,7 +12,6 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
-from allauth.socialaccount.providers.google import views as google_view
 from users.serializers import (
     SignUpSerializer,
     CustomTokenObtainPairSerializer,
@@ -34,6 +32,8 @@ from django.utils.encoding import DjangoUnicodeDecodeError, force_str
 from django.utils.http import urlsafe_base64_decode
 from django.core.mail import EmailMessage
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from shop.models import RestockNotification
+from shop.serializers import RestockNotificationSerializer
 
 
 state = os.environ.get('STATE')
@@ -56,7 +56,6 @@ def verification_code(email):
     email_base64 = base64.b64encode(email_bytes)
     email_base64_str = email_base64.decode('ascii')
     return email_base64_str
-    pass
 
 
 class SendEmailView(APIView):
@@ -82,7 +81,6 @@ class SendEmailView(APIView):
                 email_content = EmailMessage(subject, body, to=[email],)
                 email_content.send()
                 return Response({"message": "귀하의 이메일에서 인증코드를 확인해주세요."}, status=status.HTTP_200_OK)
-        pass
 
 
 class SignUpView(APIView):
@@ -95,14 +93,14 @@ class SignUpView(APIView):
     '''
 
     def post(self, request):
-        # if verification_code(request.data.get("email"))!=request.data.get("check_code"):
-        #     return Response({"message": f"잘못된 인증코드입니다."}, status=status.HTTP_400_BAD_REQUEST)
+        if verification_code(request.data.get("email"))!=request.data.get("check_code"):
+            return Response({"message": f"잘못된 인증코드입니다."}, status=status.HTTP_400_BAD_REQUEST)
         serializer = SignUpSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "가입완료!"}, status=status.HTTP_201_CREATED)
         else:
-            return Response({"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserView(APIView):
@@ -122,7 +120,6 @@ class UserView(APIView):
             return Response({"message": "회원정보 수정이 완료되었습니다."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # 회원 비활성화 DELETE 메소드
     def delete(self, request):
         user = get_object_or_404(User, id=request.user.id)
         user.withdrawal = True
@@ -497,14 +494,47 @@ class UserProfileAPIView(APIView):
 class NotificationListAPIView(APIView):
     '''
     작성자 : 장소은
-    내용 : 유저 알림 내역 조회
+    내용 : 유저 캠페인 알림/재입고 알림 조회 기능, 개별 삭제/일괄 삭제 기능 
     작성일 : 2023.06.22
     '''
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         user = request.user
+
         notifications = Notification.objects.filter(
             participant__user=user).order_by('-created_at')
-        serializer = UserNotificationSerializer(notifications, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        restock_notifications = RestockNotification.objects.filter(
+            user=user).order_by('created_at')
+
+        notification_serializer = UserNotificationSerializer(
+            notifications,
+            many=True
+        )
+        restock_notification_serializer = RestockNotificationSerializer(
+            restock_notifications,
+            many=True
+        )
+
+        data = {
+            'notifications': notification_serializer.data,
+            'restock_notifications': restock_notification_serializer.data
+        }
+
+        return Response(data, status=status.HTTP_200_OK)
+
+    def delete(self, request):
+        user = request.user
+        notification_id = request.data.get('notification_id')
+        if notification_id:
+            try:
+                notification = Notification.objects.get(
+                    id=notification_id, participant__user=user)
+                notification.delete()
+                return Response(status=204)
+            except Notification.DoesNotExist:
+                return Response({'error': '알림내역을 찾을 수 없습니다.'}, status=404)
+        else:
+            notifications = Notification.objects.filter(participant__user=user)
+            notifications.delete()
+            return Response(status=204)

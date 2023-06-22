@@ -140,7 +140,9 @@ class Notification(models.Model):
     participant = models.ForeignKey(
         'campaigns.Participant',
         on_delete=models.CASCADE,
-        related_name='notifications'
+        related_name='notifications',
+        null=True,
+        blank=True
     )
     message = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)

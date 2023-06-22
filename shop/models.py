@@ -129,6 +129,7 @@ class RestockNotification(models.Model):
     product = models.ForeignKey(ShopProduct, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     notification_sent = models.BooleanField(default=False)
+    message = models.CharField(max_length=255, null=True, blank=True)
 
     # 중복방지
     class Meta:
