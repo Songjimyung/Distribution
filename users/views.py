@@ -1,4 +1,4 @@
-from users.models import User, UserProfile
+from users.models import User, UserProfile, Notification
 import requests
 import os
 import base64
@@ -22,7 +22,8 @@ from users.serializers import (
     UpdatePasswordSerializer,
     ResetPasswordSerializer,
     ResetPasswordEmailSerializer,
-    UserProfileSerializer
+    UserProfileSerializer,
+    UserNotificationSerializer
 )
 from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.kakao import views as kakao_view
@@ -491,3 +492,19 @@ class UserProfileAPIView(APIView):
         return Response(
             serializer.errors, status=status.HTTP_400_BAD_REQUEST
         )
+
+
+class NotificationListAPIView(APIView):
+    '''
+    작성자 : 장소은
+    내용 : 유저 알림 내역 조회
+    작성일 : 2023.06.22
+    '''
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        notifications = Notification.objects.filter(
+            participant__user=user).order_by('-created_at')
+        serializer = UserNotificationSerializer(notifications, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

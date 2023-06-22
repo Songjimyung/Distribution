@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, UserProfile
+from .models import User, UserProfile, Notification
 from django.contrib.auth.hashers import check_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -395,3 +395,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'delivery_message': {'required': False},
             'receiver_number': {'required': False}
         }
+
+
+class UserNotificationSerializer(serializers.ModelSerializer):
+    '''
+    작성자 : 장소은
+    내용 : 유저의 알림 내역 조회를 위한 시리얼라이저
+    작성일 : 2023.06.22
+    '''
+    class Meta:
+        model = Notification
+        fields = ['participant', 'message', 'created_at', 'is_read']
