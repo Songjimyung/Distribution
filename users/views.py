@@ -299,15 +299,14 @@ class KakaoCallbackView(APIView):
             social_user=SocialAccount.objects.get(user = user)
             
             if social_user is None:
-                redirect_url=front_base_url
-                status_code=204
-                redirect_url_with_status=f'{redirect_url}?status_code={status_code}'
+                redirect_url = front_base_url
+                status_code = 204
+                redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
                 return redirect(redirect_url_with_status)
-
             if social_user.provider != 'kakao':
-                redirect_url=front_base_url
-                status_code=400
-                redirect_url_with_status=f'{redirect_url}?status_code={status_code}'
+                redirect_url = front_base_url
+                status_code = 400
+                redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
                 return redirect(redirect_url_with_status)
             # 기존에 kakao로 가입된 유저
             data={"access_token": access_token, "code": code}
@@ -330,15 +329,15 @@ class KakaoCallbackView(APIView):
             accept_status=accept.status_code
 
             if accept_status != 200:
-                redirect_url=front_base_url
-                status_code=accept_status
-                err_msg="kakao_signup"
-                redirect_url_with_status=f'{redirect_url}?err_msg={err_msg}'
+                redirect_url = front_base_url
+                status_code = accept_status
+                err_msg = "kakao_signup"
+                redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
                 return redirect(redirect_url_with_status)
 
-            redirect_url=front_base_url
-            status_code=201
-            redirect_url_with_status=f'{redirect_url}?status_code={status_code}'
+            redirect_url = front_base_url
+            status_code = 201
+            redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
             return redirect(redirect_url_with_status)
 
 

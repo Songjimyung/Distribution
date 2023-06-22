@@ -12,6 +12,7 @@ import campaigns.routing
 from chat.channelsmiddleware import TokenAuthMiddleware
 from channels.routing import ProtocolTypeRouter, URLRouter
 
+
 application = ProtocolTypeRouter({
     'http': django_asgi_app,
     'websocket': TokenAuthMiddleware(
