@@ -144,7 +144,14 @@ class Notification(models.Model):
         null=True,
         blank=True
     )
-    message = models.CharField(max_length=255)
+    restock = models.ForeignKey(
+        'shop.RestockNotification',
+        on_delete=models.CASCADE,
+        related_name='restock_notification',
+        null=True,
+        blank=True
+    )
+    message = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
 

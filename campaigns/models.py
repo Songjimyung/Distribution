@@ -170,6 +170,12 @@ class FundingOrder(BaseModel):
 
 
 class Participant(models.Model):
+    '''
+    작성자 : 장소은
+    내용 : 캠페인 참가자에게 시작일 전 알림을 보내기 위한 모델
+    작성일 : 2023.06.22
+    '''
+
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="campaign_participant")
     campaign = models.ForeignKey(

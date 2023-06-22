@@ -4,7 +4,8 @@ from channels.layers import get_channel_layer
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 import json
-from users.models import User
+from users.models import Notification
+from django.utils import timezone
 
 channel_layer = get_channel_layer()
 
@@ -30,5 +31,11 @@ def send_notifications(sender, instance, created, **kwargs):
             })
 
             notification.notification_sent = True  # 알림 보낸 상태 업뎃
-            notification.message = f'상품 {instance.product_name}이(가) 재입고되었습니다.',
+            notification.restock_message = f'상품 {instance.product_name}이(가) 재입고되었습니다.',
             notification.save()
+
+            notification_obj = Notification.objects.create(
+                restock=notification,
+                message=message['message']
+            )
+            notification_obj.save()

@@ -318,6 +318,10 @@ class CampaignParticipationView(APIView):
             queryset.participant.remove(request.user)
             is_participated = False
             message = "캠페인 참가 취소!"
+            participant = Participant.objects.get(
+                campaign=queryset, user=request.user)
+            participant.delete()
+
         else:
             queryset.participant.add(request.user)
             is_participated = True

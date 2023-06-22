@@ -32,9 +32,8 @@ from django.utils.encoding import DjangoUnicodeDecodeError, force_str
 from django.utils.http import urlsafe_base64_decode
 from django.core.mail import EmailMessage
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from shop.models import RestockNotification
-from shop.serializers import RestockNotificationSerializer
-
+from rest_framework.pagination import PageNumberPagination
+from django.db.models import Q
 
 state = os.environ.get('STATE')
 kakao_callback_uri = os.environ.get('KAKAO_CALLBACK_URI')
@@ -93,7 +92,7 @@ class SignUpView(APIView):
     '''
 
     def post(self, request):
-        if verification_code(request.data.get("email"))!=request.data.get("check_code"):
+        if verification_code(request.data.get("email")) != request.data.get("check_code"):
             return Response({"message": f"잘못된 인증코드입니다."}, status=status.HTTP_400_BAD_REQUEST)
         serializer = SignUpSerializer(data=request.data)
         if serializer.is_valid():
@@ -491,6 +490,17 @@ class UserProfileAPIView(APIView):
         )
 
 
+class CustomPagination(PageNumberPagination):
+    '''
+    작성자: 장소은
+    내용 : 페이지네이션을 위한 커스텀페이지네이션
+    작성일: 2023.06.16
+    '''
+    page_size = 6
+    page_size_query_param = 'page_size'
+    max_page_size = 60
+
+
 class NotificationListAPIView(APIView):
     '''
     작성자 : 장소은
@@ -498,43 +508,38 @@ class NotificationListAPIView(APIView):
     작성일 : 2023.06.22
     '''
     permission_classes = [IsAuthenticated]
+    pagination_class = CustomPagination
 
     def get(self, request):
-        user = request.user
-
-        notifications = Notification.objects.filter(
-            participant__user=user).order_by('-created_at')
-        restock_notifications = RestockNotification.objects.filter(
-            user=user).order_by('created_at')
-
-        notification_serializer = UserNotificationSerializer(
-            notifications,
+        notifications = Notification.objects.all().order_by('-created_at')
+        paginator = self.pagination_class()
+        result_page = paginator.paginate_queryset(notifications, request)
+        serializer = UserNotificationSerializer(
+            result_page,
             many=True
         )
-        restock_notification_serializer = RestockNotificationSerializer(
-            restock_notifications,
-            many=True
-        )
-
-        data = {
-            'notifications': notification_serializer.data,
-            'restock_notifications': restock_notification_serializer.data
-        }
-
-        return Response(data, status=status.HTTP_200_OK)
+        return paginator.get_paginated_response(serializer.data)
 
     def delete(self, request):
-        user = request.user
+        user = request.user.id
         notification_id = request.data.get('notification_id')
         if notification_id:
             try:
                 notification = Notification.objects.get(
-                    id=notification_id, participant__user=user)
+                    Q(participant__user__id=user) |
+                    Q(restock__user__id=user),
+                    id=notification_id
+                )
                 notification.delete()
                 return Response(status=204)
+
             except Notification.DoesNotExist:
                 return Response({'error': '알림내역을 찾을 수 없습니다.'}, status=404)
+
         else:
-            notifications = Notification.objects.filter(participant__user=user)
+            notifications = Notification.objects.filter(
+                Q(participant__user__id=user) |
+                Q(restock__user__id=user)
+            )
             notifications.delete()
             return Response(status=204)
