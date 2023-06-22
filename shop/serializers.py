@@ -1,6 +1,6 @@
 from rest_framework.serializers import ValidationError
 from rest_framework import serializers
-from .models import ShopProduct, ShopCategory, ShopImageFile, ShopOrder, ShopOrderDetail
+from .models import ShopProduct, ShopCategory, ShopImageFile, ShopOrder, ShopOrderDetail, RestockNotification
 import re
 
 
@@ -165,3 +165,15 @@ class OrderProductSerializer(serializers.ModelSerializer):
 
     def get_order_date(self, obj):
         return obj.order_date.strftime("%Y년 %m월 %d일 %R")
+
+
+class RestockNotificationSerializer(serializers.ModelSerializer):
+    '''
+    작성자 : 장소은
+    내용 : 재입고 알림 조회를 위한 시리얼라이저
+    작성일 : 2023.06.22
+    '''
+    class Meta:
+        model = RestockNotification
+        fields = ['id', 'message', 'created_at',
+                  'product', 'notification_sent']
