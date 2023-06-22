@@ -31,6 +31,7 @@ from django.utils.encoding import DjangoUnicodeDecodeError, force_str
 from django.utils.http import urlsafe_base64_decode
 from django.core.mail import EmailMessage
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.core.exceptions import ObjectDoesNotExist
 
 
 state = os.environ.get('STATE')
@@ -321,7 +322,7 @@ class KakaoCallbackView(APIView):
             }
             return JsonResponse(response_data)
 
-        except User.DoesNotExist:
+        except ObjectDoesNotExist:
             # 기존에 가입된 유저가 없으면 새로 가입
             data = {"access_token": access_token, "code": code}
             accept = requests.post(
