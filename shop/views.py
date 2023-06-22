@@ -8,7 +8,7 @@ from .serializers import (
 )
 from config.permissions import IsAdminUserOrReadonly
 from rest_framework.pagination import PageNumberPagination
-from django.db.models import Q, F, Value
+from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
 
 
@@ -31,7 +31,6 @@ class ProductListViewAPI(APIView):
     업데이트 일: 2023.06.20
     '''
     pagination_class = CustomPagination
-    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         sort_by = request.GET.get('sort_by')

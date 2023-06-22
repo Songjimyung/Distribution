@@ -1,4 +1,4 @@
-from users.models import User, UserProfile
+from users.models import User, UserProfile, Notification
 import requests
 import os
 import base64
@@ -20,7 +20,8 @@ from users.serializers import (
     UpdatePasswordSerializer,
     ResetPasswordSerializer,
     ResetPasswordEmailSerializer,
-    UserProfileSerializer
+    UserProfileSerializer,
+    UserNotificationSerializer
 )
 from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.kakao import views as kakao_view
@@ -32,7 +33,8 @@ from django.utils.http import urlsafe_base64_decode
 from django.core.mail import EmailMessage
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.exceptions import ObjectDoesNotExist
-
+from rest_framework.pagination import PageNumberPagination
+from django.db.models import Q
 
 state = os.environ.get('STATE')
 kakao_callback_uri = os.environ.get('KAKAO_CALLBACK_URI')
@@ -278,26 +280,26 @@ class KakaoCallbackView(APIView):
         access_token = token_req_json.get("access_token")
         profile_request = requests.post(
             "https://kapi.kakao.com/v2/user/me",
-            headers = {"Authorization": f"Bearer {access_token}"},
+            headers={"Authorization": f"Bearer {access_token}"},
         )
-        profile_json=profile_request.json()
-        error=profile_json.get("error")
+        profile_json = profile_request.json()
+        error = profile_json.get("error")
         if error is not None:
-            redirect_url=front_base_url
-            err_msg=error
-            redirect_url_with_status=f'{redirect_url}?err_msg={err_msg}'
+            redirect_url = front_base_url
+            err_msg = error
+            redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
             return redirect(redirect_url_with_status)
-        kakao_user_info=profile_json.get('kakao_account')
-        kakao_email=kakao_user_info["email"]
-        age_range=kakao_user_info["age_range"]
-        gender=kakao_user_info["gender"]
+        kakao_user_info = profile_json.get('kakao_account')
+        kakao_email = kakao_user_info["email"]
+        age_range = kakao_user_info["age_range"]
+        gender = kakao_user_info["gender"]
 
         try:
             # 기존에 가입된 유저의 Provider가 kakao가 아니면 에러 발생, 맞으면 로그인
             # 다른 SNS로 가입된 유저
-            user=User.objects.get(email = kakao_email)
-            social_user=SocialAccount.objects.get(user = user)
-            
+            user = User.objects.get(email=kakao_email)
+            social_user = SocialAccount.objects.get(user=user)
+
             if social_user is None:
                 redirect_url = front_base_url
                 status_code = 204
@@ -309,24 +311,24 @@ class KakaoCallbackView(APIView):
                 redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
                 return redirect(redirect_url_with_status)
             # 기존에 kakao로 가입된 유저
-            data={"access_token": access_token, "code": code}
-            accept=requests.post(
-                f"{base_url}/users/kakao/login/finish/", data = data)
-            accept_status=accept.status_code
+            data = {"access_token": access_token, "code": code}
+            accept = requests.post(
+                f"{base_url}/users/kakao/login/finish/", data=data)
+            accept_status = accept.status_code
             if accept_status != 200:
-                return JsonResponse({"err_msg": "failed to signin"}, status = accept_status)
-            jwt_token=generate_jwt_token(user)
-            response_data={
+                return JsonResponse({"err_msg": "failed to signin"}, status=accept_status)
+            jwt_token = generate_jwt_token(user)
+            response_data = {
                 'jwt_token': jwt_token
             }
             return JsonResponse(response_data)
 
         except ObjectDoesNotExist:
             # 기존에 가입된 유저가 없으면 새로 가입
-            data={"access_token": access_token, "code": code}
-            accept=requests.post(
-                f"{base_url}/users/kakao/login/finish/", data = data)
-            accept_status=accept.status_code
+            data = {"access_token": access_token, "code": code}
+            accept = requests.post(
+                f"{base_url}/users/kakao/login/finish/", data=data)
+            accept_status = accept.status_code
 
             if accept_status != 200:
                 redirect_url = front_base_url
@@ -348,9 +350,9 @@ class KakaoLogin(SocialLoginView):
     작성일 : 2023.06.08
     업데이트 일자 :
     '''
-    adapter_class=kakao_view.KakaoOAuth2Adapter
-    client_class=OAuth2Client
-    callback_url=kakao_callback_uri
+    adapter_class = kakao_view.KakaoOAuth2Adapter
+    client_class = OAuth2Client
+    callback_url = kakao_callback_uri
 
 
 class UserListView(APIView):
@@ -362,9 +364,9 @@ class UserListView(APIView):
     '''
 
     def get(self, request):
-        users=User.objects.filter(is_admin = False)
-        serializer=UserSerializer(users, many = True)
-        return Response(serializer.data, status = status.HTTP_200_OK)
+        users = User.objects.filter(is_admin=False)
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class UserDetailView(APIView):
@@ -376,9 +378,9 @@ class UserDetailView(APIView):
     '''
 
     def get(self, request, user_id):
-        user=User.objects.filter(id = user_id)
-        serializer=UserSerializer(user, many = True)
-        return Response(serializer.data, status = status.HTTP_200_OK)
+        user = User.objects.filter(id=user_id)
+        serializer = UserSerializer(user, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class UpdatePasswordView(APIView):
@@ -388,16 +390,16 @@ class UpdatePasswordView(APIView):
     최초 작성일 : 2023.06.15
     업데이트 일자 :
     '''
-    permission_classes=[IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def put(self, request):
-        user=get_object_or_404(User, id = request.user.id)
-        serializer=UpdatePasswordSerializer(
-            user, data = request.data, context = {"request": request})
+        user = get_object_or_404(User, id=request.user.id)
+        serializer = UpdatePasswordSerializer(
+            user, data=request.data, context={"request": request})
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "비밀번호 변경이 완료되었습니다. 다시 로그인해주세요!"}, status = status.HTTP_200_OK)
-        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "비밀번호 변경이 완료되었습니다. 다시 로그인해주세요!"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ResetPasswordView(APIView):
@@ -407,13 +409,13 @@ class ResetPasswordView(APIView):
     최초 작성일 : 2023.06.15
     업데이트 일자 :
     '''
-    permission_classes=[AllowAny]
+    permission_classes = [AllowAny]
 
     def put(self, request):
-        serializer=ResetPasswordSerializer(data = request.data)
+        serializer = ResetPasswordSerializer(data=request.data)
         if serializer.is_valid():
-            return Response({"message": "비밀번호 재설정 완료"}, status = status.HTTP_200_OK)
-        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "비밀번호 재설정 완료"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ResetPasswordEmailView(APIView):
@@ -424,14 +426,14 @@ class ResetPasswordEmailView(APIView):
     최초 작성일 : 2023.06.15
     업데이트 일자 :
     '''
-    permission_classes=[AllowAny]
+    permission_classes = [AllowAny]
 
     def post(self, request):
-        serializer=ResetPasswordEmailSerializer(
-            data = request.data, context = {"request": request})
+        serializer = ResetPasswordEmailSerializer(
+            data=request.data, context={"request": request})
         if serializer.is_valid():
-            return Response({"message": "비밀번호 재설정 이메일을 발송했습니다. 확인부탁드립니다."}, status = status.HTTP_200_OK)
-        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "비밀번호 재설정 이메일을 발송했습니다. 확인부탁드립니다."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CheckPasswordTokenView(APIView):
@@ -442,19 +444,19 @@ class CheckPasswordTokenView(APIView):
     최초 작성일 : 2023.06.15
     업데이트 일자 :
     '''
-    permission_classes=[AllowAny]
+    permission_classes = [AllowAny]
 
     def get(self, request, uidb64, token):
         try:
-            user_id=force_str(urlsafe_base64_decode(uidb64))
+            user_id = force_str(urlsafe_base64_decode(uidb64))
 
-            user=get_object_or_404(User, pk = user_id)
+            user = get_object_or_404(User, pk=user_id)
             if not PasswordResetTokenGenerator().check_token(user, token):
-                return Response({"message": "링크가 유효하지 않습니다."}, status = status.HTTP_401_UNAUTHORIZED)
-            return Response({"uidb64": uidb64, "token": token}, status = status.HTTP_200_OK)
+                return Response({"message": "링크가 유효하지 않습니다."}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"uidb64": uidb64, "token": token}, status=status.HTTP_200_OK)
 
         except DjangoUnicodeDecodeError as identifier:
-            return Response({"message": "링크가 유효하지 않습니다."}, status = status.HTTP_401_UNAUTHORIZED)
+            return Response({"message": "링크가 유효하지 않습니다."}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class UserProfileAPIView(APIView):
@@ -466,23 +468,78 @@ class UserProfileAPIView(APIView):
     업데이트일 : 2023.06.21
     '''
 
-    permission_classes=[IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        user_profile=UserProfile.objects.get(user = request.user)
-        serializer=UserProfileSerializer(user_profile)
-        return Response(serializer.data, status = status.HTTP_200_OK)
+        user_profile = UserProfile.objects.get(user=request.user)
+        serializer = UserProfileSerializer(user_profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request):
-        user_profile=UserProfile.objects.get(user = request.user)
-        serializer=UserProfileSerializer(
-            instance = user_profile, data = request.data
+        user_profile = UserProfile.objects.get(user=request.user)
+        serializer = UserProfileSerializer(
+            instance=user_profile, data=request.data
         )
         if serializer.is_valid():
             serializer.save()
             return Response(
-                {"message": "회원정보 수정 완료!"}, status = status.HTTP_200_OK
+                {"message": "회원정보 수정 완료!"}, status=status.HTTP_200_OK
             )
         return Response(
-            serializer.errors, status = status.HTTP_400_BAD_REQUEST
+            serializer.errors, status=status.HTTP_400_BAD_REQUEST
         )
+
+
+class CustomPagination(PageNumberPagination):
+    '''
+    작성자: 장소은
+    내용 : 페이지네이션을 위한 커스텀페이지네이션
+    작성일: 2023.06.16
+    '''
+    page_size = 6
+    page_size_query_param = 'page_size'
+    max_page_size = 60
+
+
+class NotificationListAPIView(APIView):
+    '''
+    작성자 : 장소은
+    내용 : 유저 캠페인 알림/재입고 알림 조회 기능, 개별 삭제/일괄 삭제 기능 
+    작성일 : 2023.06.22
+    '''
+    permission_classes = [IsAuthenticated]
+    pagination_class = CustomPagination
+
+    def get(self, request):
+        notifications = Notification.objects.all().order_by('-created_at')
+        paginator = self.pagination_class()
+        result_page = paginator.paginate_queryset(notifications, request)
+        serializer = UserNotificationSerializer(
+            result_page,
+            many=True
+        )
+        return paginator.get_paginated_response(serializer.data)
+
+    def delete(self, request):
+        user = request.user.id
+        notification_id = request.data.get('notification_id')
+        if notification_id:
+            try:
+                notification = Notification.objects.get(
+                    Q(participant__user__id=user) |
+                    Q(restock__user__id=user),
+                    id=notification_id
+                )
+                notification.delete()
+                return Response(status=204)
+
+            except Notification.DoesNotExist:
+                return Response({'error': '알림내역을 찾을 수 없습니다.'}, status=404)
+
+        else:
+            notifications = Notification.objects.filter(
+                Q(participant__user__id=user) |
+                Q(restock__user__id=user)
+            )
+            notifications.delete()
+            return Response(status=204)
