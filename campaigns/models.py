@@ -181,7 +181,6 @@ class Participant(models.Model):
     campaign = models.ForeignKey(
         Campaign, on_delete=models.CASCADE, related_name="campaign_key")
     is_participated = models.BooleanField(default=False)
-    is_sent = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.username} - {self.campaign.title}"

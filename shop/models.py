@@ -1,5 +1,5 @@
 from django.db import models
-from users.models import User, Notification
+from users.models import User
 from django.urls import reverse
 
 

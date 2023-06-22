@@ -153,7 +153,6 @@ class Notification(models.Model):
     )
     message = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    is_read = models.BooleanField(default=False)
 
     def mark_as_read(self):
         self.is_read = True

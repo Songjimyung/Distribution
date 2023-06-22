@@ -401,4 +401,4 @@ class UserNotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         fields = ['id', 'participant', 'message',
-                  'created_at', 'is_read']
+                  'created_at']

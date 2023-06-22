@@ -319,7 +319,9 @@ class CampaignParticipationView(APIView):
             is_participated = False
             message = "캠페인 참가 취소!"
             participant = Participant.objects.get(
-                campaign=queryset, user=request.user)
+                campaign=queryset,
+                user=request.user
+            )
             participant.delete()
 
         else:
@@ -330,8 +332,7 @@ class CampaignParticipationView(APIView):
             participant = Participant.objects.create(
                 user=request.user,
                 campaign=queryset,
-                is_participated=True,
-                is_sent=False
+                is_participated=True
             )
             participant.save()
 
