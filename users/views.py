@@ -4,7 +4,6 @@ import os
 import base64
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
-from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from dj_rest_auth.registration.views import SocialLoginView
 from rest_framework.generics import get_object_or_404
@@ -13,7 +12,6 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
-from allauth.socialaccount.providers.google import views as google_view
 from users.serializers import (
     SignUpSerializer,
     CustomTokenObtainPairSerializer,
@@ -55,7 +53,6 @@ def verification_code(email):
     email_base64 = base64.b64encode(email_bytes)
     email_base64_str = email_base64.decode('ascii')
     return email_base64_str
-    pass
 
 
 class SendEmailView(APIView):
@@ -81,7 +78,6 @@ class SendEmailView(APIView):
                 email_content = EmailMessage(subject, body, to=[email],)
                 email_content.send()
                 return Response({"message": "귀하의 이메일에서 인증코드를 확인해주세요."}, status=status.HTTP_200_OK)
-        pass
 
 
 class SignUpView(APIView):
@@ -94,14 +90,14 @@ class SignUpView(APIView):
     '''
 
     def post(self, request):
-        # if verification_code(request.data.get("email"))!=request.data.get("check_code"):
-        #     return Response({"message": f"잘못된 인증코드입니다."}, status=status.HTTP_400_BAD_REQUEST)
+        if verification_code(request.data.get("email"))!=request.data.get("check_code"):
+            return Response({"message": f"잘못된 인증코드입니다."}, status=status.HTTP_400_BAD_REQUEST)
         serializer = SignUpSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "가입완료!"}, status=status.HTTP_201_CREATED)
         else:
-            return Response({"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserView(APIView):
@@ -121,7 +117,6 @@ class UserView(APIView):
             return Response({"message": "회원정보 수정이 완료되었습니다."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # 회원 비활성화 DELETE 메소드
     def delete(self, request):
         user = get_object_or_404(User, id=request.user.id)
         user.withdrawal = True
