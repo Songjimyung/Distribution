@@ -27,12 +27,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',
 
+    #'daphne',
     'storages',
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
-    'daphne',
     'users',
     'shop',
     'campaigns',
