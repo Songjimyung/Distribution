@@ -27,5 +27,4 @@ class RestockConsumer(WebsocketConsumer):
 
     def notification_message(self, event):
         message = event['message']
-        print(message)
         self.send(text_data=message)
