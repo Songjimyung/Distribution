@@ -3,7 +3,6 @@ import requests
 import os
 import base64
 from django.utils.translation import gettext_lazy as _
-from django.utils import timezone
 from django.shortcuts import redirect
 from dj_rest_auth.registration.views import SocialLoginView
 from rest_framework.generics import get_object_or_404
@@ -21,7 +20,8 @@ from users.serializers import (
     ResetPasswordSerializer,
     ResetPasswordEmailSerializer,
     UserProfileSerializer,
-    UserNotificationSerializer
+    UserNotificationSerializer,
+    UserWithdrawalSerializer
 )
 from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.kakao import views as kakao_view
@@ -125,11 +125,12 @@ class UserView(APIView):
 
     def delete(self, request):
         user = get_object_or_404(User, id=request.user.id)
-        user.is_active = False
-        user.withdrawal = True
-        user.withdrawal_at = timezone.now()
-        user.save()
-        return Response({"message": "회원이 비활성화 되었습니다."}, status=status.HTTP_200_OK)
+        serializer = UserWithdrawalSerializer(user, data=request.data, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "회원님의 계정이 비활성화 되었습니다."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
