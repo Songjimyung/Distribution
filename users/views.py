@@ -266,7 +266,6 @@ class KakaoCallbackView(APIView):
         restapikey = rest_api_key
         code = request.GET.get("code")
         redirect_uri = kakao_callback_uri
-
         token_req = requests.get(
             f"https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id={restapikey}&redirect_uri={redirect_uri}&code={code}"
         )
