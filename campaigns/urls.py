@@ -18,7 +18,7 @@ urlpatterns = [
          views.CampaignCommentView.as_view(), name='campaign_comment_view'),
     path('comment/detail/<int:comment_id>/',
          views.CampaignCommentDetailView.as_view(), name='campaign_comment_detail_view'),
-    path('mypage/participart/', views.ParticipatingCampaignView.as_view(),
+    path('mypage/participant/', views.ParticipatingCampaignView.as_view(),
          name='participating_campaign'),
     path('mypage/review/', views.CampaignUserReviewView.as_view(),
          name='campaign_user_review'),
