@@ -35,6 +35,8 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q
+from json import JSONDecodeError
+
 
 state = os.environ.get('STATE')
 kakao_callback_uri = os.environ.get('KAKAO_CALLBACK_URI')
@@ -125,12 +127,12 @@ class UserView(APIView):
 
     def delete(self, request):
         user = get_object_or_404(User, id=request.user.id)
-        serializer = UserWithdrawalSerializer(user, data=request.data, context={"request": request})
+        serializer = UserWithdrawalSerializer(
+            user, data=request.data, context={"request": request})
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "회원님의 계정이 비활성화 되었습니다."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -179,7 +181,7 @@ class GoogleLoginFormView(APIView):
     업데이트 일자 : 2023.06.19
     '''
     permission_classes = [AllowAny]
-        
+
     def get(self, request):
         scope = "profile%20email"
         client_id = os.environ.get("SOCIAL_AUTH_GOOGLE_CLIENT_ID")
@@ -281,10 +283,7 @@ class KakaoCallbackView(APIView):
         token_req_json = token_req.json()
         error = token_req_json.get("error")
         if error is not None:
-            redirect_url = front_base_url
-            err_msg = error
-            redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
-            return redirect(redirect_url_with_status)
+            raise JSONDecodeError(error)
         access_token = token_req_json.get("access_token")
         profile_request = requests.post(
             "https://kapi.kakao.com/v2/user/me",
@@ -293,10 +292,7 @@ class KakaoCallbackView(APIView):
         profile_json = profile_request.json()
         error = profile_json.get("error")
         if error is not None:
-            redirect_url = front_base_url
-            err_msg = error
-            redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
-            return redirect(redirect_url_with_status)
+            raise JSONDecodeError(error)
         kakao_user_info = profile_json.get('kakao_account')
         kakao_email = kakao_user_info["email"]
         age_range = kakao_user_info["age_range"]
@@ -309,15 +305,10 @@ class KakaoCallbackView(APIView):
             social_user = SocialAccount.objects.get(user=user)
 
             if social_user is None:
-                redirect_url = front_base_url
-                status_code = 204
-                redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
-                return redirect(redirect_url_with_status)
+                return JsonResponse({'err_msg': 'email exists but not social user'}, status=status.HTTP_400_BAD_REQUEST)
             if social_user.provider != 'kakao':
-                redirect_url = front_base_url
-                status_code = 400
-                redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
-                return redirect(redirect_url_with_status)
+                return JsonResponse({'err_msg': 'no matching social type'}, status=status.HTTP_400_BAD_REQUEST)
+
             # 기존에 kakao로 가입된 유저
             data = {"access_token": access_token, "code": code}
             accept = requests.post(
@@ -339,16 +330,12 @@ class KakaoCallbackView(APIView):
             accept_status = accept.status_code
 
             if accept_status != 200:
-                redirect_url = front_base_url
-                status_code = accept_status
-                err_msg = "kakao_signup"
-                redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
-                return redirect(redirect_url_with_status)
-
-            redirect_url = front_base_url
-            status_code = 201
-            redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
-            return redirect(redirect_url_with_status)
+                return JsonResponse({'err_msg': 'failed to signup'}, status=accept_status)
+            jwt_token = generate_jwt_token(user)
+            response_data = {
+                'jwt_token': jwt_token
+            }
+            return JsonResponse(response_data)
 
 
 class KakaoLogin(SocialLoginView):
