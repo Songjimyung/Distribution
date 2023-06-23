@@ -23,11 +23,15 @@ class ProductListSerializer(serializers.ModelSerializer):
     )
     category_name = serializers.CharField(
         source="category.category_name", read_only=True)
+    sold_stock = serializers.SerializerMethodField()
 
     class Meta:
         model = ShopProduct
         fields = ['id', 'product_name', 'product_price', 'product_stock',
-                        'product_desc', 'product_date', 'category', 'images', 'uploaded_images', 'hits', 'category_name', 'sold_out']
+                        'product_desc', 'product_date', 'category', 'images', 'uploaded_images', 'hits', 'category_name', 'sold_out', 'sold_stock']
+
+    def get_sold_stock(self, obj):
+        return obj.product_stock - obj.product_set.filter(order_detail_status=0).count()
 
     def get(self, instance):
         request = self.context.get('request')
