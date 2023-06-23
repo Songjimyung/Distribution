@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializers import RegisterSerializer, PaymentScheduleSerializer, RegisterPaymentSerializer
 from .models import RegisterPayment, Payment
-from shop.models import ShopProduct
+from shop.models import ShopOrder
 from users.models import User
 from rest_framework import status
 from iamport import Iamport
@@ -97,21 +97,21 @@ class ReceiptAPIView(APIView):
         작성자 : 송지명
         작성일 : 2023.06.14
         작성내용: 결제 후 모델에 저장
-        업데이트 날짜 :
+        업데이트 날짜 : 2023.06.23
         '''
         merchant_uid = request.data.get('merchant_uid')
         imp_uid = request.data.get('imp_uid')
         amount = request.data.get('amount')
         product = request.data.get('product')
         user_data = User.objects.get(id=user_id)
-        product_data = ShopProduct.objects.get(id=product)
+        product_data = ShopOrder.objects.get(id=product)
         response = Payment.objects.create(user=user_data, amount=amount, imp_uid=imp_uid,merchant_uid=merchant_uid, product=product_data, status ="2")
         response_data = {
             'user': user_data.username,
             'merchant_uid': response.merchant_uid,
             'imp_uid': response.imp_uid,
             'amount': response.amount,
-            'product': response.product.product_name
+            'product': response.product.product.product_name
             
         }
         return Response(response_data, status=status.HTTP_201_CREATED)
