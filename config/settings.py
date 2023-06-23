@@ -215,12 +215,12 @@ SIMPLE_JWT = {
 BASE_URL = os.environ.get("BASE_URL")
 FRONT_BASE_URL = os.environ.get("FRONT_BASE_URL")
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
 
-# CORS_ALLOWED_ORIGINS = [
-#     BASE_URL,
-#     FRONT_BASE_URL
-# ]
+CORS_ALLOWED_ORIGINS = [
+    BASE_URL,
+    FRONT_BASE_URL
+]
 
 CORS_ALLOW_CREDENTIALS = True  # cross-site HTTP요청에 Cookie 추가
 
