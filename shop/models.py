@@ -1,6 +1,7 @@
 from django.db import models
 from users.models import User
 from django.urls import reverse
+from django.utils import timezone
 
 
 class ShopCategory(models.Model):
@@ -61,9 +62,8 @@ class ShopOrder(models.Model):
     작성자 : 장소은
     내용 : 주문 정보를 나타내는 모델
     최초 작성일: 2023.06.06
-    업데이트 일자:
+    업데이트 일자:2023.06.23
     '''
-    order_quantity = models.PositiveIntegerField(default=0)
     order_totalprice = models.PositiveIntegerField(default=0)
     order_date = models.DateTimeField(auto_now_add=True)
     zip_code = models.CharField(max_length=20)
@@ -73,8 +73,6 @@ class ShopOrder(models.Model):
     receiver_name = models.CharField(max_length=20)
     receiver_number = models.CharField(max_length=20)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    product = models.ForeignKey(
-        ShopProduct, on_delete=models.CASCADE, related_name='product_key')
 
 
 class ShopOrderDetail(models.Model):
@@ -127,7 +125,8 @@ class RestockNotification(models.Model):
     '''
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     product = models.ForeignKey(ShopProduct, on_delete=models.CASCADE)
-    restock_created_at = models.DateTimeField(auto_now_add=True)
+    restock_created_at = models.DateTimeField(
+        auto_now_add=True)
     notification_sent = models.BooleanField(default=False)
     restock_message = models.CharField(max_length=255, null=True, blank=True)
 

@@ -7,6 +7,7 @@ from rest_framework import serializers, exceptions
 from django.core.mail import EmailMessage
 from django.utils.encoding import force_str
 from django.utils.encoding import smart_bytes
+from django.utils import timezone
 import threading
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 
@@ -109,6 +110,54 @@ class UserUpdateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         instance.email = validated_data.get("email", instance.email)
+        instance.save()
+
+        return instance
+
+
+class UserWithdrawalSerializer(serializers.ModelSerializer):
+    '''
+    작성자 : 이주한
+    내용 : 회원탈퇴에 필요한 UserWithdrawalSerializer 클래스 입니다.
+    최초 작성일 : 2023.06.23
+    업데이트 일자 :
+    '''
+    
+    confirm_password = serializers.CharField(
+        error_messages={
+            "required": "비밀번호를 입력해주세요.",
+            "blank": "비밀번호를 입력해주세요.",
+        }
+    )
+
+    class Meta:
+        model = User
+        fields = (
+            "confirm_password",
+        )
+        extra_kwargs = {
+            "confirm_password": {
+                "error_messages": {
+                    "required": "비밀번호를 입력해주세요.",
+                    "blank": "비밀번호를 입력해주세요.",
+                },
+            },
+        }
+
+    def validate(self, data):
+        current_password = self.context.get("request").user.password
+        confirm_password = data.get("confirm_password")
+
+        if not check_password(confirm_password, current_password):
+            raise serializers.ValidationError(
+                detail={"confirm_password": "현재 비밀번호가 일치하지 않습니다."})
+
+        return data
+
+    def update(self, instance, validated_data):
+        instance.is_active = False
+        instance.withdrawal = True
+        instance.withdrawal_at = timezone.now()
         instance.save()
 
         return instance
@@ -263,7 +312,7 @@ class ResetPasswordEmailSerializer(serializers.Serializer):
             token = PasswordResetTokenGenerator().make_token(user)
 
             frontend_site = 'https://www.ecocanvas.net'
-            absurl = f"{frontend_site}/reset_auth.html?uidb64={uidb64}&token={token}"
+            absurl = f"{frontend_site}/reset-pw/reset-params?uidb64={uidb64}&token={token}"
 
             email_body = "비밀번호 재설정을 위해 아래 링크를 클릭해주세요. \n " + absurl
             message = {
@@ -366,7 +415,8 @@ class UserSerializer(serializers.ModelSerializer):
     '''
     class Meta:
         model = User
-        fields = ['id', 'email', 'username', 'is_active']
+        fields = ['id', 'email', 'username',
+                  'is_active', 'is_admin', 'created_at']
 
 
 class UserProfileSerializer(serializers.ModelSerializer):

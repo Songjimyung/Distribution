@@ -3,7 +3,6 @@ import requests
 import os
 import base64
 from django.utils.translation import gettext_lazy as _
-from django.utils import timezone
 from django.shortcuts import redirect
 from dj_rest_auth.registration.views import SocialLoginView
 from rest_framework.generics import get_object_or_404
@@ -21,7 +20,8 @@ from users.serializers import (
     ResetPasswordSerializer,
     ResetPasswordEmailSerializer,
     UserProfileSerializer,
-    UserNotificationSerializer
+    UserNotificationSerializer,
+    UserWithdrawalSerializer
 )
 from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.kakao import views as kakao_view
@@ -35,6 +35,8 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q
+from json import JSONDecodeError
+
 
 state = os.environ.get('STATE')
 kakao_callback_uri = os.environ.get('KAKAO_CALLBACK_URI')
@@ -66,6 +68,7 @@ class SendEmailView(APIView):
     최초 작성일 : 2023.06.15
     업데이트 일자 :
     '''
+    permission_classes = [AllowAny]
 
     def post(self, request):
         email = request.data.get("email")
@@ -91,6 +94,7 @@ class SignUpView(APIView):
     최초 작성일 : 2023.06.06
     업데이트 일자 : 2023.06.15
     '''
+    permission_classes = [AllowAny]
 
     def post(self, request):
         if verification_code(request.data.get("email")) != request.data.get("check_code"):
@@ -110,6 +114,7 @@ class UserView(APIView):
     최초 작성일 : 2023.06.06
     업데이트 일자 : 2023.06.14
     '''
+    permission_classes = [IsAuthenticated]
 
     def put(self, request):
         user = get_object_or_404(User, id=request.user.id)
@@ -122,10 +127,12 @@ class UserView(APIView):
 
     def delete(self, request):
         user = get_object_or_404(User, id=request.user.id)
-        user.withdrawal = True
-        user.withdrawal_at = timezone.now()
-        user.save()
-        return Response({"message": "회원이 비활성화 되었습니다."}, status=status.HTTP_200_OK)
+        serializer = UserWithdrawalSerializer(
+            user, data=request.data, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "회원님의 계정이 비활성화 되었습니다."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -135,6 +142,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     최초 작성일 : 2023.06.06
     업데이트 일자 :
     '''
+    permission_classes = [AllowAny]
     serializer_class = CustomTokenObtainPairSerializer
 
 
@@ -166,13 +174,15 @@ def generate_jwt_token(user):
 
 
 class GoogleLoginFormView(APIView):
+    '''
+    작성자 : 이주한
+    내용 : 구글 OAUTH2.0 서버로 client_id, callback_uri, scope를 보내서 구글 로그인 페이지를 불러옵니다.
+    최초 작성일 : 2023.06.08
+    업데이트 일자 : 2023.06.19
+    '''
+    permission_classes = [AllowAny]
+
     def get(self, request):
-        '''
-        작성자 : 이주한
-        내용 : 구글 OAUTH2.0 서버로 client_id, callback_uri, scope를 보내서 구글 로그인 페이지를 불러옵니다.
-        최초 작성일 : 2023.06.08
-        업데이트 일자 : 2023.06.19
-        '''
         scope = "profile%20email"
         client_id = os.environ.get("SOCIAL_AUTH_GOOGLE_CLIENT_ID")
 
@@ -188,6 +198,7 @@ class GoogleCallbackView(APIView):
     최초 작성일 : 2023.06.08
     업데이트 일자 : 2023.06.19
     '''
+    permission_classes = [AllowAny]
 
     def post(self, request):
         client_id = os.environ.get("SOCIAL_AUTH_GOOGLE_CLIENT_ID")
@@ -266,17 +277,13 @@ class KakaoCallbackView(APIView):
         restapikey = rest_api_key
         code = request.GET.get("code")
         redirect_uri = kakao_callback_uri
-
         token_req = requests.get(
             f"https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id={restapikey}&redirect_uri={redirect_uri}&code={code}"
         )
         token_req_json = token_req.json()
         error = token_req_json.get("error")
         if error is not None:
-            redirect_url = front_base_url
-            err_msg = error
-            redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
-            return redirect(redirect_url_with_status)
+            raise JSONDecodeError(error)
         access_token = token_req_json.get("access_token")
         profile_request = requests.post(
             "https://kapi.kakao.com/v2/user/me",
@@ -285,14 +292,9 @@ class KakaoCallbackView(APIView):
         profile_json = profile_request.json()
         error = profile_json.get("error")
         if error is not None:
-            redirect_url = front_base_url
-            err_msg = error
-            redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
-            return redirect(redirect_url_with_status)
+            raise JSONDecodeError(error)
         kakao_user_info = profile_json.get('kakao_account')
         kakao_email = kakao_user_info["email"]
-        age_range = kakao_user_info["age_range"]
-        gender = kakao_user_info["gender"]
 
         try:
             # 기존에 가입된 유저의 Provider가 kakao가 아니면 에러 발생, 맞으면 로그인
@@ -301,15 +303,10 @@ class KakaoCallbackView(APIView):
             social_user = SocialAccount.objects.get(user=user)
 
             if social_user is None:
-                redirect_url = front_base_url
-                status_code = 204
-                redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
-                return redirect(redirect_url_with_status)
+                return JsonResponse({'err_msg': 'email exists but not social user'}, status=status.HTTP_400_BAD_REQUEST)
             if social_user.provider != 'kakao':
-                redirect_url = front_base_url
-                status_code = 400
-                redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
-                return redirect(redirect_url_with_status)
+                return JsonResponse({'err_msg': 'no matching social type'}, status=status.HTTP_400_BAD_REQUEST)
+
             # 기존에 kakao로 가입된 유저
             data = {"access_token": access_token, "code": code}
             accept = requests.post(
@@ -329,18 +326,10 @@ class KakaoCallbackView(APIView):
             accept = requests.post(
                 f"{base_url}/users/kakao/login/finish/", data=data)
             accept_status = accept.status_code
-
             if accept_status != 200:
-                redirect_url = front_base_url
-                status_code = accept_status
-                err_msg = "kakao_signup"
-                redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
-                return redirect(redirect_url_with_status)
+                return JsonResponse({'err_msg': 'failed to signup'}, status=accept_status)
 
-            redirect_url = front_base_url
-            status_code = 201
-            redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
-            return redirect(redirect_url_with_status)
+            return JsonResponse({'message': '가입 성공!'}, status=status.HTTP_201_CREATED)
 
 
 class KakaoLogin(SocialLoginView):
@@ -355,6 +344,17 @@ class KakaoLogin(SocialLoginView):
     callback_url = kakao_callback_uri
 
 
+class CustomPagination(PageNumberPagination):
+    '''
+    작성자: 장소은
+    내용 : 페이지네이션을 위한 커스텀페이지네이션
+    작성일: 2023.06.16
+    '''
+    page_size = 6
+    page_size_query_param = 'page_size'
+    max_page_size = 60
+
+
 class UserListView(APIView):
     '''
     작성자 : 박지홍
@@ -362,24 +362,44 @@ class UserListView(APIView):
     작성일 : 2023.06.09
     업데이트 일자 :
     '''
+    pagination_class = CustomPagination
 
     def get(self, request):
-        users = User.objects.filter(is_admin=False)
-        serializer = UserSerializer(users, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        users = User.objects.all()
+        paginator = self.pagination_class()
+        result_page = paginator.paginate_queryset(users, request)
+        serializer = UserSerializer(
+            result_page,
+            many=True
+        )
+        return paginator.get_paginated_response(serializer.data)
 
 
 class UserDetailView(APIView):
     '''
     작성자 : 박지홍
-    내용: 어드민 페이지에서 일반 유저의 상세 정보를 알기 위해 사용
+    내용: 어드민 페이지에서 일반 유저의 상세 정보 조회 및 권한 변경 시 사용
     작성일 : 2023.06.09
-    업데이트 일자 :
+    업데이트 일자 :2023.06.23
     '''
 
     def get(self, request, user_id):
-        user = User.objects.filter(id=user_id)
-        serializer = UserSerializer(user, many=True)
+        user = User.objects.get(id=user_id)
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, user_id):
+
+        user = User.objects.get(id=user_id)
+
+        if user.is_admin:
+            user.is_admin = False
+        else:
+            user.is_admin = True
+
+        user.save()
+        serializer = UserSerializer(user)
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -488,17 +508,6 @@ class UserProfileAPIView(APIView):
         return Response(
             serializer.errors, status=status.HTTP_400_BAD_REQUEST
         )
-
-
-class CustomPagination(PageNumberPagination):
-    '''
-    작성자: 장소은
-    내용 : 페이지네이션을 위한 커스텀페이지네이션
-    작성일: 2023.06.16
-    '''
-    page_size = 6
-    page_size_query_param = 'page_size'
-    max_page_size = 60
 
 
 class NotificationListAPIView(APIView):

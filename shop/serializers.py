@@ -23,11 +23,15 @@ class ProductListSerializer(serializers.ModelSerializer):
     )
     category_name = serializers.CharField(
         source="category.category_name", read_only=True)
+    sold_stock = serializers.SerializerMethodField()
 
     class Meta:
         model = ShopProduct
         fields = ['id', 'product_name', 'product_price', 'product_stock',
-                        'product_desc', 'product_date', 'category', 'images', 'uploaded_images', 'hits', 'category_name', 'sold_out']
+                        'product_desc', 'product_date', 'category', 'images', 'uploaded_images', 'hits', 'category_name', 'sold_out', 'sold_stock']
+
+    def get_sold_stock(self, obj):
+        return obj.product_stock - obj.product_set.filter(order_detail_status=0).count()
 
     def get(self, instance):
         request = self.context.get('request')
@@ -115,28 +119,27 @@ class OrderProductSerializer(serializers.ModelSerializer):
           3. 사용자가 해당 상품에 대한 주문 목록들을 볼 수 있습니다.
           4. 주문한 수량이 재고보다 클 시 ValdationError 발생(업뎃)  
     작성일 : 2023.06.13
-    업데이트일 : 2023.06.15
+    업데이트일 : 2023.06.23
     '''
     order_info = OrderDetailSerializer(
         many=True, read_only=True)
-    product = serializers.CharField(
-        source='product.product_name', read_only=True)
     order_date = serializers.SerializerMethodField()
+    order_quantity = serializers.IntegerField(write_only=True)
+    product = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = ShopOrder
         fields = ['id', 'order_info', 'order_quantity', 'order_date', 'zip_code', 'address',
-                  'address_detail', 'address_message', 'receiver_name', 'receiver_number', 'user', 'product', 'order_totalprice']
+                  'address_detail', 'address_message', 'receiver_name', 'receiver_number', 'user',  'order_totalprice', 'product']
 
     def create(self, validated_data):
-        order_quantity = validated_data.get('order_quantity')
+        order_quantity = validated_data.pop('order_quantity', [])
+        product_key = validated_data.pop('product', [])
         if order_quantity <= 0:
             raise ValidationError("주문 수량은 0보다 작을 수 없습니다.")
-
         receiver_number = validated_data.get('receiver_number')
         if not re.match(r'^\d{3}-\d{3,4}-\d{4}$', receiver_number):
             raise ValidationError("유효한 연락처를 입력해주세요! 예시: 010-1234-5678")
-        product_key = validated_data.get('product')
         product = ShopProduct.objects.get(id=product_key.id)
 
         if product.product_stock >= order_quantity:
