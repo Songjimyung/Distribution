@@ -354,6 +354,17 @@ class KakaoLogin(SocialLoginView):
     callback_url = kakao_callback_uri
 
 
+class CustomPagination(PageNumberPagination):
+    '''
+    작성자: 장소은
+    내용 : 페이지네이션을 위한 커스텀페이지네이션
+    작성일: 2023.06.16
+    '''
+    page_size = 6
+    page_size_query_param = 'page_size'
+    max_page_size = 60
+
+
 class UserListView(APIView):
     '''
     작성자 : 박지홍
@@ -361,11 +372,17 @@ class UserListView(APIView):
     작성일 : 2023.06.09
     업데이트 일자 :
     '''
+    pagination_class = CustomPagination
 
     def get(self, request):
-        users = User.objects.filter(is_admin=False)
-        serializer = UserSerializer(users, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        users = User.objects.all()
+        paginator = self.pagination_class()
+        result_page = paginator.paginate_queryset(users, request)
+        serializer = UserSerializer(
+            result_page,
+            many=True
+        )
+        return paginator.get_paginated_response(serializer.data)
 
 
 class UserDetailView(APIView):
@@ -487,17 +504,6 @@ class UserProfileAPIView(APIView):
         return Response(
             serializer.errors, status=status.HTTP_400_BAD_REQUEST
         )
-
-
-class CustomPagination(PageNumberPagination):
-    '''
-    작성자: 장소은
-    내용 : 페이지네이션을 위한 커스텀페이지네이션
-    작성일: 2023.06.16
-    '''
-    page_size = 6
-    page_size_query_param = 'page_size'
-    max_page_size = 60
 
 
 class NotificationListAPIView(APIView):
