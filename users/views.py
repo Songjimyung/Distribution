@@ -3,7 +3,6 @@ import requests
 import os
 import base64
 from django.utils.translation import gettext_lazy as _
-from django.utils import timezone
 from django.shortcuts import redirect
 from dj_rest_auth.registration.views import SocialLoginView
 from rest_framework.generics import get_object_or_404
@@ -21,7 +20,8 @@ from users.serializers import (
     ResetPasswordSerializer,
     ResetPasswordEmailSerializer,
     UserProfileSerializer,
-    UserNotificationSerializer
+    UserNotificationSerializer,
+    UserWithdrawalSerializer
 )
 from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.kakao import views as kakao_view
@@ -66,6 +66,7 @@ class SendEmailView(APIView):
     최초 작성일 : 2023.06.15
     업데이트 일자 :
     '''
+    permission_classes = [AllowAny]
 
     def post(self, request):
         email = request.data.get("email")
@@ -91,6 +92,7 @@ class SignUpView(APIView):
     최초 작성일 : 2023.06.06
     업데이트 일자 : 2023.06.15
     '''
+    permission_classes = [AllowAny]
 
     def post(self, request):
         if verification_code(request.data.get("email")) != request.data.get("check_code"):
@@ -110,6 +112,7 @@ class UserView(APIView):
     최초 작성일 : 2023.06.06
     업데이트 일자 : 2023.06.14
     '''
+    permission_classes = [IsAuthenticated]
 
     def put(self, request):
         user = get_object_or_404(User, id=request.user.id)
@@ -122,10 +125,12 @@ class UserView(APIView):
 
     def delete(self, request):
         user = get_object_or_404(User, id=request.user.id)
-        user.withdrawal = True
-        user.withdrawal_at = timezone.now()
-        user.save()
-        return Response({"message": "회원이 비활성화 되었습니다."}, status=status.HTTP_200_OK)
+        serializer = UserWithdrawalSerializer(user, data=request.data, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "회원님의 계정이 비활성화 되었습니다."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -135,6 +140,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     최초 작성일 : 2023.06.06
     업데이트 일자 :
     '''
+    permission_classes = [AllowAny]
     serializer_class = CustomTokenObtainPairSerializer
 
 
@@ -166,13 +172,15 @@ def generate_jwt_token(user):
 
 
 class GoogleLoginFormView(APIView):
+    '''
+    작성자 : 이주한
+    내용 : 구글 OAUTH2.0 서버로 client_id, callback_uri, scope를 보내서 구글 로그인 페이지를 불러옵니다.
+    최초 작성일 : 2023.06.08
+    업데이트 일자 : 2023.06.19
+    '''
+    permission_classes = [AllowAny]
+        
     def get(self, request):
-        '''
-        작성자 : 이주한
-        내용 : 구글 OAUTH2.0 서버로 client_id, callback_uri, scope를 보내서 구글 로그인 페이지를 불러옵니다.
-        최초 작성일 : 2023.06.08
-        업데이트 일자 : 2023.06.19
-        '''
         scope = "profile%20email"
         client_id = os.environ.get("SOCIAL_AUTH_GOOGLE_CLIENT_ID")
 
@@ -188,6 +196,7 @@ class GoogleCallbackView(APIView):
     최초 작성일 : 2023.06.08
     업데이트 일자 : 2023.06.19
     '''
+    permission_classes = [AllowAny]
 
     def post(self, request):
         client_id = os.environ.get("SOCIAL_AUTH_GOOGLE_CLIENT_ID")

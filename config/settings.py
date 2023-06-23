@@ -25,7 +25,6 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'daphne',
     'django.contrib.staticfiles',
     'django.contrib.sites',
 
@@ -34,7 +33,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
-    'daphne',
+    
     'users',
     'shop',
     'campaigns',
@@ -215,7 +214,7 @@ SIMPLE_JWT = {
 BASE_URL = os.environ.get("BASE_URL")
 FRONT_BASE_URL = os.environ.get("FRONT_BASE_URL")
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
 
 CORS_ALLOWED_ORIGINS = [
     BASE_URL,
