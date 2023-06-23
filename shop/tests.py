@@ -25,7 +25,7 @@ def arbitrary_image():
     return temp_img
 
 
-class ProductTest(APITestCase):
+class ProductPostTest(APITestCase):
     '''
     작성자: 장소은
     내용: 일반유저가 상품 post 했을 때, admin유저가 post했을 때 testcode 작성
@@ -87,7 +87,6 @@ class ProductTest(APITestCase):
             data=self.product_data,
             HTTP_AUTHORIZATION=f"Bearer {self.admin_access_token}",
         )
-        print(response.data)
         self.assertEqual(response.status_code, 201)
 
     def test_notadmin_post_product(self):
@@ -99,3 +98,10 @@ class ProductTest(APITestCase):
         )
 
         self.assertEquals(response.status_code, 403)
+
+
+class ProductUpdateTest(APITestCase):
+    '''
+    내용 : 상품 수정 
+    '''
+    pass

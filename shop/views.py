@@ -8,7 +8,7 @@ from .serializers import (
 )
 from config.permissions import IsAdminUserOrReadonly
 from rest_framework.pagination import PageNumberPagination
-from django.db.models import Q, F, Value
+from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
 
 
@@ -132,11 +132,7 @@ class ProductDetailViewAPI(APIView):
         product = get_object_or_404(ShopProduct, id=product_id)
         serializer = ProductListSerializer(product)
         product.hits += 1
-        print(product.hits)
         product.save()
-
-        if product.sold_out:
-            return Response({"message": "해당 상품은 현재 품절되었습니다. 재입고 알림을 신청해주세요!"}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -164,6 +160,7 @@ class AdminProductViewAPI(APIView):
     업데이트 일자 :
     '''
     pagination_class = CustomPagination
+    permission_classes = [IsAdminUserOrReadonly]
 
     def get(self, request):
         products = ShopProduct.objects.all().order_by('-product_date')
@@ -181,6 +178,7 @@ class AdminCategoryViewAPI(APIView):
     최초 작성일 : 2023.06.09
     업데이트 일자 :
     '''
+    permission_classes = [IsAdminUserOrReadonly]
 
     def get(self, request):
         categorys = ShopCategory.objects.all()
@@ -203,6 +201,7 @@ class OrderProductViewAPI(APIView):
     최초 작성일 : 2023.06.13
     업데이트 일자 :
     '''
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, product_id):
         orders = ShopOrder.objects.filter(
@@ -213,7 +212,6 @@ class OrderProductViewAPI(APIView):
     def post(self, request, product_id):
         product = get_object_or_404(ShopProduct, id=product_id)
         serializer = OrderProductSerializer(data=request.data)
-        print(serializer)
         if serializer.is_valid():
             serializer.save(product=product)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -229,6 +227,7 @@ class AdminOrderViewAPI(APIView):
     업데이트 일자 :
     '''
     pagination_class = CustomPagination
+    permission_classes = [IsAdminUserOrReadonly]
 
     def get(self, request):
 
@@ -247,10 +246,12 @@ class MypageOrderViewAPI(APIView):
     최초 작성일 : 2023.06.14
     업데이트 일자 : 2023.06.18
     '''
+    permission_classes = [IsAuthenticated]
     pagination_class = CustomPagination
 
     def get(self, request):
-        orders = ShopOrder.objects.filter(user=request.user.id)
+        orders = ShopOrder.objects.filter(
+            user=request.user.id).order_by('-order_date')
         paginator = self.pagination_class()
         result_page = paginator.paginate_queryset(orders, request)
         serializer = OrderProductSerializer(result_page, many=True)
@@ -269,9 +270,8 @@ class RestockNotificationViewAPI(APIView):
     def post(self, request, product_id):
         product = get_object_or_404(ShopProduct, id=product_id)
         user = request.user
-
         if product.sold_out:
             if not RestockNotification.objects.filter(product=product, user=user).exists():
                 RestockNotification.objects.create(product=product, user=user)
-
-            return Response({"message": "재입고 알림 신청이 완료되었습니다."}, status=status.HTTP_201_CREATED)
+                return Response({"message": "재입고 알림 신청이 완료되었습니다."}, status=status.HTTP_201_CREATED)
+            return Response({"message": "이미 재입고 알림을 구독 하셨습니다."}, status=status.HTTP_400_BAD_REQUEST)

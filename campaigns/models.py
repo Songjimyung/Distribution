@@ -47,9 +47,12 @@ class Campaign(BaseModel):
         (3, "캠페인 실패"),
     )
 
-    user = models.ForeignKey(User, verbose_name="작성자", on_delete=models.CASCADE, related_name="campaigns")
-    participant = models.ManyToManyField(User, verbose_name="참가자", related_name="participants", blank=True)
-    like = models.ManyToManyField(User, verbose_name="좋아요", related_name="likes", blank=True)
+    user = models.ForeignKey(User, verbose_name="작성자",
+                             on_delete=models.CASCADE, related_name="campaigns")
+    participant = models.ManyToManyField(
+        User, verbose_name="참가자", related_name="participants", blank=True)
+    like = models.ManyToManyField(
+        User, verbose_name="좋아요", related_name="likes", blank=True)
     title = models.CharField("제목", max_length=50)
     content = models.TextField("내용")
     members = models.PositiveIntegerField("모집 인원")
@@ -57,9 +60,11 @@ class Campaign(BaseModel):
     campaign_end_date = models.DateTimeField("캠페인 마감일")
     activity_start_date = models.DateTimeField("활동 시작일", blank=True, null=True)
     activity_end_date = models.DateTimeField("활동 마감일", blank=True, null=True)
-    image = models.ImageField("이미지", blank=True, null=True, upload_to="campaign/%Y/%m/")
+    image = models.ImageField(
+        "이미지", blank=True, null=True, upload_to="campaign/%Y/%m/")
     is_funding = models.BooleanField("펀딩여부", default=False)
-    status = models.PositiveSmallIntegerField("진행 상태", choices=STATUS_CHOICES, default=0)
+    status = models.PositiveSmallIntegerField(
+        "진행 상태", choices=STATUS_CHOICES, default=0)
 
     def __str__(self):
         return str(self.title)
@@ -80,15 +85,18 @@ class CampaignReview(BaseModel):
     class Meta:
         db_table = "campaign_review"
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reviews")
-    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="reviews")
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="reviews")
+    campaign = models.ForeignKey(
+        Campaign, on_delete=models.CASCADE, related_name="reviews")
     title = models.CharField("캠페인 리뷰 제목", max_length=50)
     content = models.TextField("캠페인 리뷰 내용")
-    image = models.ImageField("캠페인 리뷰 이미지", blank=True, null=True, upload_to="review/%Y/%m/")
+    image = models.ImageField("캠페인 리뷰 이미지", blank=True,
+                              null=True, upload_to="review/%Y/%m/")
 
     def __str__(self):
         return str(self.title)
-    
+
     def get_absolute_url(self):
         return reverse("campaign_review_detail_view", kwargs={"review_id": self.id})
 
@@ -104,13 +112,15 @@ class CampaignComment(BaseModel):
     class Meta:
         db_table = "campaign_comment"
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
-    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="comments")
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="comments")
+    campaign = models.ForeignKey(
+        Campaign, on_delete=models.CASCADE, related_name="comments")
     content = models.TextField("캠페인 댓글 내용")
 
     def __str__(self):
         return str(self.content)
-    
+
     def get_absolute_url(self):
         return reverse("campaign_comment_detail_view", kwargs={"comment_id": self.id})
 
@@ -132,7 +142,8 @@ class Funding(BaseModel):
     )
     goal = models.PositiveIntegerField("펀딩 목표 금액")
     amount = models.PositiveIntegerField("펀딩 현재 금액", default=0)
-    approve_file = models.FileField("펀딩 승인 파일", upload_to="funding/%Y/%m/", null=True, blank=True)
+    approve_file = models.FileField(
+        "펀딩 승인 파일", upload_to="funding/%Y/%m/", null=True, blank=True)
 
     def __str__(self):
         return str(self.goal)
@@ -151,6 +162,25 @@ class FundingOrder(BaseModel):
     class Meta:
         db_table = "funding_order"
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="fundingorders")
-    funding = models.ForeignKey(Funding, on_delete=models.CASCADE, related_name="fundingorders")
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="fundingorders")
+    funding = models.ForeignKey(
+        Funding, on_delete=models.CASCADE, related_name="fundingorders")
     # payment_text = models.TextField("결제정보")
+
+
+class Participant(models.Model):
+    '''
+    작성자 : 장소은
+    내용 : 캠페인 참가자에게 시작일 전 알림을 보내기 위한 모델
+    작성일 : 2023.06.22
+    '''
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="campaign_participant")
+    campaign = models.ForeignKey(
+        Campaign, on_delete=models.CASCADE, related_name="campaign_key")
+    is_participated = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.campaign.title}"

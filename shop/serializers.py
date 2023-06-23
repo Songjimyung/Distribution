@@ -1,6 +1,7 @@
 from rest_framework.serializers import ValidationError
 from rest_framework import serializers
-from .models import ShopProduct, ShopCategory, ShopImageFile, ShopOrder, ShopOrderDetail
+from .models import ShopProduct, ShopCategory, ShopImageFile, ShopOrder, ShopOrderDetail, RestockNotification
+import re
 
 
 class PostImageSerializer(serializers.ModelSerializer):
@@ -14,7 +15,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     작성자:장소은
     내용: 카테고리별 상품목록 조회/다중 이미지 업로드 시 필요한 Serializer 클래스
     작성일: 2023.06.07
-    업데이트일: 2023.06.12
+    업데이트일: 2023.06.21
     '''
     images = PostImageSerializer(many=True, read_only=True)
     uploaded_images = serializers.ListField(child=serializers.ImageField(
@@ -26,7 +27,15 @@ class ProductListSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShopProduct
         fields = ['id', 'product_name', 'product_price', 'product_stock',
-                        'product_desc', 'product_date', 'category', 'images', 'uploaded_images', 'hits', 'category_name']
+                        'product_desc', 'product_date', 'category', 'images', 'uploaded_images', 'hits', 'category_name', 'sold_out']
+
+    def get(self, instance):
+        request = self.context.get('request')
+
+        if instance.sold_out and not request.user.is_amdin:
+            raise serializers.ValidationError('해당 상품은 현재 품절되었습니다.')
+
+        return super().get(instance)
 
     def validate_product_price(self, value):
         try:
@@ -112,6 +121,7 @@ class OrderProductSerializer(serializers.ModelSerializer):
         many=True, read_only=True)
     product = serializers.CharField(
         source='product.product_name', read_only=True)
+    order_date = serializers.SerializerMethodField()
 
     class Meta:
         model = ShopOrder
@@ -120,6 +130,12 @@ class OrderProductSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         order_quantity = validated_data.get('order_quantity')
+        if order_quantity <= 0:
+            raise ValidationError("주문 수량은 0보다 작을 수 없습니다.")
+
+        receiver_number = validated_data.get('receiver_number')
+        if not re.match(r'^\d{3}-\d{3,4}-\d{4}$', receiver_number):
+            raise ValidationError("유효한 연락처를 입력해주세요! 예시: 010-1234-5678")
         product_key = validated_data.get('product')
         product = ShopProduct.objects.get(id=product_key.id)
 
@@ -146,3 +162,18 @@ class OrderProductSerializer(serializers.ModelSerializer):
             return order
         else:
             raise ValidationError("상품 재고가 주문 수량보다 적습니다.")
+
+    def get_order_date(self, obj):
+        return obj.order_date.strftime("%Y년 %m월 %d일 %R")
+
+
+class RestockNotificationSerializer(serializers.ModelSerializer):
+    '''
+    작성자 : 장소은
+    내용 : 재입고 알림 조회를 위한 시리얼라이저
+    작성일 : 2023.06.22
+    '''
+    class Meta:
+        model = RestockNotification
+        fields = ['id', 'message', 'created_at',
+                  'product', 'notification_sent']

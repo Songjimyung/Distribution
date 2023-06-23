@@ -18,12 +18,14 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
 
 INSTALLED_APPS = [
+
     'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'daphne',
     'django.contrib.staticfiles',
     'django.contrib.sites',
 
@@ -32,7 +34,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
-
+    
     'users',
     'shop',
     'campaigns',
@@ -281,7 +283,6 @@ CARD_NUMBER = os.environ.get('CARD_NUMBER')
 EXPIRY_AT = os.environ.get('EXPIRY_AT')
 BIRTH = os.environ.get('BIRTH')
 PWD_2DIGIT = os.environ.get('PWD_2DIGIT')
-
 CSRF_TRUSTED_ORIGINS = [
     FRONT_BASE_URL,
     BASE_URL,

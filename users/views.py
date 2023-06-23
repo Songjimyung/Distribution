@@ -1,10 +1,9 @@
-from users.models import User, UserProfile
+from users.models import User, UserProfile, Notification
 import requests
 import os
 import base64
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
-from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from dj_rest_auth.registration.views import SocialLoginView
 from rest_framework.generics import get_object_or_404
@@ -13,7 +12,6 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
-from allauth.socialaccount.providers.google import views as google_view
 from users.serializers import (
     SignUpSerializer,
     CustomTokenObtainPairSerializer,
@@ -22,7 +20,8 @@ from users.serializers import (
     UpdatePasswordSerializer,
     ResetPasswordSerializer,
     ResetPasswordEmailSerializer,
-    UserProfileSerializer
+    UserProfileSerializer,
+    UserNotificationSerializer
 )
 from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.kakao import views as kakao_view
@@ -33,7 +32,9 @@ from django.utils.encoding import DjangoUnicodeDecodeError, force_str
 from django.utils.http import urlsafe_base64_decode
 from django.core.mail import EmailMessage
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-
+from django.core.exceptions import ObjectDoesNotExist
+from rest_framework.pagination import PageNumberPagination
+from django.db.models import Q
 
 state = os.environ.get('STATE')
 kakao_callback_uri = os.environ.get('KAKAO_CALLBACK_URI')
@@ -51,11 +52,10 @@ def verification_code(email):
     최초 작성일 : 2023.06.15
     업데이트 일자 :
     '''
-    # email_bytes = email.encode('ascii')
-    # email_base64 = base64.b64encode(email_bytes)
-    # email_base64_str = email_base64.decode('ascii')
-    # return email_base64_str
-    pass
+    email_bytes = email.encode('ascii')
+    email_base64 = base64.b64encode(email_bytes)
+    email_base64_str = email_base64.decode('ascii')
+    return email_base64_str
 
 
 class SendEmailView(APIView):
@@ -68,20 +68,19 @@ class SendEmailView(APIView):
     '''
 
     def post(self, request):
-        # email=request.data.get("email")
-        # if email == "":
-        #     return Response({'error':'이메일을 입력해주세요.'},status=status.HTTP_400_BAD_REQUEST)
-        # else:
-        #     try:
-        #         User.objects.get(email=email)
-        #         return Response({"message":"계정이 이미 존재합니다."},status=status.HTTP_400_BAD_REQUEST)
-        #     except:
-        #         subject='EcoCanvas 인증 코드 메일'
-        #         body=verification_code(email)
-        #         email_content = EmailMessage(subject,body,to=[email],)
-        #         email_content.send()
-        #         return Response({"message":"귀하의 이메일에서 인증코드를 확인해주세요."},status=status.HTTP_200_OK)
-        pass
+        email = request.data.get("email")
+        if email == "":
+            return Response({'error': '이메일을 입력해주세요.'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            try:
+                User.objects.get(email=email)
+                return Response({"message": "계정이 이미 존재합니다."}, status=status.HTTP_400_BAD_REQUEST)
+            except:
+                subject = 'EcoCanvas 인증 코드 메일'
+                body = verification_code(email)
+                email_content = EmailMessage(subject, body, to=[email],)
+                email_content.send()
+                return Response({"message": "귀하의 이메일에서 인증코드를 확인해주세요."}, status=status.HTTP_200_OK)
 
 
 class SignUpView(APIView):
@@ -94,14 +93,14 @@ class SignUpView(APIView):
     '''
 
     def post(self, request):
-        # if verification_code(request.data.get("email"))!=request.data.get("check_code"):
-        #     return Response({"message": f"잘못된 인증코드입니다."}, status=status.HTTP_400_BAD_REQUEST)
+        if verification_code(request.data.get("email")) != request.data.get("check_code"):
+            return Response({"message": f"잘못된 인증코드입니다."}, status=status.HTTP_400_BAD_REQUEST)
         serializer = SignUpSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "가입완료!"}, status=status.HTTP_201_CREATED)
         else:
-            return Response({"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserView(APIView):
@@ -121,7 +120,6 @@ class UserView(APIView):
             return Response({"message": "회원정보 수정이 완료되었습니다."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # 회원 비활성화 DELETE 메소드
     def delete(self, request):
         user = get_object_or_404(User, id=request.user.id)
         user.withdrawal = True
@@ -184,7 +182,7 @@ class GoogleLoginFormView(APIView):
 class GoogleCallbackView(APIView):
     '''
     작성자 : 이주한
-    내용 : 받아온 구글 로그인 폼에 사용자가 id와 pw를 작성하여 제공하면 구글이 Authorization Code를 발급해줍니다. 
+    내용 : 받아온 구글 로그인 폼에 사용자가 id와 pw를 작성하여 제공하면 구글이 Authorization Code를 발급해줍니다.
             Authorization Code를 활용하여 우리의 앱이 API에 사용자의 정보를 요청하여 받아옵니다.
             해당 정보들 중 email을 사용하여 사용자를 확인하고 JWT token을 발급받아 로그인을 진행합니다.
     최초 작성일 : 2023.06.08
@@ -275,12 +273,11 @@ class KakaoCallbackView(APIView):
         token_req_json = token_req.json()
         error = token_req_json.get("error")
         if error is not None:
-            redirect_url = f'${front_base_url}'
-            err_msg = "error"
+            redirect_url = front_base_url
+            err_msg = error
             redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
             return redirect(redirect_url_with_status)
         access_token = token_req_json.get("access_token")
-        print(access_token)
         profile_request = requests.post(
             "https://kapi.kakao.com/v2/user/me",
             headers={"Authorization": f"Bearer {access_token}"},
@@ -288,8 +285,8 @@ class KakaoCallbackView(APIView):
         profile_json = profile_request.json()
         error = profile_json.get("error")
         if error is not None:
-            redirect_url = f'${front_base_url}'
-            err_msg = "error"
+            redirect_url = front_base_url
+            err_msg = error
             redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
             return redirect(redirect_url_with_status)
         kakao_user_info = profile_json.get('kakao_account')
@@ -304,13 +301,12 @@ class KakaoCallbackView(APIView):
             social_user = SocialAccount.objects.get(user=user)
 
             if social_user is None:
-                redirect_url = f'${front_base_url}'
+                redirect_url = front_base_url
                 status_code = 204
                 redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
                 return redirect(redirect_url_with_status)
-
             if social_user.provider != 'kakao':
-                redirect_url = f'${front_base_url}'
+                redirect_url = front_base_url
                 status_code = 400
                 redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
                 return redirect(redirect_url_with_status)
@@ -325,10 +321,9 @@ class KakaoCallbackView(APIView):
             response_data = {
                 'jwt_token': jwt_token
             }
-            print(response_data)
             return JsonResponse(response_data)
 
-        except User.DoesNotExist:
+        except ObjectDoesNotExist:
             # 기존에 가입된 유저가 없으면 새로 가입
             data = {"access_token": access_token, "code": code}
             accept = requests.post(
@@ -336,13 +331,13 @@ class KakaoCallbackView(APIView):
             accept_status = accept.status_code
 
             if accept_status != 200:
-                redirect_url = f'${front_base_url}'
+                redirect_url = front_base_url
                 status_code = accept_status
                 err_msg = "kakao_signup"
                 redirect_url_with_status = f'{redirect_url}?err_msg={err_msg}'
                 return redirect(redirect_url_with_status)
 
-            redirect_url = f'${front_base_url}'
+            redirect_url = front_base_url
             status_code = 201
             redirect_url_with_status = f'{redirect_url}?status_code={status_code}'
             return redirect(redirect_url_with_status)
@@ -465,39 +460,86 @@ class CheckPasswordTokenView(APIView):
 
 
 class UserProfileAPIView(APIView):
+    '''
+    작성자 : 장소은
+    내용 : (기존) 작성된 로직은 유저의 프로필이 없다면 생성하도록 만들고 그에 해당하는 예외처리
+          (수정) signals.py에서 receiver를 통해 유저 생성 시 프로필 생성되도록 변경하고 그로 인해 불필요한 코드 삭제
+    작성일 : 2023.06.15
+    업데이트일 : 2023.06.21
+    '''
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        try:
-            user_profile = UserProfile.objects.get(user=request.user)
-            serializer = UserProfileSerializer(user_profile)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except UserProfile.DoesNotExist:
-            return Response({'error': '프로필이 존재하지 않습니다.'}, status=status.HTTP_404_NOT_FOUND)
+        user_profile = UserProfile.objects.get(user=request.user)
+        serializer = UserProfileSerializer(user_profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request):
-        try:
-            user_profile = UserProfile.objects.get(user=request.user)
-            serializer = UserProfileSerializer(
-                instance=user_profile, data=request.data
-            )
-            if serializer.is_valid():
-                serializer.save()
-                return Response(
-                    {"message": "회원정보 수정 완료!"}, status=status.HTTP_200_OK
-                )
+        user_profile = UserProfile.objects.get(user=request.user)
+        serializer = UserProfileSerializer(
+            instance=user_profile, data=request.data
+        )
+        if serializer.is_valid():
+            serializer.save()
             return Response(
-                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+                {"message": "회원정보 수정 완료!"}, status=status.HTTP_200_OK
             )
-        except UserProfile.DoesNotExist:
-            # 프로필이 없는 경우 프로필 생성
-            serializer = UserProfileSerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save(user=request.user)
-                return Response(
-                    {"message": "프로필 생성 완료!"}, status=status.HTTP_201_CREATED
+        return Response(
+            serializer.errors, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+class CustomPagination(PageNumberPagination):
+    '''
+    작성자: 장소은
+    내용 : 페이지네이션을 위한 커스텀페이지네이션
+    작성일: 2023.06.16
+    '''
+    page_size = 6
+    page_size_query_param = 'page_size'
+    max_page_size = 60
+
+
+class NotificationListAPIView(APIView):
+    '''
+    작성자 : 장소은
+    내용 : 유저 캠페인 알림/재입고 알림 조회 기능, 개별 삭제/일괄 삭제 기능 
+    작성일 : 2023.06.22
+    '''
+    permission_classes = [IsAuthenticated]
+    pagination_class = CustomPagination
+
+    def get(self, request):
+        notifications = Notification.objects.all().order_by('-created_at')
+        paginator = self.pagination_class()
+        result_page = paginator.paginate_queryset(notifications, request)
+        serializer = UserNotificationSerializer(
+            result_page,
+            many=True
+        )
+        return paginator.get_paginated_response(serializer.data)
+
+    def delete(self, request):
+        user = request.user.id
+        notification_id = request.data.get('notification_id')
+        if notification_id:
+            try:
+                notification = Notification.objects.get(
+                    Q(participant__user__id=user) |
+                    Q(restock__user__id=user),
+                    id=notification_id
                 )
-            return Response(
-                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+                notification.delete()
+                return Response(status=204)
+
+            except Notification.DoesNotExist:
+                return Response({'error': '알림내역을 찾을 수 없습니다.'}, status=404)
+
+        else:
+            notifications = Notification.objects.filter(
+                Q(participant__user__id=user) |
+                Q(restock__user__id=user)
             )
+            notifications.delete()
+            return Response(status=204)
