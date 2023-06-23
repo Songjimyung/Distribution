@@ -415,7 +415,8 @@ class UserSerializer(serializers.ModelSerializer):
     '''
     class Meta:
         model = User
-        fields = ['id', 'email', 'username', 'is_active']
+        fields = ['id', 'email', 'username',
+                  'is_active', 'is_admin', 'created_at']
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
