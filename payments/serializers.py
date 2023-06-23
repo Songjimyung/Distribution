@@ -47,9 +47,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         get_expiry = data.get('expiry_at')
         birth = data.get('birth')
         pwd_2digit = data.get('pwd_2digit')
-        
+        email = self.context['request'].user.email
+        customer_uid = f"{email}_{int(time.time())}"
         response = iamport.customer_create(
-            customer_uid=self.context['request'].user.email,
+            customer_uid=customer_uid,
             card_number=data['card_number'],
             expiry=get_expiry,
             birth=birth,
@@ -112,7 +113,7 @@ class PaymentScheduleSerializer(serializers.ModelSerializer):
         with transaction.atomic():
             response = iamport.pay_schedule(**payload)
             # 모든 작업이 성공한 경우에만 Payment 객체 생성 및 저장
-            data = Payment.objects.create(user=user_id, amount=amount, campaign=campaign, merchant_uid=merchant_uid, status="0")
+            data = Payment.objects.create(user=user_id, amount=amount, campaign=campaign, merchant_uid=merchant_uid, status="0", customer_uid=customer_uid)
 
 
         return response

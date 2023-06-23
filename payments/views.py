@@ -84,7 +84,7 @@ class CreatePaymentScheduleView(APIView):
                 print(1,response)
                 receipt_data_list.append(response)
             elif schedule_time < timezone.now() and receipt.campaign.status =="2":
-                 receipt.status = "2"
+                 receipt.status = "5"
                  receipt.save()
                  print("종료",receipt)
             elif schedule_time < timezone.now() and receipt.campaign.status =="3":
@@ -118,15 +118,15 @@ class ReceiptAPIView(APIView):
             
         }
         return Response(response_data, status=status.HTTP_201_CREATED)
+    
     def get(self, request, user_id):
         '''
         작성자 : 송지명
         작성일 : 2023.06.14
-        작성내용 : 유저의 결제정보 전체조회(모델에서 갖고옴), 예약결제 포함으로 변경
+        작성내용 : 유저의 결제정보 전체조회(모델에서 갖고옴), 예약결제 미포함으로 변경
         업데이트 날짜 : 2023.06.20
         '''
-        user = User.objects.get(id=user_id)
-        receipts = Payment.objects.filter(user=user_id)
+        receipts = Payment.objects.filter(user=user_id, campaign__isnull=True)
         
         receipt_data = []
         for receipt in receipts :
@@ -136,8 +136,7 @@ class ReceiptAPIView(APIView):
                 'amount': receipt.amount,
                 'created_at': receipt.created_at,
                 'product' : receipt.product.product_name,
-                'campaign' : receipt.campaign.title,
-                'campaign_date' : receipt.campaign.campaign_end_date
+                'status' : receipt.status
             })
         return JsonResponse(receipt_data, safe=False)
     
@@ -168,32 +167,16 @@ class DetailReciptAPIView(APIView):
         '''
         작성자: 송지명
         작성일: 2023.06.18
-        작성내용: 결제 취소
-        업데이트 일자 : 2023.06.20        
+        작성내용: 결제 취소 요청하기
+        업데이트 일자 : 2023.06.21        
         '''
-        iamport = Iamport(imp_key=settings.IMP_KEY, imp_secret=settings.IMP_SECRET)
-        token = iamport.get_headers()
         receipt = Payment.objects.get(pk=pk)
-        imp_uid = receipt.imp_uid
-        merchant_uid = receipt.merchant_uid
+        receipt.status = "3"
+        receipt.save()
+        return JsonResponse({'message': '결제취소 요청이 접수되었습니다.'})
+       
         
-        cancel_url = "https://api.iamport.kr/payments/cancel"
-        payload = {
-            'imp_uid[]': [imp_uid],
-            'merchant_uid[]': [merchant_uid]
-        }
-        response = requests.post(cancel_url, data=payload, headers=token)
-        
-        if response.status_code == 200:
-            # 결제 취소 성공
-            print(response)
-            return JsonResponse({'message': '결제가 취소되었습니다.'})
-        else:
-            # 결제 취소 실패
-            print(response)
-            return JsonResponse({'message': '결제 취소에 실패했습니다.'}, status=400)
-        
-class ScheduleReceiptAPIView(APIView):
+class DetailScheduleReceiptAPIView(APIView):
     '''
     작성자 : 송지명
     작성일 : 2023.06.12
@@ -215,19 +198,82 @@ class ScheduleReceiptAPIView(APIView):
         '''
         작성자 : 송지명
         작성일 : 2023.06.17
-        작성내용 : 예약결제 취소
+        작성내용 : 예약 취소
         업데이트 날짜 : 2023.06.20
         '''
         iamport = Iamport(imp_key=settings.IMP_KEY, imp_secret=settings.IMP_SECRET)
         token = iamport.get_headers()
-        payment = RegisterPayment.objects.get(user=request.user.id)
-        customer_uid = payment.customer_uid
         receipt = Payment.objects.get(pk=pk)
         merchant_uid = receipt.merchant_uid
+        customer_uid = receipt.customer_uid
         cancle_url = "https://api.iamport.kr/subscribe/payments/unschedule"
         payload = {
             'customer_uid' : customer_uid,
             'merchant_uid' : merchant_uid
         }
         response = requests.post(cancle_url, payload, headers=token)
-        return response
+        print(response)
+        if response.status_code == 200 :
+            receipt.status = "6"
+            receipt.save()            
+            return JsonResponse({"message":"예약 결제 취소 완료"})
+        else :
+            print(response)
+            return JsonResponse({"message":"결제 취소에 실패하였습니다."})
+        
+class RefundpaymentsAPIView(APIView):
+    
+    def post(self, request, pk):
+        '''
+        작성자: 송지명
+        작성일: 2023.06.18
+        작성내용: 결제 취소, admin이 확인하여 취소.
+        업데이트 일자 : 2023.06.20        
+        '''
+        iamport = Iamport(imp_key=settings.IMP_KEY, imp_secret=settings.IMP_SECRET)
+        token = iamport.get_headers()
+        receipt = Payment.objects.get(pk=pk)
+        imp_uid = receipt.imp_uid
+        merchant_uid = receipt.merchant_uid
+        
+        cancel_url = "https://api.iamport.kr/payments/cancel"
+        payload = {
+            'imp_uid[]': [imp_uid],
+            'merchant_uid[]': [merchant_uid]
+        }
+        response = requests.post(cancel_url, data=payload, headers=token)
+        
+        if response.status_code == 200:
+            # 결제 취소 성공
+            print(response)
+            receipt.status = "4"
+            receipt.save()
+            return JsonResponse({'message': '결제가 취소되었습니다.'})
+        else:
+            # 결제 취소 실패
+            print(response)
+            return JsonResponse({'message': '결제 취소에 실패했습니다.'}, status=400)
+        
+class ScheduleReceiptAPIView(APIView):
+    
+    def get(self, request, user_id):
+        '''
+        작성자 : 송지명
+        작성일 : 2023.06.21
+        작성내용 : 유저의 예약결제정보 전체조회(모델에서 갖고옴)
+        업데이트 날짜 : 
+        '''
+        receipts = Payment.objects.filter(user=user_id, product__isnull=True)
+        receipt_data = []
+        for receipt in receipts :     
+            receipt_data.append({
+                'id' : receipt.pk,
+                'user' : receipt.user.username,
+                'amount': receipt.amount,
+                'created_at': receipt.created_at,
+                'campaign' : receipt.campaign.title,
+                'campaign_date' : receipt.campaign.campaign_end_date,
+                'status' : receipt.get_status_display()
+            })
+        return JsonResponse(receipt_data, safe=False)
+    
