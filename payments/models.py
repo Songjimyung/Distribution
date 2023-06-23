@@ -27,7 +27,7 @@ class Payment(models.Model):
     campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, null=True)
     merchant_uid = models.CharField(max_length=255)
     imp_uid = models.CharField(max_length=255, null=True)
-    product = models.ForeignKey(ShopOrder, on_delete=models.CASCADE, null=True)
+    order = models.ForeignKey(ShopOrder, on_delete=models.CASCADE, null=True)
     status = models.PositiveIntegerField(choices=STATUS_CHOICES, null=True)
     customer_uid = models.CharField(max_length=255, blank=True, null=True)
     

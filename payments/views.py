@@ -102,16 +102,16 @@ class ReceiptAPIView(APIView):
         merchant_uid = request.data.get('merchant_uid')
         imp_uid = request.data.get('imp_uid')
         amount = request.data.get('amount')
-        product = request.data.get('product')
+        # product = request.data.get('product')
         user_data = User.objects.get(id=user_id)
-        product_data = ShopOrder.objects.get(id=product)
-        response = Payment.objects.create(user=user_data, amount=amount, imp_uid=imp_uid,merchant_uid=merchant_uid, product=product_data, status ="2")
+        # product_data = ShopOrder.objects.get(id=product)
+        response = Payment.objects.create(user=user_data, amount=amount, imp_uid=imp_uid,merchant_uid=merchant_uid,  status ="2")
         response_data = {
             'user': user_data.username,
             'merchant_uid': response.merchant_uid,
             'imp_uid': response.imp_uid,
             'amount': response.amount,
-            'product': response.product.product.product_name
+            # 'product': response.product.product.product_name
             
         }
         return Response(response_data, status=status.HTTP_201_CREATED)
@@ -256,7 +256,7 @@ class ScheduleReceiptAPIView(APIView):
         작성내용 : 유저의 예약결제정보 전체조회(모델에서 갖고옴)
         업데이트 날짜 : 
         '''
-        receipts = Payment.objects.filter(user=user_id, product__isnull=True)
+        receipts = Payment.objects.filter(user=user_id, campaign__isnull=False)
         receipt_data = []
         for receipt in receipts :     
             receipt_data.append({
