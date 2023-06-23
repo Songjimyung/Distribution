@@ -81,16 +81,13 @@ class CreatePaymentScheduleView(APIView):
                 response = iamport.pay_schedule_get(merchant_uid)
                 response['campaign_id'] = receipt.campaign.id
                 response['status'] = receipt.status
-                print(1,response)
                 receipt_data_list.append(response)
             elif schedule_time < timezone.now() and receipt.campaign.status =="2":
                  receipt.status = "5"
                  receipt.save()
-                 print("종료",receipt)
             elif schedule_time < timezone.now() and receipt.campaign.status =="3":
                  receipt.status = "1" 
                  receipt.save()
-                 print("실패",receipt)
         return JsonResponse(receipt_data_list, safe=False)
     
 class ReceiptAPIView(APIView):
@@ -212,13 +209,11 @@ class DetailScheduleReceiptAPIView(APIView):
             'merchant_uid' : merchant_uid
         }
         response = requests.post(cancle_url, payload, headers=token)
-        print(response)
         if response.status_code == 200 :
             receipt.status = "6"
             receipt.save()            
             return JsonResponse({"message":"예약 결제 취소 완료"})
         else :
-            print(response)
             return JsonResponse({"message":"결제 취소에 실패하였습니다."})
         
 class RefundpaymentsAPIView(APIView):
@@ -245,13 +240,11 @@ class RefundpaymentsAPIView(APIView):
         
         if response.status_code == 200:
             # 결제 취소 성공
-            print(response)
             receipt.status = "4"
             receipt.save()
             return JsonResponse({'message': '결제가 취소되었습니다.'})
         else:
             # 결제 취소 실패
-            print(response)
             return JsonResponse({'message': '결제 취소에 실패했습니다.'}, status=400)
         
 class ScheduleReceiptAPIView(APIView):
