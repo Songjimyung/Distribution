@@ -129,7 +129,7 @@ class RestockNotification(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     product = models.ForeignKey(ShopProduct, on_delete=models.CASCADE)
     restock_created_at = models.DateTimeField(
-        auto_now_add=True, default=timezone.now())
+        auto_now_add=True)
     notification_sent = models.BooleanField(default=False)
     restock_message = models.CharField(max_length=255, null=True, blank=True)
 

@@ -295,8 +295,6 @@ class KakaoCallbackView(APIView):
             raise JSONDecodeError(error)
         kakao_user_info = profile_json.get('kakao_account')
         kakao_email = kakao_user_info["email"]
-        age_range = kakao_user_info["age_range"]
-        gender = kakao_user_info["gender"]
 
         try:
             # 기존에 가입된 유저의 Provider가 kakao가 아니면 에러 발생, 맞으면 로그인
@@ -328,14 +326,10 @@ class KakaoCallbackView(APIView):
             accept = requests.post(
                 f"{base_url}/users/kakao/login/finish/", data=data)
             accept_status = accept.status_code
-
             if accept_status != 200:
                 return JsonResponse({'err_msg': 'failed to signup'}, status=accept_status)
-            jwt_token = generate_jwt_token(user)
-            response_data = {
-                'jwt_token': jwt_token
-            }
-            return JsonResponse(response_data)
+
+            return JsonResponse({'message': '가입 성공!'}, status=status.HTTP_201_CREATED)
 
 
 class KakaoLogin(SocialLoginView):
