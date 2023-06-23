@@ -149,26 +149,6 @@ class Funding(BaseModel):
         return str(self.goal)
 
 
-class FundingOrder(BaseModel):
-    """
-    작성자 : 최준영
-    내용 : 펀딩 결제정보 모델입니다.
-    결제는 아직 import하지 않은 상황입니다.
-    payment_text는 쓰일지 확정되지 않아 주석으로 처리해두겠습니다.
-    최초 작성일 : 2023.06.06
-    업데이트 일자 : 2023.06.08
-    """
-
-    class Meta:
-        db_table = "funding_order"
-
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="fundingorders")
-    funding = models.ForeignKey(
-        Funding, on_delete=models.CASCADE, related_name="fundingorders")
-    # payment_text = models.TextField("결제정보")
-
-
 class Participant(models.Model):
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="campaign_participant")
