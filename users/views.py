@@ -388,14 +388,28 @@ class UserListView(APIView):
 class UserDetailView(APIView):
     '''
     작성자 : 박지홍
-    내용: 어드민 페이지에서 일반 유저의 상세 정보를 알기 위해 사용
+    내용: 어드민 페이지에서 일반 유저의 상세 정보 조회 및 권한 변경 시 사용
     작성일 : 2023.06.09
-    업데이트 일자 :
+    업데이트 일자 :2023.06.23
     '''
 
     def get(self, request, user_id):
-        user = User.objects.filter(id=user_id)
-        serializer = UserSerializer(user, many=True)
+        user = User.objects.get(id=user_id)
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, user_id):
+
+        user = User.objects.get(id=user_id)
+
+        if user.is_admin:
+            user.is_admin = False
+        else:
+            user.is_admin = True
+
+        user.save()
+        serializer = UserSerializer(user)
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
