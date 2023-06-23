@@ -76,7 +76,7 @@
 
 ### Back-end
 
-> <img src="https://img.shields.io/badge/python 3.10.8-3776AB?style=for-the-badge&logo=python&logoColor=white"> <img src="https://img.shields.io/badge/django 4.2.1-092E20?style=for-the-badge&logo=django&logoColor=white"> <img src="https://img.shields.io/badge/django rest framework 3.14.0-092E20?style=for-the-badge&logo=django&logoColor=white"> <img src="https://img.shields.io/badge/celery 5.2.7-2BB530?style=for-the-badge&logo=celery&logoColor=white">
+> <img src="https://img.shields.io/badge/python 3.9.10-3776AB?style=for-the-badge&logo=python&logoColor=white"> <img src="https://img.shields.io/badge/django 4.2.1-092E20?style=for-the-badge&logo=django&logoColor=white"> <img src="https://img.shields.io/badge/django rest framework 3.14.0-092E20?style=for-the-badge&logo=django&logoColor=white">
 
 ### Front-end
 
@@ -116,13 +116,13 @@
 
 ## 🎨 [Wireframe](https://www.figma.com/file/Jh0ZRKqUuXPomqyxCVQMzr/Untitled?type=design&node-id=0-1&t=kZSkorEHGW2sxhpQ-0)
 
-![Wireframe]()
+![Wireframe](./readme_img/wireframe.png)
 
 <br>
 
 ## 🛢 [ERD](https://www.erdcloud.com/d/rcy9tc32bPmgHN6gn)
 
-![ERD]()
+![ERD](./readme_img/erd.png)
 
 <br>
 
@@ -184,4 +184,4 @@
 
 ### [트러블 슈팅](https://bedecked-block-34c.notion.site/Error-log-9bf480bc93e74b5e86c9d670f3bc5005?pvs=4)
 
-### [배포 사이트]()
+### [배포 사이트](https://www.ecocanvas.net)
