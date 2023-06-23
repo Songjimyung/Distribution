@@ -11,8 +11,9 @@ urlpatterns = [
     path('kakao/login/finish/', views.KakaoLogin.as_view(),
          name='kakao_login_todjango'),
     path('google/login/', views.GoogleLoginFormView.as_view(), name='google_login'),
-    path('google/callback/', views.GoogleCallbackView.as_view(), name='google_callback'),
-    
+    path('google/callback/', views.GoogleCallbackView.as_view(),
+         name='google_callback'),
+
     # 회원정보 관련
     path('', views.UserView.as_view(), name='update_or_withdrawal'),
 
@@ -28,7 +29,11 @@ urlpatterns = [
     path('login/', views.CustomTokenObtainPairView.as_view(), name='log_in'),
     path('list/', views.UserListView().as_view(), name='user_list'),
     path('<int:user_id>/', views.UserDetailView().as_view(), name='user'),
-    
+
     # 유저프로필
-    path('profile/', views.UserProfileAPIView.as_view(), name='user_profile')
+    path('profile/', views.UserProfileAPIView.as_view(), name='user_profile'),
+
+    # 유저 알림 조회
+    path('notifications/', views.NotificationListAPIView.as_view(),
+         name='notification_list'),
 ]

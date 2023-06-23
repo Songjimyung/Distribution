@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, UserProfile, password_validator, password_pattern
+from .models import User, UserProfile, password_validator, password_pattern, Notification
 from django.contrib.auth.hashers import check_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -7,6 +7,7 @@ from rest_framework import serializers, exceptions
 from django.core.mail import EmailMessage
 from django.utils.encoding import force_str
 from django.utils.encoding import smart_bytes
+from django.utils import timezone
 import threading
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 
@@ -114,6 +115,54 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         return instance
 
 
+class UserWithdrawalSerializer(serializers.ModelSerializer):
+    '''
+    작성자 : 이주한
+    내용 : 회원탈퇴에 필요한 UserWithdrawalSerializer 클래스 입니다.
+    최초 작성일 : 2023.06.23
+    업데이트 일자 :
+    '''
+    
+    confirm_password = serializers.CharField(
+        error_messages={
+            "required": "비밀번호를 입력해주세요.",
+            "blank": "비밀번호를 입력해주세요.",
+        }
+    )
+
+    class Meta:
+        model = User
+        fields = (
+            "confirm_password",
+        )
+        extra_kwargs = {
+            "confirm_password": {
+                "error_messages": {
+                    "required": "비밀번호를 입력해주세요.",
+                    "blank": "비밀번호를 입력해주세요.",
+                },
+            },
+        }
+
+    def validate(self, data):
+        current_password = self.context.get("request").user.password
+        confirm_password = data.get("confirm_password")
+
+        if not check_password(confirm_password, current_password):
+            raise serializers.ValidationError(
+                detail={"confirm_password": "현재 비밀번호가 일치하지 않습니다."})
+
+        return data
+
+    def update(self, instance, validated_data):
+        instance.is_active = False
+        instance.withdrawal = True
+        instance.withdrawal_at = timezone.now()
+        instance.save()
+
+        return instance
+
+
 class UpdatePasswordSerializer(serializers.ModelSerializer):
     '''
     작성자 : 이주한
@@ -176,10 +225,12 @@ class UpdatePasswordSerializer(serializers.ModelSerializer):
                 detail={"password": "비밀번호가 일치하지 않습니다."})
 
         if password_validator(password):
-            raise serializers.ValidationError(detail={"password": "비밀번호는 8자 이상 16자이하의 영문 대/소문자, 숫자, 특수문자 조합이어야 합니다."})
+            raise serializers.ValidationError(
+                detail={"password": "비밀번호는 8자 이상 16자이하의 영문 대/소문자, 숫자, 특수문자 조합이어야 합니다."})
 
         if password_pattern(password):
-            raise serializers.ValidationError(detail={"password": "비밀번호는 3자리 이상 동일한 영문/사용 사용 불가합니다."})
+            raise serializers.ValidationError(
+                detail={"password": "비밀번호는 3자리 이상 동일한 영문/사용 사용 불가합니다."})
 
         return data
 
@@ -261,7 +312,7 @@ class ResetPasswordEmailSerializer(serializers.Serializer):
             token = PasswordResetTokenGenerator().make_token(user)
 
             frontend_site = 'https://www.ecocanvas.net'
-            absurl = f"{frontend_site}/reset_auth.html?uidb64={uidb64}&token={token}"
+            absurl = f"{frontend_site}/reset-pw/reset-params?uidb64={uidb64}&token={token}"
 
             email_body = "비밀번호 재설정을 위해 아래 링크를 클릭해주세요. \n " + absurl
             message = {
@@ -326,10 +377,12 @@ class ResetPasswordSerializer(serializers.Serializer):
                 detail={"password": "비밀번호가 일치하지 않습니다."})
 
         if password_validator(password):
-            raise serializers.ValidationError(detail={"password": "비밀번호는 8자 이상 16자이하의 영문 대/소문자, 숫자, 특수문자 조합이어야 합니다."})
+            raise serializers.ValidationError(
+                detail={"password": "비밀번호는 8자 이상 16자이하의 영문 대/소문자, 숫자, 특수문자 조합이어야 합니다."})
 
         if password_pattern(password):
-            raise serializers.ValidationError(detail={"password": "비밀번호는 3자리 이상 동일한 영문/사용 사용 불가합니다."})
+            raise serializers.ValidationError(
+                detail={"password": "비밀번호는 3자리 이상 동일한 영문/사용 사용 불가합니다."})
 
         user.set_password(password)
         user.save()
@@ -362,7 +415,8 @@ class UserSerializer(serializers.ModelSerializer):
     '''
     class Meta:
         model = User
-        fields = ['id', 'email', 'username', 'is_active']
+        fields = ['id', 'email', 'username',
+                  'is_active', 'is_admin', 'created_at']
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -385,3 +439,16 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'delivery_message': {'required': False},
             'receiver_number': {'required': False}
         }
+
+
+class UserNotificationSerializer(serializers.ModelSerializer):
+    '''
+    작성자 : 장소은
+    내용 : 유저의 알림 내역 조회를 위한 시리얼라이저
+    작성일 : 2023.06.22
+    '''
+
+    class Meta:
+        model = Notification
+        fields = ['id', 'participant', 'message',
+                  'created_at']

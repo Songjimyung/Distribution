@@ -150,12 +150,17 @@ class Funding(BaseModel):
 
 
 class Participant(models.Model):
+    '''
+    작성자 : 장소은
+    내용 : 캠페인 참가자에게 시작일 전 알림을 보내기 위한 모델
+    작성일 : 2023.06.22
+    '''
+
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="campaign_participant")
     campaign = models.ForeignKey(
         Campaign, on_delete=models.CASCADE, related_name="campaign_key")
     is_participated = models.BooleanField(default=False)
-    is_sent = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.username} - {self.campaign.title}"
