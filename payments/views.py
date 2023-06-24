@@ -19,8 +19,8 @@ class ReceiptPagination(PageNumberPagination):
     작성내용 : 페이지네이션
     업데이트 날짜 :
     '''  
-    page_size = 10
-    page_size_query_param = 'page'
+    page_size = 6
+    page_size_query_param = 'page_size'
     max_page_size = 60
 
 class RegisterCustomerView(APIView):
@@ -256,16 +256,16 @@ class RefundpaymentsAPIView(APIView):
             return JsonResponse({'message': '결제 취소에 실패했습니다.'}, status=400)
         
 class ScheduleReceiptAPIView(APIView):
-    pagination_class = ReceiptPagination
     
-    def get(self, request, user_id):
+    pagination_class = ReceiptPagination    
+    def get(self, request):
         '''
         작성자 : 송지명
         작성일 : 2023.06.21
         작성내용 : 유저의 예약결제정보 전체조회(모델에서 갖고옴)
         업데이트 날짜 : 
         '''
-        receipts = Payment.objects.filter(user=user_id, campaign__isnull=False)
+        receipts = Payment.objects.filter(user=request.user.id, campaign__isnull=False)
         paginated_receipts = self.pagination_class().paginate_queryset(receipts, request)
         receipt_data = []
         for receipt in paginated_receipts :     
@@ -278,6 +278,8 @@ class ScheduleReceiptAPIView(APIView):
                 'campaign_date' : receipt.campaign.campaign_end_date,
                 'status' : receipt.get_status_display()
             })
-        return JsonResponse(receipt_data, safe=False)
+            
+            
+        return Response({'results': receipt_data, 'count':len(receipts)})
     
     
