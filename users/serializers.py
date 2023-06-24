@@ -122,7 +122,7 @@ class UserWithdrawalSerializer(serializers.ModelSerializer):
     최초 작성일 : 2023.06.23
     업데이트 일자 :
     '''
-    
+
     confirm_password = serializers.CharField(
         error_messages={
             "required": "비밀번호를 입력해주세요.",

@@ -137,6 +137,7 @@ class Notification(models.Model):
     내용 : 사용자의 알림 레코드
     작성일 : 2023.06.22
     '''
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     participant = models.ForeignKey(
         'campaigns.Participant',
         on_delete=models.CASCADE,
@@ -159,4 +160,4 @@ class Notification(models.Model):
         self.save()
 
     def __str__(self):
-        return f"{self.participant.user.username} - {self.message}"
+        return f"{self.user.username} - {self.message}"

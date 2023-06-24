@@ -35,6 +35,7 @@ def send_notifications(sender, instance, created, **kwargs):
             notification.save()
 
             notification_obj = Notification.objects.create(
+                user=notification.user,
                 restock=notification,
                 message=message['message']
             )

@@ -266,7 +266,7 @@ class KakaoCallbackView(APIView):
             try-except - 기존에 가입된 유저인지 체크
             만약 가입된 유저라면, 해당 유저정보를 사용하여 JWT 토큰을 생성하고, 리다이렉트 응답&JWT 토큰은 쿠키에 저장해 전달
             User.DoesNotExist - 새로운 가입자 처리, 가입 처리 결과에 따라 리다이렉트 응답을 생성
-            +) RedirectURL과 쿠키 반환 로직 변경
+            +) RedirectURL과 쿠키 반환 로직 변경 
     최초 작성일 : 2023.06.08
     업데이트 일자 : 2023.06.11
     '''
@@ -520,7 +520,9 @@ class NotificationListAPIView(APIView):
     pagination_class = CustomPagination
 
     def get(self, request):
-        notifications = Notification.objects.all().order_by('-created_at')
+        notifications = Notification.objects.filter(
+            user=request.user.id).order_by('-created_at')
+        print(notifications)
         paginator = self.pagination_class()
         result_page = paginator.paginate_queryset(notifications, request)
         serializer = UserNotificationSerializer(
@@ -531,14 +533,15 @@ class NotificationListAPIView(APIView):
 
     def delete(self, request):
         user = request.user.id
+        print(user)
         notification_id = request.data.get('notification_id')
         if notification_id:
             try:
                 notification = Notification.objects.get(
-                    Q(participant__user__id=user) |
-                    Q(restock__user__id=user),
-                    id=notification_id
+                    id=notification_id,
+                    user=user
                 )
+                print(notification)
                 notification.delete()
                 return Response(status=204)
 
@@ -546,9 +549,6 @@ class NotificationListAPIView(APIView):
                 return Response({'error': '알림내역을 찾을 수 없습니다.'}, status=404)
 
         else:
-            notifications = Notification.objects.filter(
-                Q(participant__user__id=user) |
-                Q(restock__user__id=user)
-            )
+            notifications = Notification.objects.filter(user=user)
             notifications.delete()
             return Response(status=204)

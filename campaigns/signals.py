@@ -23,8 +23,10 @@ def send_daily_notifications():
     campaign_start_date = current_datetime + timedelta(days=3)
     participants = Participant.objects.filter(
         is_participated=True,
-        campaign__activity_start_date__lte=campaign_start_date
+        campaign__activity_start_date__range=(
+            current_datetime, campaign_start_date)
     )
+    print(current_datetime, campaign_start_date)
     for participant in participants:
 
         days_remain = (
@@ -40,7 +42,7 @@ def send_daily_notifications():
 
         # 알림 레코드 생성
         notification = Notification.objects.create(
-            participant=participant,
+            user=participant.user,
             message=f'캠페인 시작까지 {days_remain}일 남았습니다.',
         )
         notification.save()
@@ -50,7 +52,7 @@ scheduler = BackgroundScheduler()
 
 scheduler.add_jobstore(DjangoJobStore(), "djangojobstore")
 
-scheduler.add_job(send_daily_notifications, 'interval', minutes=10)  # 테스트용
+# scheduler.add_job(send_daily_notifications, 'interval', minutes=1)  # 테스트용
 # scheduler.add_job(send_daily_notifications,
 #                   'cron',
 #                   hour=18
