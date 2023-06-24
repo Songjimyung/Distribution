@@ -28,6 +28,7 @@ django-apscheduler = "^0.6.2"
 boto3 = "^1.26.152"
 django-storages = "^1.13.2"
 websocket-client = "^1.6.0"
+django-debug-toolbar = "^4.1.0"
 
 
 [build-system]

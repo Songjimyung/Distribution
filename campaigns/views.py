@@ -603,7 +603,7 @@ class MyAttendCampaignView(APIView):
     def get(self, request):
         mycampaigns = Campaign.objects.filter(
             participant=request.user).order_by('-activity_end_date')
-        serializer = CampaignCreateSerializer(mycampaigns, many=True)
+        serializer = CampaignSerializer(mycampaigns, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

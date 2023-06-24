@@ -56,6 +56,9 @@ class ShopProduct(models.Model):
     def __str__(self):
         return str(self.product_name)
 
+    def get_absolute_url(self):
+        return reverse("campaign_review_detail_view", kwargs={"review_id": self.id})
+
 
 class ShopOrder(models.Model):
     '''
