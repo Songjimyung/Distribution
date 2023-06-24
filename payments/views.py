@@ -87,18 +87,11 @@ class CreatePaymentScheduleView(APIView):
         receipt_data_list = []
         for receipt in receipts :
             merchant_uid = receipt.merchant_uid
-            schedule_time = receipt.campaign.campaign_end_date
-            if schedule_time > timezone.now():
-                response = iamport.pay_schedule_get(merchant_uid)
-                response['campaign_id'] = receipt.campaign.id
-                response['status'] = receipt.status
-                receipt_data_list.append(response)
-            elif schedule_time < timezone.now() and receipt.campaign.status =="2":
-                 receipt.status = "5"
-                 receipt.save()
-            elif schedule_time < timezone.now() and receipt.campaign.status =="3":
-                 receipt.status = "1" 
-                 receipt.save()
+            response = iamport.pay_schedule_get(merchant_uid)
+            response['campaign_id'] = receipt.campaign.id
+            response['status'] = receipt.status
+            receipt_data_list.append(response)
+            
         return JsonResponse(receipt_data_list, safe=False)
     
 class ReceiptAPIView(APIView):
@@ -218,12 +211,22 @@ class DetailScheduleReceiptAPIView(APIView):
         }
         response = requests.post(cancle_url, payload, headers=token)
         if response.status_code == 200 :
-            receipt.status = "6"
+            receipt.status = "1"
             receipt.save()            
             return JsonResponse({"message":"예약 결제 취소 완료"})
         else :
             return JsonResponse({"message":"결제 취소에 실패하였습니다."})
         
+    def check_payment_status(self):
+        payments = Payment.objects.filter(campaign__isnull=False, status="0")
+        for payment in payments:
+            campaign = payment.campaign
+            if campaign.status == "3":
+               self.post(None, payment.pk)
+            elif campaign.status == "2":
+                payment.status = "5"
+        
+    
 class RefundpaymentsAPIView(APIView):
     
     def post(self, request, pk):
@@ -281,5 +284,3 @@ class ScheduleReceiptAPIView(APIView):
             
             
         return Response({'results': receipt_data, 'count':len(receipts)})
-    
-    

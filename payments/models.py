@@ -14,12 +14,11 @@ class Payment(models.Model):
     
     STATUS_CHOICES = (
         (0, "펀딩 결제 대기 중"),
-        (1, "펀딩 실패"),
+        (1, "예약결제 취소"),
         (2, "결제 완료"),
         (3, "결제 취소 대기 중"),
         (4, "결제 취소"),
-        (5, "예약결제 완료"),
-        (6, "예약결제 취소")
+        (5, "예약결제 완료")
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     amount= models.CharField(max_length=10)
