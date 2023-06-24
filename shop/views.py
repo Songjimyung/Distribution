@@ -126,7 +126,6 @@ class ProductDetailViewAPI(APIView):
     작성일: 2023.06.06
     업데이트일: 2023.06.15
     '''
-    permission_classes = [IsAdminUserOrReadonly]
 
     def get(self, request, product_id):
         product = get_object_or_404(ShopProduct, id=product_id)
@@ -137,6 +136,7 @@ class ProductDetailViewAPI(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, product_id):
+        permission_classes = [IsAdminUserOrReadonly]
         product = get_object_or_404(ShopProduct, id=product_id)
         serializer = ProductListSerializer(
             product, data=request.data, partial=True)
@@ -147,6 +147,8 @@ class ProductDetailViewAPI(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, product_id):
+        permission_classes = [IsAdminUserOrReadonly]
+
         product = get_object_or_404(ShopProduct, id=product_id)
         product.delete()
         return Response({"massage": "삭제 완료"}, status=status.HTTP_204_NO_CONTENT)
@@ -275,3 +277,5 @@ class RestockNotificationViewAPI(APIView):
                 RestockNotification.objects.create(product=product, user=user)
                 return Response({"message": "재입고 알림 신청이 완료되었습니다."}, status=status.HTTP_201_CREATED)
             return Response({"message": "이미 재입고 알림을 구독 하셨습니다."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({"message": "상품이 품절되지 않았습니다."}, status=status.HTTP_400_BAD_REQUEST)
