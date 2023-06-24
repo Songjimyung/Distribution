@@ -312,7 +312,7 @@ class ResetPasswordEmailSerializer(serializers.Serializer):
             token = PasswordResetTokenGenerator().make_token(user)
 
             frontend_site = 'https://www.ecocanvas.net'
-            absurl = f"{frontend_site}/reset_pw/reset_params?uidb64={uidb64}&token={token}"
+            absurl = f"{frontend_site}/reset-pw/reset-params?uidb64={uidb64}&token={token}"
 
             email_body = "비밀번호 재설정을 위해 아래 링크를 클릭해주세요. \n " + absurl
             message = {
