@@ -5,7 +5,6 @@ from campaigns.models import (
     CampaignComment,
     CampaignReview,
     Funding,
-    FundingOrder,
     Participant
 )
 
@@ -186,37 +185,6 @@ class CampaignCommentDisplay(admin.ModelAdmin):
         "user",
         "campaign",
         "content",
-    ]
-
-
-@admin.register(FundingOrder)
-class FundingOrdertDisplay(admin.ModelAdmin):
-    """
-    작성자 : 최준영
-    내용 : 캠페인 댓글 admin 페이지 등록 클래스입니다.
-    최초 작성일 : 2023.06.08
-    업데이트 일자 :
-    """
-
-    list_display = [
-        "user",
-        "funding",
-    ]
-    fields = [
-        "user",
-        "funding",
-    ]
-    readonly_fields = (
-        "created_at",
-        "updated_at",
-    )
-    list_filter = [
-        "user",
-        "funding",
-    ]
-    search_fields = [
-        "user",
-        "funding",
     ]
 
 

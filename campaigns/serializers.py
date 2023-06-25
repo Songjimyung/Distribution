@@ -61,7 +61,7 @@ class CampaignSerializer(BaseSerializer):
     """
     작성자 : 최준영
     내용 : 캠페인 시리얼라이저 입니다.
-    obj.user.email를 name으로 나중에 변경하여 name값이 뜨도록 변경 완료
+    obj.user.email를 name값이 뜨도록 변경 완료
     최초 작성일 : 2023.06.06
     업데이트 일자 : 2023.06.18
     """
@@ -71,6 +71,7 @@ class CampaignSerializer(BaseSerializer):
         fields = (
             "id",
             "user",
+            "user_id",
             "like_count",
             "participant_count",
             "title",
@@ -101,6 +102,9 @@ class CampaignSerializer(BaseSerializer):
 
     def get_user(self, obj):
         return obj.user.username
+    
+    def get_user_id(self, obj):
+        return obj.user.id
 
     def get_campaign_start_date(self, obj):
         return obj.campaign_start_date.strftime("%Y년 %m월 %d일 %R")
@@ -248,7 +252,16 @@ class CampaignCommentSerializer(BaseSerializer):
 
     class Meta:
         model = CampaignComment
-        fields = "__all__"
+        fields = (
+            "author",
+            "campaign",
+            "campaign_title",
+            "content",
+            "created_at",
+            "id",
+            "user",
+            "user_id",
+        )
 
     author = serializers.CharField(source="user.username", read_only=True)
     campaign_title = serializers.CharField(
@@ -257,6 +270,9 @@ class CampaignCommentSerializer(BaseSerializer):
 
     def get_user(self, obj):
         return obj.user.username
+    
+    def get_user_id(self, obj):
+        return obj.user.id
 
 
 class CampaignCommentCreateSerializer(serializers.ModelSerializer):

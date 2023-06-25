@@ -178,7 +178,7 @@ class CampaignDetailView(APIView):
         PUT 요청 함수입니다.
         is_funding이 True라면 펀딩정보를 같이 PUT하는 방식으로 모듈화 했습니다.
         """
-        if request.data["is_funding"] == "False":
+        if request.data["is_funding"] == "false":
             return self.update_campaign(request, campaign_id)
         else:
             return self.update_campaign_with_funding(request, campaign_id)

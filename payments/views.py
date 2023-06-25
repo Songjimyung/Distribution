@@ -2,15 +2,26 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializers import RegisterSerializer, PaymentScheduleSerializer, RegisterPaymentSerializer
 from .models import RegisterPayment, Payment
-from shop.models import ShopOrder
 from users.models import User
 from rest_framework import status
 from iamport import Iamport
 from config import settings
 import requests, json
-from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.utils import timezone
+from rest_framework.pagination import PageNumberPagination
+
+
+class ReceiptPagination(PageNumberPagination):
+    '''
+    작성자 : 송지명
+    작성일 : 2023.06.24
+    작성내용 : 페이지네이션
+    업데이트 날짜 :
+    '''  
+    page_size = 6
+    page_size_query_param = 'page_size'
+    max_page_size = 60
 
 class RegisterCustomerView(APIView):
     
@@ -76,18 +87,11 @@ class CreatePaymentScheduleView(APIView):
         receipt_data_list = []
         for receipt in receipts :
             merchant_uid = receipt.merchant_uid
-            schedule_time = receipt.campaign.campaign_end_date
-            if schedule_time > timezone.now():
-                response = iamport.pay_schedule_get(merchant_uid)
-                response['campaign_id'] = receipt.campaign.id
-                response['status'] = receipt.status
-                receipt_data_list.append(response)
-            elif schedule_time < timezone.now() and receipt.campaign.status =="2":
-                 receipt.status = "5"
-                 receipt.save()
-            elif schedule_time < timezone.now() and receipt.campaign.status =="3":
-                 receipt.status = "1" 
-                 receipt.save()
+            response = iamport.pay_schedule_get(merchant_uid)
+            response['campaign_id'] = receipt.campaign.id
+            response['status'] = receipt.status
+            receipt_data_list.append(response)
+            
         return JsonResponse(receipt_data_list, safe=False)
     
 class ReceiptAPIView(APIView):
@@ -102,16 +106,13 @@ class ReceiptAPIView(APIView):
         merchant_uid = request.data.get('merchant_uid')
         imp_uid = request.data.get('imp_uid')
         amount = request.data.get('amount')
-        product = request.data.get('product')
         user_data = User.objects.get(id=user_id)
-        product_data = ShopOrder.objects.get(id=product)
-        response = Payment.objects.create(user=user_data, amount=amount, imp_uid=imp_uid,merchant_uid=merchant_uid, product=product_data, status ="2")
+        response = Payment.objects.create(user=user_data, amount=amount, imp_uid=imp_uid,merchant_uid=merchant_uid,  status ="2")
         response_data = {
             'user': user_data.username,
             'merchant_uid': response.merchant_uid,
             'imp_uid': response.imp_uid,
             'amount': response.amount,
-            'product': response.product.product.product_name
             
         }
         return Response(response_data, status=status.HTTP_201_CREATED)
@@ -210,12 +211,25 @@ class DetailScheduleReceiptAPIView(APIView):
         }
         response = requests.post(cancle_url, payload, headers=token)
         if response.status_code == 200 :
-            receipt.status = "6"
+            receipt.status = 1
             receipt.save()            
             return JsonResponse({"message":"예약 결제 취소 완료"})
         else :
             return JsonResponse({"message":"결제 취소에 실패하였습니다."})
         
+    def check_payment_status(self):
+        payments = Payment.objects.filter(campaign__isnull=False, status="0")
+        for payment in payments:
+            campaign = payment.campaign
+            if campaign.status == 3:
+               self.post(None, payment.pk)
+            elif campaign.status == 2:
+                payment.status = 5
+                payment.save()
+            else:
+                pass
+        
+    
 class RefundpaymentsAPIView(APIView):
     
     def post(self, request, pk):
@@ -249,16 +263,18 @@ class RefundpaymentsAPIView(APIView):
         
 class ScheduleReceiptAPIView(APIView):
     
-    def get(self, request, user_id):
+    pagination_class = ReceiptPagination    
+    def get(self, request):
         '''
         작성자 : 송지명
         작성일 : 2023.06.21
         작성내용 : 유저의 예약결제정보 전체조회(모델에서 갖고옴)
         업데이트 날짜 : 
         '''
-        receipts = Payment.objects.filter(user=user_id, product__isnull=True)
+        receipts = Payment.objects.filter(user=request.user.id, campaign__isnull=False)
+        paginated_receipts = self.pagination_class().paginate_queryset(receipts, request)
         receipt_data = []
-        for receipt in receipts :     
+        for receipt in paginated_receipts :     
             receipt_data.append({
                 'id' : receipt.pk,
                 'user' : receipt.user.username,
@@ -268,5 +284,6 @@ class ScheduleReceiptAPIView(APIView):
                 'campaign_date' : receipt.campaign.campaign_end_date,
                 'status' : receipt.get_status_display()
             })
-        return JsonResponse(receipt_data, safe=False)
-    
+            
+            
+        return Response({'results': receipt_data, 'count':len(receipts)})

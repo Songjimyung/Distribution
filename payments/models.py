@@ -14,12 +14,11 @@ class Payment(models.Model):
     
     STATUS_CHOICES = (
         (0, "펀딩 결제 대기 중"),
-        (1, "펀딩 실패"),
+        (1, "예약결제 취소"),
         (2, "결제 완료"),
         (3, "결제 취소 대기 중"),
         (4, "결제 취소"),
-        (5, "예약결제 완료"),
-        (6, "예약결제 취소")
+        (5, "예약결제 완료")
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     amount= models.CharField(max_length=10)
@@ -27,7 +26,7 @@ class Payment(models.Model):
     campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, null=True)
     merchant_uid = models.CharField(max_length=255)
     imp_uid = models.CharField(max_length=255, null=True)
-    product = models.ForeignKey(ShopOrder, on_delete=models.CASCADE, null=True)
+    order = models.OneToOneField(ShopOrder, on_delete=models.CASCADE, null=True)
     status = models.PositiveIntegerField(choices=STATUS_CHOICES, null=True)
     customer_uid = models.CharField(max_length=255, blank=True, null=True)
     
