@@ -18,7 +18,7 @@ def start():
     register_events(scheduler)
     # 매분 8초에 실행되도록 테스트
 #     @scheduler.scheduled_job(CronTrigger(hour=8))
-    @scheduler.scheduled_job(CronTrigger(second=8))
+    @scheduler.scheduled_job("cron", second="1", name="check")
     def check():
          DetailScheduleReceiptAPIView().check_payment_status()
 

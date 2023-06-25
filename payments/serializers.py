@@ -1,11 +1,11 @@
 from rest_framework import serializers
-from campaigns.models import Campaign
-from shop.models import ShopProduct
+from campaigns.models import Campaign, Funding
 from .models import Payment, RegisterPayment
 from iamport import Iamport
 from config import settings
 import time
 from django.db import transaction
+from django.db.models import F
 
 class RegisterPaymentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -114,7 +114,7 @@ class PaymentScheduleSerializer(serializers.ModelSerializer):
             response = iamport.pay_schedule(**payload)
             # 모든 작업이 성공한 경우에만 Payment 객체 생성 및 저장
             data = Payment.objects.create(user=user_id, amount=amount, campaign=campaign, merchant_uid=merchant_uid, status="0", customer_uid=customer_uid)
-
+            Funding.objects.filter(campaign=campaign).update(amount=F('amount')+amount)
 
         return response
         
