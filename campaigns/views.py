@@ -21,7 +21,6 @@ from campaigns.serializers import (
     CampaignCommentCreateSerializer,
     FundingCreateSerializer,
 )
-from .signals import send_daily_notifications
 
 
 class CampaignView(APIView):
@@ -166,7 +165,6 @@ class CampaignDetailView(APIView):
         """
         campaing_id를 Parameter로 받아 해당하는 캠페인에 GET 요청을 보내는 함수입니다.
         """
-        send_daily_notifications()
 
         queryset = get_object_or_404(Campaign, id=campaign_id)
         serializer = CampaignSerializer(queryset)

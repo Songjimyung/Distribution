@@ -5,7 +5,7 @@ from users import views
 urlpatterns = [
     # 회원가입
     path('signup/', views.SignUpView.as_view(), name='sign_up'),
-    path('signup/email_code/', views.SendEmailView.as_view(), name='send_email'),
+    path('signup/email_code/', views.SendSignupEmailView.as_view(), name='send_email'),
     path('oauth/kakao/callback/',
          views.KakaoCallbackView.as_view(), name='kakao_callback'),
     path('kakao/login/finish/', views.KakaoLogin.as_view(),
@@ -32,8 +32,4 @@ urlpatterns = [
 
     # 유저프로필
     path('profile/', views.UserProfileAPIView.as_view(), name='user_profile'),
-
-    # 유저 알림 조회
-    path('notifications/', views.NotificationListAPIView.as_view(),
-         name='notification_list'),
 ]

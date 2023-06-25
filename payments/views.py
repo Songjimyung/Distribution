@@ -211,7 +211,7 @@ class DetailScheduleReceiptAPIView(APIView):
         }
         response = requests.post(cancle_url, payload, headers=token)
         if response.status_code == 200 :
-            receipt.status = "1"
+            receipt.status = 1
             receipt.save()            
             return JsonResponse({"message":"예약 결제 취소 완료"})
         else :
@@ -221,10 +221,13 @@ class DetailScheduleReceiptAPIView(APIView):
         payments = Payment.objects.filter(campaign__isnull=False, status="0")
         for payment in payments:
             campaign = payment.campaign
-            if campaign.status == "3":
+            if campaign.status == 3:
                self.post(None, payment.pk)
-            elif campaign.status == "2":
-                payment.status = "5"
+            elif campaign.status == 2:
+                payment.status = 5
+                payment.save()
+            else:
+                pass
         
     
 class RefundpaymentsAPIView(APIView):

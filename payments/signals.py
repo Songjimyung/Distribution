@@ -4,7 +4,7 @@ from channels.layers import get_channel_layer
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 import json
-from users.models import Notification
+from alarms.models import Notification
 from django.utils import timezone
 from .models import Payment
 
@@ -19,8 +19,7 @@ def send_payments(sender, instance, created, **kwargs):
     최초 작성일 : 2023.06.23
     '''
     if created:
-       payment = Payment.objects.filter(user=instance.user).latest('created_at')
-       payment.order = instance
-       payment.save()
-        
-
+        payment = Payment.objects.filter(
+            user=instance.user).latest('created_at')
+        payment.order = instance
+        payment.save()

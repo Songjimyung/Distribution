@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, UserProfile, password_validator, password_pattern, Notification
+from .models import User, UserProfile, password_validator, password_pattern
 from django.contrib.auth.hashers import check_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -10,6 +10,46 @@ from django.utils.encoding import smart_bytes
 from django.utils import timezone
 import threading
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+import hashlib
+
+class EmailThread(threading.Thread):
+    '''
+    작성자 : 이주한
+    내용 : 이메일 전송을 위해 'Thread'를 사용하는 'EmailThread'클래스입니다.
+            run 메소드는 Tread의 start() 메소드로 Tread가 실행될 때 호출됩니다.
+
+            * Tread를 사용하는 이유: 
+                이메일 전송 작업을 백그라운드에서 비동기적으로 처리하고, 
+                다른 작업과 동시에 진행할 수 있도록 하기 위함입니다.
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
+    '''
+
+    def __init__(self, email):
+        self.email = email
+        threading.Thread.__init__(self)
+
+    def run(self):
+        self.email.send()
+
+
+class Util:
+    '''
+    작성자 : 이주한
+    내용 : 이메일 전송 시 양식을 정의한 클래스입니다.
+            양식은 EmailMessage의 양식을 따르며, EmailThread(email).start()를 통해
+            이메일 전송 작업이 백그라운드에서 비동기적으로 처리됩니다.
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
+    '''
+    @staticmethod
+    def send_email(message):
+        email = EmailMessage(
+            subject=message["email_subject"],
+            body=message["email_body"],
+            to=[message["to_email"]],
+        )
+        EmailThread(email).start()
 
 
 class SignUpSerializer(serializers.ModelSerializer):
@@ -87,6 +127,64 @@ class SignUpSerializer(serializers.ModelSerializer):
         return validated_data
 
 
+class VerificationCodeGenerator:
+    '''
+        작성자 : 이주한
+        내용 : 회원가입시 이메일 인증에 필요한 인증 코드를 생성하는 함수입니다.
+
+        최초 작성일 : 2023.06.15
+        업데이트 일자 : 2023.06.25
+        '''
+    @staticmethod
+    def verification_code(email, time_check):
+        ingredient = email + str(time_check)
+        hashed_code = hashlib.sha256(ingredient.encode()).hexdigest()
+        return hashed_code
+
+
+class SendSignupEmailSerializer(serializers.Serializer):
+    '''
+    작성자 : 이주한
+    내용 : SendSignupEmailView API가 호출될 때 사용되는 시리얼라이저입니다.
+            사용자가 입력한 이메일이 존재하는 이메일인지 확인 후 존재할 경우
+            에러 메시지를 띄워주고, 존재하지 않다면 로직을 계속합니다.
+    최초 작성일 : 2023.06.15
+    업데이트 일자 : 
+    '''
+    email = serializers.EmailField(
+        error_messages={
+            "required": "이메일을 입력해주세요.",
+            "blank": "이메일을 입력해주세요.",
+        }
+    )
+    time_check = serializers.IntegerField()
+    
+    class Meta:
+        fields = ("email", "date")
+
+    def validate(self, attrs):
+        email = attrs.get("email")
+        time_check = attrs.get("time_check")
+        verification_code = VerificationCodeGenerator.verification_code(email, time_check)
+        
+        try:
+            User.objects.get(email=email)
+            
+            raise serializers.ValidationError(
+                detail={"email": "이미 존재하는 계정의 이메일 주소입니다."})
+
+        except User.DoesNotExist:
+            email_body = "아래 인증코드를 인증코드 작성란에 기입해주세요. \n " + verification_code
+            message = {
+                "email_body": email_body,
+                "to_email": email,
+                "email_subject": "EcoCanvas 이메일 인증 코드",
+            }
+            Util.send_email(message)
+
+            return super().validate(attrs)
+
+
 class UserUpdateSerializer(serializers.ModelSerializer):
     '''
     작성자 : 이주한
@@ -122,7 +220,7 @@ class UserWithdrawalSerializer(serializers.ModelSerializer):
     최초 작성일 : 2023.06.23
     업데이트 일자 :
     '''
-    
+
     confirm_password = serializers.CharField(
         error_messages={
             "required": "비밀번호를 입력해주세요.",
@@ -240,46 +338,6 @@ class UpdatePasswordSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
-
-
-class EmailThread(threading.Thread):
-    '''
-    작성자 : 이주한
-    내용 : 이메일 전송을 위해 'Thread'를 사용하는 'EmailThread'클래스입니다.
-            run 메소드는 Tread의 start() 메소드로 Tread가 실행될 때 호출됩니다.
-
-            * Tread를 사용하는 이유: 
-                이메일 전송 작업을 백그라운드에서 비동기적으로 처리하고, 
-                다른 작업과 동시에 진행할 수 있도록 하기 위함입니다.
-    최초 작성일 : 2023.06.15
-    업데이트 일자 : 
-    '''
-
-    def __init__(self, email):
-        self.email = email
-        threading.Thread.__init__(self)
-
-    def run(self):
-        self.email.send()
-
-
-class Util:
-    '''
-    작성자 : 이주한
-    내용 : 이메일 전송 시 양식을 정의한 클래스입니다.
-            양식은 EmailMessage의 양식을 따르며, EmailThread(email).start()를 통해
-            이메일 전송 작업이 백그라운드에서 비동기적으로 처리됩니다.
-    최초 작성일 : 2023.06.15
-    업데이트 일자 : 
-    '''
-    @staticmethod
-    def send_email(message):
-        email = EmailMessage(
-            subject=message["email_subject"],
-            body=message["email_body"],
-            to=[message["to_email"]],
-        )
-        EmailThread(email).start()
 
 
 class ResetPasswordEmailSerializer(serializers.Serializer):
@@ -441,14 +499,4 @@ class UserProfileSerializer(serializers.ModelSerializer):
         }
 
 
-class UserNotificationSerializer(serializers.ModelSerializer):
-    '''
-    작성자 : 장소은
-    내용 : 유저의 알림 내역 조회를 위한 시리얼라이저
-    작성일 : 2023.06.22
-    '''
 
-    class Meta:
-        model = Notification
-        fields = ['id', 'participant', 'message',
-                  'created_at']
