@@ -1,7 +1,6 @@
 from users.models import User, UserProfile, Notification
 import requests
 import os
-import base64
 from django.utils.translation import gettext_lazy as _
 from django.shortcuts import redirect
 from dj_rest_auth.registration.views import SocialLoginView
@@ -13,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from users.serializers import (
     SignUpSerializer,
+    SendSignupEmailSerializer,
     CustomTokenObtainPairSerializer,
     UserSerializer,
     UserUpdateSerializer,
@@ -21,7 +21,8 @@ from users.serializers import (
     ResetPasswordEmailSerializer,
     UserProfileSerializer,
     UserNotificationSerializer,
-    UserWithdrawalSerializer
+    UserWithdrawalSerializer,
+    VerificationCodeGenerator
 )
 from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.kakao import views as kakao_view
@@ -30,7 +31,6 @@ from django.http import JsonResponse
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.utils.encoding import DjangoUnicodeDecodeError, force_str
 from django.utils.http import urlsafe_base64_decode
-from django.core.mail import EmailMessage
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.pagination import PageNumberPagination
@@ -46,44 +46,21 @@ front_base_url = os.environ.get('FRONT_BASE_URL')
 secret_key = os.environ.get('SECRET_KEY')
 
 
-def verification_code(email):
-    '''
-    작성자 : 이주한
-    내용 : 회원가입시 이메일 인증에 필요한 인증 코드를 생성하는 함수입니다.
-            개발 단계에서는 필요하지 않을 수 있어 주석 처리해 두었습니다.
-    최초 작성일 : 2023.06.15
-    업데이트 일자 :
-    '''
-    email_bytes = email.encode('ascii')
-    email_base64 = base64.b64encode(email_bytes)
-    email_base64_str = email_base64.decode('ascii')
-    return email_base64_str
-
-
-class SendEmailView(APIView):
+class SendSignupEmailView(APIView):
     '''
     작성자 : 이주한
     내용 : 회원가입시 이메일 인증에 필요한 메일을 보내는 view 클래스입니다.
-            개발 단계에서는 이메일 인증이 번거로울 수 있어 주석 처리해 두었습니다.
     최초 작성일 : 2023.06.15
-    업데이트 일자 :
+    업데이트 일자 : 2023.06.25
     '''
     permission_classes = [AllowAny]
 
     def post(self, request):
-        email = request.data.get("email")
-        if email == "":
-            return Response({'error': '이메일을 입력해주세요.'}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            try:
-                User.objects.get(email=email)
-                return Response({"message": "계정이 이미 존재합니다."}, status=status.HTTP_400_BAD_REQUEST)
-            except:
-                subject = 'EcoCanvas 인증 코드 메일'
-                body = verification_code(email)
-                email_content = EmailMessage(subject, body, to=[email],)
-                email_content.send()
-                return Response({"message": "귀하의 이메일에서 인증코드를 확인해주세요."}, status=status.HTTP_200_OK)
+        serializer = SendSignupEmailSerializer(
+            data=request.data, context={"request": request})
+        if serializer.is_valid():
+            return Response({"message": "이메일 인증코드를 회원님의 이메일 계정으로 발송했습니다. 확인 부탁드립니다!"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class SignUpView(APIView):
@@ -97,14 +74,20 @@ class SignUpView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        if verification_code(request.data.get("email")) != request.data.get("check_code"):
-            return Response({"message": f"잘못된 인증코드입니다."}, status=status.HTTP_400_BAD_REQUEST)
-        serializer = SignUpSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "가입완료!"}, status=status.HTTP_201_CREATED)
+        verification_code = VerificationCodeGenerator.verification_code(request.data['email'], request.data['time_check'])
+        print(verification_code)
+        check_code = request.data.get('check_code')
+        if verification_code == check_code:
+            serializer = SignUpSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"message": "가입완료!"}, status=status.HTTP_201_CREATED)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        elif check_code == "":
+            return Response({"empty": "인증코드를 입력해주세요!"}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"not_match": "잘못된 인증코드입니다!"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserView(APIView):
