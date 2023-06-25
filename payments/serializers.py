@@ -6,6 +6,8 @@ from config import settings
 import time
 from django.db import transaction
 from django.db.models import F
+import datetime
+
 
 class RegisterPaymentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -92,7 +94,8 @@ class PaymentScheduleSerializer(serializers.ModelSerializer):
     def create(self, data):
         campaign = data.get('campaign')
         campaign_date = campaign.campaign_end_date     
-        schedules_date = campaign_date.replace(tzinfo=None)
+        schedules_date_default = campaign_date.replace(tzinfo=None)
+        schedules_date = schedules_date_default + datetime.timedelta(days=1)
         schedules_at = int(schedules_date.timestamp())
         iamport = Iamport(imp_key=settings.IMP_KEY, imp_secret=settings.IMP_SECRET)
         customer_uid = data.get('selected_card').customer_uid
