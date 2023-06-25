@@ -21,7 +21,7 @@ from campaigns.serializers import (
     CampaignCommentCreateSerializer,
     FundingCreateSerializer,
 )
-from .signals import send_daily_notifications
+from alarms.signals import send_daily_notifications
 
 
 class CampaignView(APIView):
