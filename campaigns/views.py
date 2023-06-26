@@ -478,13 +478,13 @@ class CampaignCommentView(APIView):
         """
         queryset = get_object_or_404(Campaign, id=campaign_id)
         comment = queryset.comments.all()
+        serializer = CampaignCommentSerializer(comment, many=True)
 
         pagination_instance = self.pagination_class()
         paginated_data = pagination_instance.paginate_queryset(
-            comment, request)
+            serializer.data, request)
 
-        serializer = CampaignCommentSerializer(paginated_data, many=True)
-        return pagination_instance.get_paginated_response(serializer.data)
+        return pagination_instance.get_paginated_response(paginated_data)
 
     def post(self, request, campaign_id):
         """
